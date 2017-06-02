@@ -44,3 +44,20 @@ endif()
 
 set(GTEST_BOTH_LIBRARIES debug ${GTEST_LIBRARY_DEBUG} optimized ${GTEST_LIBRARY_RELEASE})
 find_package_handle_standard_args(gtest REQUIRED_VARS GTEST_INCLUDE_DIR GTEST_LIBRARY_DEBUG GTEST_LIBRARY_RELEASE)
+
+################
+# find CUDA
+################
+
+include(FindCUDA)
+
+if (NOT DEFINED CUDA_CUDA_LIBRARY)
+	message("This project requires the NVidia Cuda Toolkit v8.0 to be installed")
+else()
+	# Enable output of kernel memory useage info during compilation
+	set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};-gencode arch=compute_52,code=sm_50)
+	set(CUDA_NVCC_FLAGS_DEBUG ${CUDA_NVCC_FLAGS_DEBUG};-Xptxas='-v';--ptxas-options -v)
+	set(CUDA_NVCC_FLAGS_RELWITHDEBINFO ${CUDA_NVCC_FLAGS_RELWITHDEBINFO};-Xptxas='-v';--ptxas-options -v)
+endif()
+
+
