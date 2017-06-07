@@ -25,8 +25,9 @@ generate_source_tree(HOST_SOURCES "${DIRS}" "${FILE_TYPES}")
 add_subdirectory(test)
 include_directories(${LIBMMV_INCLUDE_DIR})
 
-add_executable(${PROJECT_NAME}
-               ${HOST_SOURCES}
+CUDA_ADD_EXECUTABLE(${PROJECT_NAME}
+                    ${HOST_SOURCES}
+)
 
 target_link_libraries(${PROJECT_NAME}
                       ${LIBMMV_LIBRARY_RELEASE}
