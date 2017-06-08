@@ -10,10 +10,16 @@ generate_source_tree(HOST_SOURCES "${DIRS}" "${FILE_TYPES}")
 
 set(SOLVER_TEST_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src")
 
+if (MSVC)
+	#Compile in static mode to link with gtest dependency
+	set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MTd")
+	set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} /MT")
+endif(MSVC)
+
 # set include directories
 include_directories("${GTEST_INCLUDE_DIR}")
 
-add_executable(${PROJECT_NAME}
+CUDA_ADD_EXECUTABLE(${PROJECT_NAME}
 			   ${HOST_SOURCES}
 )
 
