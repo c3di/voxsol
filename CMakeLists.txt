@@ -17,13 +17,17 @@ include(FindSolverDependencies)
 SwitchOnCpp11()
 
 # find all directories containing source files
-set(FILE_TYPES *.c *.cc *.cpp *.h *.hpp *.tcc)
+set(FILE_TYPES *.c *.cc *.cu *.cpp *.h *.hpp *.tcc)
 find_directories(DIRS src "${FILE_TYPES}")
 # generate source tree
 generate_source_tree(HOST_SOURCES "${DIRS}" "${FILE_TYPES}")
 
+set(STOMECH_SOLVER_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src")
+
 add_subdirectory(test)
-include_directories(${LIBMMV_INCLUDE_DIR})
+include_directories(${LIBMMV_INCLUDE_DIR}
+                    ${STOMECH_SOLVER_INCLUDE_DIR}
+)
 
 CUDA_ADD_EXECUTABLE(${PROJECT_NAME}
                     ${HOST_SOURCES}
