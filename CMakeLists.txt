@@ -14,7 +14,10 @@ include(GetSourceFiles)
 include(Cpp11)
 include(FindPackageHandleStandardArgs)
 include(FindSolverDependencies)
+include(PrecompiledHeaders)
 SwitchOnCpp11()
+
+set(SOLVER_DOUBLE_PRECISION FALSE CACHE BOOL "Compile with double precision rather than single precision.")
 
 # find all directories containing source files
 set(FILE_TYPES *.c *.cc *.cu *.cpp *.h *.hpp *.tcc)
@@ -37,3 +40,11 @@ target_link_libraries(${PROJECT_NAME}
                       ${LIBMMV_LIBRARY_RELEASE}
 )
 
+IF (SOLVER_DOUBLE_PRECISION) 
+	add_definitions(-DUSE_DOUBLE_PRECISION)
+ELSE()
+	remove_definitions(-DUSE_DOUBLE_PRECISION)
+ENDIF()
+
+# precompiled headers
+add_precompiled_header(${PROJECT_NAME} stdafx.h)

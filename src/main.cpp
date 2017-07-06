@@ -1,6 +1,10 @@
+#include <stdafx.h>
 #include <cstdio>
 #include <iostream>
+#include <algorithm>
 #include "gpu/CudaDebugHelper.h"
+#include "gpu/kernels/CK_ComputeLHSMatrices.h"
+#include "libmmv/math/Vec3.h"
 
 int main(int argc, char* argv[]) {
 
@@ -17,4 +21,6 @@ int main(int argc, char* argv[]) {
 
     CudaDebugHelper::PrintDeviceInfo(0);
 
+    ettention::Vec3ui what(10, 10, 10);
+    CK_ComputeLHSMatrices blah(what);
 }

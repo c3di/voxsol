@@ -18,7 +18,10 @@ if (MSVC)
 endif(MSVC)
 
 # set include directories
-include_directories("${GTEST_INCLUDE_DIR}")
+include_directories("${GTEST_INCLUDE_DIR}" 
+                     ${LIBMMV_INCLUDE_DIR}
+					 ${STOMECH_SOLVER_INCLUDE_DIR}
+)
 
 CUDA_ADD_EXECUTABLE(${PROJECT_NAME}
 			   ${HOST_SOURCES}
@@ -26,4 +29,11 @@ CUDA_ADD_EXECUTABLE(${PROJECT_NAME}
 
 target_link_libraries(${PROJECT_NAME}
 			${GTEST_BOTH_LIBRARIES}
+			${LIBMMV_LIBRARY_RELEASE}
 			)
+
+IF (SOLVER_DOUBLE_PRECISION) 
+	add_definitions(-DUSE_DOUBLE_PRECISION)
+ELSE()
+	remove_definitions(-DUSE_DOUBLE_PRECISION)
+ENDIF()
