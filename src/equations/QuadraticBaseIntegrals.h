@@ -1,8 +1,5 @@
 #pragma once
-#include <stdafx.h>
-#include "libmmv/math/Vec3.h"
-
-#define MAP(A, func, deriv, testFunc, cell) A[(func)*3*3*8 + (deriv)*3*8 + (testFunc)*3 + (cell)]
+#include "BaseIntegrals.h"
 
 /************************************************************************/
 /*
@@ -12,30 +9,31 @@
 */
 /************************************************************************/
 
-class QuadraticBaseIntegrals {
+class QuadraticBaseIntegrals : public BaseIntegrals {
 public:
 
     QuadraticBaseIntegrals(ettention::Vec3f& voxelSize) :
-        dx(voxelSize.x),
-        dy(voxelSize.y),
-        dz(voxelSize.z)
+        BaseIntegrals(voxelSize)
     {
         init();
     }
 
-    REAL* data() {
-        return (REAL*) &m_data;
+    QuadraticBaseIntegrals(ettention::Vec3d& voxelSize) :
+        BaseIntegrals(voxelSize)
+    {
+        init();
     }
 
-    REAL value(unsigned int basisFunc, unsigned int deriv, unsigned int testFunc, unsigned int cell) {
-        return MAP(m_data, basisFunc, deriv, testFunc, cell);
-    }
+    //From BaseIntegrals
+    //  inline REAL* data()
+    //  inline REAL value(unsigned int basisFunc, unsigned int deriv, unsigned int testFunc, unsigned int cell)
 
-private:
-    REAL dx;
-    REAL dy;
-    REAL dz;
-    REAL m_data[27 * 3 * 3 * 8];
+protected:
+    //From BaseIntegrals:
+    //  REAL dx;
+    //  REAL dy;
+    //  REAL dz;
+    //  REAL m_data[27 * 3 * 3 * 8];
 
     void init() {
         MAP(m_data,0,0,0,0) = -3703 / 86400 / dx * dy * dz;
