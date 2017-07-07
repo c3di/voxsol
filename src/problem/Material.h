@@ -1,16 +1,22 @@
+#pragma once
+#include <stdafx.h>
+
 class Material {
 
 public:
-    Material(unsigned int id, double rho, double eModul, double poissonRatio, double yieldStrength);
+    
+    Material(char id, REAL rho, REAL eModul, REAL poissonRatio, REAL yieldStrength);
     ~Material();
 
-    const unsigned int m_id;
-    const double m_lambda;
-    const double m_mu;
+    const char m_id;
+    const REAL m_lambda;
+    const REAL m_mu;
+
+    static Material EMPTY;
 
 private:
 
-    double calculateMu(double eModul, double poissonRatio);
-    double calculateLambda(double eModul, double poissonRatio);
+    REAL calculateMu(REAL eModul, REAL poissonRatio);
+    REAL calculateLambda(REAL eModul, REAL poissonRatio);
 
 };
