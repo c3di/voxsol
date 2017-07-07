@@ -11,6 +11,8 @@ public:
 
     void setMaterial(unsigned int index, Material& mat);
     void setMaterial(unsigned int index, Material* mat);
+
+    //TODO: implement a KEY based on an array of ints instead of using strings
     std::string getMaterialConfiguration() const;
     bool containsMixedMaterials() const;
 
