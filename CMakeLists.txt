@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.4)
 SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}")
 
-project(stomech_solver)
+project(stomech_solver_lib)
 
 set(CMAKE_BINARY_DIR ${PROJECT_BINARY_DIR})
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin)
@@ -16,6 +16,13 @@ include(FindPackageHandleStandardArgs)
 include(FindSolverDependencies)
 include(PrecompiledHeaders)
 SwitchOnCpp11()
+
+if (MSVC)
+	#Compile in static mode to link with gtest dependency
+	set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MTd")
+	set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} /MT")
+	set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT")
+endif(MSVC)
 
 set(SOLVER_DOUBLE_PRECISION FALSE CACHE BOOL "Compile with double precision rather than single precision.")
 
@@ -32,8 +39,8 @@ include_directories(${LIBMMV_INCLUDE_DIR}
                     ${STOMECH_SOLVER_INCLUDE_DIR}
 )
 
-CUDA_ADD_EXECUTABLE(${PROJECT_NAME}
-                    ${HOST_SOURCES}
+CUDA_ADD_LIBRARY(${PROJECT_NAME}
+                 ${HOST_SOURCES}
 )
 
 target_link_libraries(${PROJECT_NAME}
@@ -48,3 +55,5 @@ ENDIF()
 
 # precompiled headers
 add_precompiled_header(${PROJECT_NAME} stdafx.h)
+
+add_subdirectory(frontend)

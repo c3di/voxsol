@@ -30,6 +30,7 @@ CUDA_ADD_EXECUTABLE(${PROJECT_NAME}
 target_link_libraries(${PROJECT_NAME}
 			${GTEST_BOTH_LIBRARIES}
 			${LIBMMV_LIBRARY_RELEASE}
+			stomech_solver_lib
 			)
 
 IF (SOLVER_DOUBLE_PRECISION) 
