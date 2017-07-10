@@ -5,14 +5,16 @@ class Material {
 
 public:
     
-    Material(char id, REAL rho, REAL eModul, REAL poissonRatio, REAL yieldStrength);
+    Material();
+    Material(REAL rho, REAL eModul, REAL poissonRatio, REAL yieldStrength);
     ~Material();
 
-    const char m_id;
+    const unsigned char m_id;
     const REAL m_lambda;
     const REAL m_mu;
 
     static Material EMPTY;
+    static unsigned char NEXT_ID;
 
 private:
 

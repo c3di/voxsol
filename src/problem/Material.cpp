@@ -1,15 +1,25 @@
 #include "stdafx.h"
 #include "problem/Material.h"
 
-Material Material::EMPTY = Material(65, 0, 0, 0, 0);
+Material Material::EMPTY = Material(0, 0, 0, 0);
+unsigned char Material::NEXT_ID = 1;
 
-Material::Material(char id, REAL rho, REAL eModul, REAL poissonRatio, REAL yieldStrength) :
-    m_lambda(calculateLambda(eModul, poissonRatio)),
-    m_mu(calculateMu(eModul, poissonRatio)),
-    m_id(id)
+Material::Material() :
+    m_id(255),
+    m_mu(0),
+    m_lambda(0)
 {
 
 }
+
+Material::Material(REAL rho, REAL eModul, REAL poissonRatio, REAL yieldStrength) :
+    m_lambda(calculateLambda(eModul, poissonRatio)),
+    m_mu(calculateMu(eModul, poissonRatio)),
+    m_id(NEXT_ID)
+{
+    NEXT_ID++;
+}
+
 Material::~Material() {
 
 }

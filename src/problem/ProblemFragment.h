@@ -2,6 +2,7 @@
 #include <vector>
 #include "libmmv/math/Vec3.h"
 #include "problem/Material.h"
+#include "ProblemFragmentKey.h"
 
 class ProblemFragment {
 public:
@@ -12,8 +13,7 @@ public:
     void setMaterial(unsigned int index, Material& mat);
     void setMaterial(unsigned int index, Material* mat);
 
-    //TODO: implement a KEY based on an array of ints instead of using strings
-    std::string getMaterialConfiguration() const;
+    const ProblemFragmentKey& key() const;
     bool containsMixedMaterials() const;
 
     inline REAL mu(unsigned int cell) const {
@@ -27,5 +27,6 @@ public:
 private:
     const ettention::Vec3ui m_centerVertexCoord;
     std::vector<Material*> m_materials;
+    ProblemFragmentKey m_key;
 
 };

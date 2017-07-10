@@ -45,7 +45,7 @@ void Solution::precomputeMatrices() {
 
 void Solution::processNode(ettention::Vec3ui centerCoord, const MatrixPrecomputer* precomputer) {
     ProblemFragment fragment = m_problem->extractLocalProblem(centerCoord);
-    std::string materialConfig = fragment.getMaterialConfiguration();
+    ProblemFragmentKey materialConfig = fragment.key();
     unsigned int idForNode = 0;
     
     //TODO: Generate IDs for all unique configs first, then compute their matrices in a second (possibly async) step

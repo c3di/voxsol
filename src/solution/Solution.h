@@ -24,7 +24,7 @@ private:
     const DiscreteProblem* const m_problem;
     std::vector<unsigned int> m_nodes;
     std::vector<MatrixStore> m_matrixStore;
-    std::unordered_map < std::string, unsigned int> m_hashmap;
+    std::unordered_map < ProblemFragmentKey, unsigned int> m_hashmap;
 
     void processNode(ettention::Vec3ui centerCoord, const MatrixPrecomputer* precomputer);
     inline bool outOfBounds(ettention::Vec3ui& coordinate) const;
