@@ -16,6 +16,8 @@ public:
 
     static Material EMPTY;
     static unsigned char NEXT_ID;
+    
+    bool operator==(const Material& other) const;
 
 private:
 

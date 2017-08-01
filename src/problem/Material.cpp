@@ -40,3 +40,8 @@ REAL Material::calculateLambda(REAL eModul, REAL poissonRatio) {
     REAL divisor = (1.0 + poissonRatio) * (1.0 - 2.0 * poissonRatio);
     return (eModul * poissonRatio) / divisor;
 }
+
+bool Material::operator==(const Material& other) const
+{
+    return other.m_id == m_id;
+}
