@@ -21,6 +21,7 @@ endif(MSVC)
 include_directories("${GTEST_INCLUDE_DIR}" 
                      ${LIBMMV_INCLUDE_DIR}
 					 ${STOMECH_SOLVER_INCLUDE_DIR}
+					 ${TEST_SOURCE_DIR}
 )
 
 CUDA_ADD_EXECUTABLE(${PROJECT_NAME}
