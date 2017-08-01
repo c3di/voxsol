@@ -6,13 +6,28 @@ Solution::Solution(DiscreteProblem& problem) :
     m_size(problem.getSize() + ettention::Vec3ui(1,1,1)),
     m_voxelSize(problem.getVoxelSize()),
     m_problem(&problem),
-    m_nodes(m_size.x * m_size.y * m_size.z, 0)
+    m_fragmentIds(m_size.x * m_size.y * m_size.z, 0)
 {
 
 }
 
 Solution::~Solution() {
 
+}
+
+const std::vector<unsigned int>& Solution::getFragmentIds() {
+    return m_fragmentIds;
+}
+
+const std::vector<MatrixStore>& Solution::getMatrixStore() {
+    return m_matrixStore;
+}
+
+unsigned int Solution::getFragmentIdForKey(const ProblemFragmentKey& key) {
+    if (m_hashmap.count(key) <= 0) {
+        throw std::exception("the given problem fragment key is not known in this solution");
+    }
+    return m_hashmap.at(key);
 }
 
 unsigned int Solution::mapToIndex(ettention::Vec3ui& coordinate) const {
@@ -60,5 +75,5 @@ void Solution::processNode(ettention::Vec3ui centerCoord, const MatrixPrecompute
     }
 
     unsigned int index = mapToIndex(centerCoord);
-    m_nodes[index] = idForNode;
+    m_fragmentIds[index] = idForNode;
 }

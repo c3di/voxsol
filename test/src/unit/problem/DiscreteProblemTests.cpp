@@ -23,33 +23,17 @@ public:
 };
 
 TEST_F(DiscreteProblemTests, Initialization) {
-    ettention::Vec3ui size(2, 2, 2);
-    ettention::Vec3<REAL> voxelSize(1, 1, 1);
-
-    DiscreteProblem problem(size, voxelSize);
-    int numCells = 8;
-
-    for (int i = 0; i < numCells; i++) {
-        problem.setMaterial(i, Templates::Mat::STEEL);
-    }
+    DiscreteProblem problem = Templates::Problem::STEEL_2_2_2();
 
     bool didInit = true;
-    for (int i = 0; i < numCells; i++) {
+    for (int i = 0; i < 8; i++) {
         didInit = didInit && *problem.getMaterial(i) == Templates::Mat::STEEL;
     }
     EXPECT_TRUE(didInit) << "Materials were not initialized properly";
 }
 
 TEST_F(DiscreteProblemTests, BoundsHandling) {
-    ettention::Vec3ui size(2, 2, 2);
-    ettention::Vec3<REAL> voxelSize(1, 1, 1);
-
-    DiscreteProblem problem(size, voxelSize);
-    int numCells = 8;
-
-    for (int i = 0; i < numCells; i++) {
-        problem.setMaterial(i, Templates::Mat::STEEL);
-    }
+    DiscreteProblem problem = Templates::Problem::STEEL_2_2_2();
 
     Material* outOfBounds = problem.getMaterial(ettention::Vec3ui(3,3,3));
     EXPECT_TRUE(*outOfBounds == Material::EMPTY) << "Out of bounds coordinate did not return EMPTY material";
@@ -66,15 +50,7 @@ TEST_F(DiscreteProblemTests, BoundsHandling) {
 }
 
 TEST_F(DiscreteProblemTests, ProblemFragmentExtraction) {
-    ettention::Vec3ui size(2, 2, 2);
-    ettention::Vec3<REAL> voxelSize(1, 1, 1);
-
-    DiscreteProblem problem(size, voxelSize);
-    int numCells = 8;
-
-    for (int i = 0; i < numCells; i++) {
-        problem.setMaterial(i, Templates::Mat::STEEL);
-    }
+    DiscreteProblem problem = Templates::Problem::STEEL_2_2_2();
 
     ProblemFragment fragment = problem.extractLocalProblem(ettention::Vec3ui(1, 1, 1));
     ProblemFragmentKey actualKey = fragment.key();
@@ -88,5 +64,4 @@ TEST_F(DiscreteProblemTests, ProblemFragmentExtraction) {
     expected2[4] = expected2[5] = expected2[6] = expected2[7] = &Templates::Mat::STEEL;
     ProblemFragmentKey expectedKey2(&expected2);
     EXPECT_TRUE(actualKey2 == expectedKey2) << "Fragment at (1,1,0) did not match expected result";
-
 }
