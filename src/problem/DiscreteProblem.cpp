@@ -32,7 +32,12 @@ unsigned int DiscreteProblem::mapToIndex(ettention::Vec3ui& coordinate) const {
 }
 
 ettention::Vec3ui DiscreteProblem::mapToCoordinate(unsigned int index) const {
-    return ettention::Vec3ui(index % m_size.x, (index / m_size.x) % m_size.y, index / (m_size.x * m_size.y));
+    ettention::Vec3ui coord(index % m_size.x, (index / m_size.x) % m_size.y, index / (m_size.x * m_size.y));
+
+    if (outOfBounds(coord)) {
+        throw std::invalid_argument("given index could not be mapped to a valid coordinate because it is outside the problem space");
+    }
+    return coord;
 }
 
 
