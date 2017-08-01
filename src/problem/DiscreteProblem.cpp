@@ -65,17 +65,16 @@ inline bool DiscreteProblem::outOfBounds(ettention::Vec3ui& coordinate) const {
 }
 
 ProblemFragment DiscreteProblem::extractLocalProblem(ettention::Vec3ui centerCoord) const {
-    ProblemFragment fragment(centerCoord);
-    unsigned int index = 0;  
+    std::vector<Material*> mats;
     
     for (int z = -1; z < 1; z++) {
         for (int y = -1; y < 1; y++) {
             for (int x = -1; x < 1; x++) {
                 ettention::Vec3ui offset(centerCoord.x + x, centerCoord.y + y, centerCoord.z + z);
-                fragment.setMaterial(index, getMaterial(offset));
-                index++;
+                mats.push_back(getMaterial(offset));
             }
         }
     }
-    return fragment;
+
+    return ProblemFragment(centerCoord, mats);
 }

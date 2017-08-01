@@ -1,9 +1,8 @@
 #pragma once
 #include <vector>
 #include "libmmv/math/Vec3.h"
-#include "Material.h"
+#include "problem/ProblemFragment.h"
 
-class ProblemFragment;
 class DiscreteProblem {
 
 public:

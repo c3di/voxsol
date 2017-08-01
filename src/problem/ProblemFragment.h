@@ -7,7 +7,8 @@
 class ProblemFragment {
 public:
 
-    ProblemFragment(ettention::Vec3ui centerVertexCoord);
+    ProblemFragment(ettention::Vec3ui& centerVertexCoord, std::vector<Material*>& materials);
+    ProblemFragment(ettention::Vec3ui& centerVertexCoord);
     ~ProblemFragment();
 
     void setMaterial(unsigned int index, Material& mat);
