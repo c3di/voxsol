@@ -41,7 +41,7 @@ void MatrixPrecomputer::computeLHS(const ProblemFragment& fragment, MatrixStore&
         REAL mu = fragment.mu(cell);
         REAL lambda = fragment.lambda(cell);
 
-        fullIntegralLHS[0] += (mu + 2.0 * mu) * integrals->value(13,0,0,cell);
+        fullIntegralLHS[0] += (lambda + 2.0 * mu) * integrals->value(13,0,0,cell);
         fullIntegralLHS[1] += lambda * integrals->value(13,1,0,cell);
         fullIntegralLHS[2] += lambda * integrals->value(13,2,0,cell);
         fullIntegralLHS[3] += mu * integrals->value(13,1,1,cell);
