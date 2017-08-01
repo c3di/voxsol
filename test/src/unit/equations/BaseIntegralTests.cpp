@@ -47,8 +47,8 @@ TEST_F(BaseIntegralTests, QuadraticIntegrals) {
     ettention::Vec3<REAL> voxelSize(1, 1, 1);
     QuadraticBaseIntegrals quadIntegrals(voxelSize);
 
-    EXPECT_EQ(quadIntegrals.value(0, 0, 0, 0), static_cast<REAL>(-3703 / 86400 / 1.0 * 1.0 * 1.0));
-    EXPECT_EQ(quadIntegrals.value(26, 2, 2, 7), static_cast<REAL>(-3703 / 86400 * 1.0 * 1.0 / 1.0));
+    EXPECT_EQ(quadIntegrals.value(0, 0, 0, 0), static_cast<REAL>(-3703) / 86400 / 1.0 * 1.0 * 1.0);
+    EXPECT_EQ(quadIntegrals.value(26, 2, 2, 7), static_cast<REAL>(-3703) / 86400 * 1.0 * 1.0 / 1.0);
 
 }
 
@@ -57,8 +57,7 @@ TEST_F(BaseIntegralTests, QuadraticIntegralsNonUniformVoxels) {
 
     ettention::Vec3<REAL> voxelSize(1, 0.5f, 0.25f);
     QuadraticBaseIntegrals quadIntegrals(voxelSize);
-
-    EXPECT_EQ(quadIntegrals.value(0, 0, 0, 0), static_cast<REAL>(-3703 / 86400 * 1.0 * 0.5 / 0.25));
-    EXPECT_EQ(quadIntegrals.value(26, 2, 2, 7), static_cast<REAL>(-3703 / 86400 * 1.0 * 0.5 / 0.25));
+    EXPECT_EQ(quadIntegrals.value(0, 0, 0, 0), static_cast<REAL>(-3703) / 86400 / 1.0 * 0.5 * 0.25);
+    EXPECT_EQ(quadIntegrals.value(26, 2, 2, 7), static_cast<REAL>(-3703) / 86400 * 1.0 * 0.5 / 0.25);
 
 }
