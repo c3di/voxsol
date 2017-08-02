@@ -15,15 +15,15 @@ public:
     MatrixPrecomputer(ettention::Vec3<REAL> voxelSize);
     ~MatrixPrecomputer();
 
-    MatrixStore computeMatrixStoreForFragment(const ProblemFragment& fragment) const;
+    void initializeMatrixStoreForFragment(MatrixStore* store, const ProblemFragment& fragment) const;
 
 private:
     const ettention::Vec3<REAL> m_voxelSize;
     const LinearBaseIntegrals m_linearIntegrals;
     const QuadraticBaseIntegrals m_quadIntegrals;
 
-    void computeLHS(const ProblemFragment& fragment, MatrixStore& store, const BaseIntegrals* integrals) const;
-    void computeRHS(const ProblemFragment& fragment, MatrixStore& store, const BaseIntegrals* integrals) const;
+    void computeLHS(const ProblemFragment& fragment, MatrixStore* store, const BaseIntegrals* integrals) const;
+    void computeRHS(const ProblemFragment& fragment, MatrixStore* store, const BaseIntegrals* integrals) const;
 
-    void computeRHSForNode(unsigned int nodeIndex, const ProblemFragment& fragment, MatrixStore& store, const BaseIntegrals* integrals) const;
+    void computeRHSForNode(unsigned int nodeIndex, const ProblemFragment& fragment, MatrixStore* store, const BaseIntegrals* integrals) const;
 };

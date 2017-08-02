@@ -14,14 +14,12 @@ public:
 
     Material* getMaterial(ettention::Vec3ui& coordinate) const;
     Material* getMaterial(unsigned int index) const;
+    ettention::Vec3d getVoxelSize() const;
+    ettention::Vec3ui getSize() const;
+    std::vector<Material*>* getMaterialVector();
 
     unsigned int mapToIndex(ettention::Vec3ui& coordinate) const;
     ettention::Vec3ui mapToCoordinate(unsigned int index) const;
-
-    ettention::Vec3d getVoxelSize() const;
-    ettention::Vec3ui getSize() const;
-
-    std::vector<Material*>* getMaterialVector();
 
     ProblemFragment extractLocalProblem(ettention::Vec3ui centerCoord) const;
 

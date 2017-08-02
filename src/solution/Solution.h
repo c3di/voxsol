@@ -18,19 +18,20 @@ public:
     unsigned int mapToIndex(ettention::Vec3ui& coordinate) const;
     ettention::Vec3ui mapToCoordinate(unsigned int index) const;
 
-    const std::vector<unsigned int>& getFragmentIds();
-    const std::vector<MatrixStore>& getMatrixStore();
-    unsigned int getFragmentIdForKey(const ProblemFragmentKey& key);
+    const std::vector<int>& getSignatureIds() const;
+    const std::vector<MatrixStore>& getMatrixStore() const;
+    int getSignatureIdForKey(const ProblemFragmentKey& key) const;
 
-private:
+protected:
     const ettention::Vec3ui m_size;
     const ettention::Vec3<REAL> m_voxelSize;
     const DiscreteProblem* const m_problem;
-    std::vector<unsigned int> m_fragmentIds;
+    std::vector<int> m_signatureIds;
     std::vector<MatrixStore> m_matrixStore;
-    std::unordered_map < ProblemFragmentKey, unsigned int> m_hashmap;
+    std::unordered_map < ProblemFragmentKey, int> m_signatureToId;
 
-    void processNode(ettention::Vec3ui centerCoord, const MatrixPrecomputer* precomputer);
+    void gatherUniqueFragmentSignatures();
+    void precomputeMatricesForSignatures();
+
     inline bool outOfBounds(ettention::Vec3ui& coordinate) const;
-
 };

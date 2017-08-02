@@ -6,7 +6,7 @@ Solution::Solution(DiscreteProblem& problem) :
     m_size(problem.getSize() + ettention::Vec3ui(1,1,1)),
     m_voxelSize(problem.getVoxelSize()),
     m_problem(&problem),
-    m_fragmentIds(m_size.x * m_size.y * m_size.z, 0)
+    m_signatureIds(m_size.x * m_size.y * m_size.z, -1)
 {
 
 }
@@ -15,19 +15,19 @@ Solution::~Solution() {
 
 }
 
-const std::vector<unsigned int>& Solution::getFragmentIds() {
-    return m_fragmentIds;
+const std::vector<int>& Solution::getSignatureIds() const {
+    return m_signatureIds;
 }
 
-const std::vector<MatrixStore>& Solution::getMatrixStore() {
+const std::vector<MatrixStore>& Solution::getMatrixStore() const {
     return m_matrixStore;
 }
 
-unsigned int Solution::getFragmentIdForKey(const ProblemFragmentKey& key) {
-    if (m_hashmap.count(key) <= 0) {
+int Solution::getSignatureIdForKey(const ProblemFragmentKey& key) const {
+    if (m_signatureToId.count(key) <= 0) {
         throw std::exception("the given problem fragment key is not known in this solution");
     }
-    return m_hashmap.at(key);
+    return m_signatureToId.at(key);
 }
 
 unsigned int Solution::mapToIndex(ettention::Vec3ui& coordinate) const {
@@ -46,34 +46,46 @@ inline bool Solution::outOfBounds(ettention::Vec3ui& coordinate) const {
 }
 
 void Solution::precomputeMatrices() {
-    MatrixPrecomputer precomputer(m_voxelSize);
+    // This is separated into two steps to allow matrix pre-computation to be done asynchronously later
+    gatherUniqueFragmentSignatures();
+    precomputeMatricesForSignatures();
+}
+
+void Solution::gatherUniqueFragmentSignatures() {
+    int signatureIdCounter = 0;
 
     for (unsigned int z = 0; z < m_size.z; z++) {
         for (unsigned int y = 0; y < m_size.y; y++) {
             for (unsigned int x = 0; x < m_size.x; x++) {
                 ettention::Vec3ui centerCoord(x, y, z);
-                processNode(centerCoord, &precomputer);
+                ProblemFragment fragment = m_problem->extractLocalProblem(centerCoord);
+                ProblemFragmentKey materialConfig = fragment.key();
+
+                if (m_signatureToId.count(materialConfig) <= 0) {
+                    m_signatureToId[materialConfig] = signatureIdCounter;
+                    signatureIdCounter++;
+                }
+                m_signatureIds[mapToIndex(centerCoord)] = m_signatureToId[materialConfig];
             }
         }
     }
+    m_matrixStore.resize(signatureIdCounter);
 }
 
-void Solution::processNode(ettention::Vec3ui centerCoord, const MatrixPrecomputer* precomputer) {
-    ProblemFragment fragment = m_problem->extractLocalProblem(centerCoord);
-    ProblemFragmentKey materialConfig = fragment.key();
-    unsigned int idForNode = 0;
-    
-    //TODO: Generate IDs for all unique configs first, then compute their matrices in a second (possibly async) step
-    if (m_hashmap.count(materialConfig) > 0) {
-        idForNode = m_hashmap.at(materialConfig);
-    }
-    else {
-        MatrixStore matStore = precomputer->computeMatrixStoreForFragment(fragment);
-        m_matrixStore.push_back(matStore);
-        idForNode = (unsigned int) m_matrixStore.size() - 1;
-        m_hashmap[materialConfig] = idForNode;
-    }
+void Solution::precomputeMatricesForSignatures() {
+    MatrixPrecomputer precomputer(m_voxelSize);
 
-    unsigned int index = mapToIndex(centerCoord);
-    m_fragmentIds[index] = idForNode;
+    for (int i = 0; i < m_signatureIds.size(); i++) {
+        int signatureId = m_signatureIds[i];
+        MatrixStore* store = &m_matrixStore[signatureId];
+
+        if (store->getId() == -1) {
+            // This matrix store hasn't been initialized yet so lets pre-compute the matrices
+            store->setId(signatureId);
+            ettention::Vec3ui centerCoord = mapToCoordinate(i);
+            ProblemFragment fragment = m_problem->extractLocalProblem(centerCoord);
+            ProblemFragmentKey materialConfig = fragment.key();
+            precomputer.initializeMatrixStoreForFragment(store, fragment);
+        }
+    }
 }

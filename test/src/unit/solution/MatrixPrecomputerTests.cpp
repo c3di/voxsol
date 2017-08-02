@@ -33,7 +33,8 @@ TEST_F(MatrixPrecomputerTests, UniformSteel) {
     ProblemFragment fragment(coord, mats);
 
     // Will use quadratic equations since this fragment is made of a uniform material
-    MatrixStore matStore = precomp.computeMatrixStoreForFragment(fragment);
+    MatrixStore matStore;
+    precomp.initializeMatrixStoreForFragment(&matStore, fragment);
     
     const Matrix3x3* lhs = matStore.getLHS();
     std::vector<REAL> lhsExpected({ 1.3478290598290596E12, 0, 0, 0, 1.3478290598290596E12, 0, 0, 0, 1.3478290598290596E12 });
@@ -66,7 +67,8 @@ TEST_F(MatrixPrecomputerTests, MixSteelNull) {
     ProblemFragment fragment(coord, mats);
 
     // Will use linear equations since this fragment is not uniform
-    MatrixStore matStore = precomp.computeMatrixStoreForFragment(fragment);
+    MatrixStore matStore;
+    precomp.initializeMatrixStoreForFragment(&matStore, fragment);
 
     const Matrix3x3* lhs = matStore.getLHS();
     std::vector<REAL> lhsExpected({ 1.9743589743589746E11, 0, 0, 0, 1.9743589743589746E11, 0, 0, 0, 1.9743589743589746E11 });
@@ -94,7 +96,8 @@ TEST_F(MatrixPrecomputerTests, SteelNonUniformVoxels) {
     std::vector<Material*> mats(8, &Templates::Mat::STEEL);
 
     ProblemFragment fragment(coord, mats);
-    MatrixStore matStore = precomp.computeMatrixStoreForFragment(fragment);
+    MatrixStore matStore;
+    precomp.initializeMatrixStoreForFragment(&matStore, fragment);
 
     const Matrix3x3* lhs = matStore.getLHS();
     std::vector<REAL> lhsExpected({ 7.198632478632479E11, 0, 0, 0, 1.868581196581196E12, 0, 0, 0, 9.496068376068375E11 });
@@ -123,7 +126,8 @@ TEST_F(MatrixPrecomputerTests, SteelNullNonUniformVoxels) {
     mats[4] = mats[5] = mats[6] = mats[7] = &Templates::Mat::STEEL;
 
     ProblemFragment fragment(coord, mats);
-    MatrixStore matStore = precomp.computeMatrixStoreForFragment(fragment);
+    MatrixStore matStore;
+    precomp.initializeMatrixStoreForFragment(&matStore, fragment);
 
     const Matrix3x3* lhs = matStore.getLHS();
     std::vector<REAL> lhsExpected({ 1.0544871794871796E11, 0, 0, 0, 2.737179487179487E11, 0, 0, 0, 1.391025641025641E11 });
