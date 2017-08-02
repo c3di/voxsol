@@ -3,6 +3,7 @@
 #include "libmmv/math/Vec3.h"
 #include "solution/Solution.h"
 #include "helpers/Templates.h"
+#include "helpers/SolutionInspector.h"
 
 class SolutionTests : public ::testing::Test {
 
@@ -59,4 +60,18 @@ TEST_F(SolutionTests, PrecomputeMatrices) {
     ProblemFragmentKey fragKey = frag.key();
     unsigned int fragId = sol.getSignatureIdForKey(fragKey);
     EXPECT_EQ(fragId, 13) << "Expected problem fragment for center vertex to have fragment id 13";
+}
+
+TEST_F(SolutionTests, ConsistencyAfterPrecompute) {
+    DiscreteProblem problem = Templates::Problem::STEEL_2_2_2();
+    SolutionInspector sol(problem);
+    std::string errMessage;
+
+    ASSERT_TRUE(sol.solutionDimensionsMatchProblem(errMessage)) << errMessage;
+
+    sol.precomputeMatrices();
+    
+    ASSERT_TRUE(sol.allVerticesHaveValidSignatureId(errMessage)) << errMessage;
+    ASSERT_TRUE(sol.matrixStoreIdsMatchPositionInVector(errMessage)) << errMessage;
+    ASSERT_TRUE(sol.allMatrixStoresInitialized(errMessage)) << errMessage;
 }
