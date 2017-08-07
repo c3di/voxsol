@@ -15,7 +15,7 @@ MatrixPrecomputer::~MatrixPrecomputer() {
 
 }
 
-void MatrixPrecomputer::initializeMatrixStoreForFragment(MatrixStore* store, const ProblemFragment& fragment) const {
+void MatrixPrecomputer::initializeSignatureForFragment(FragmentSignature* store, const ProblemFragment& fragment) const {
     const BaseIntegrals* integrals;
     
     //Quadratic integrals can only be used for fragments with uniform materials, mixed materials will cause
@@ -31,7 +31,7 @@ void MatrixPrecomputer::initializeMatrixStoreForFragment(MatrixStore* store, con
     computeRHS(fragment, store, integrals);
 }
 
-void MatrixPrecomputer::computeLHS(const ProblemFragment& fragment, MatrixStore* store, const BaseIntegrals* integrals) const {
+void MatrixPrecomputer::computeLHS(const ProblemFragment& fragment, FragmentSignature* store, const BaseIntegrals* integrals) const {
     REAL* fullIntegralLHS = new REAL[21]();
 
     for (unsigned int cell = 0; cell < 8; cell++) {
@@ -86,7 +86,7 @@ void MatrixPrecomputer::computeLHS(const ProblemFragment& fragment, MatrixStore*
     delete[] fullIntegralLHS;
 }
 
-void MatrixPrecomputer::computeRHS(const ProblemFragment& fragment, MatrixStore* store, const BaseIntegrals* integrals) const {
+void MatrixPrecomputer::computeRHS(const ProblemFragment& fragment, FragmentSignature* store, const BaseIntegrals* integrals) const {
     for (unsigned int nodeIndex = 0; nodeIndex < 27; nodeIndex++) {
         if (nodeIndex == 13) {
             //Don't need to calculate RHS for the center node
@@ -96,7 +96,7 @@ void MatrixPrecomputer::computeRHS(const ProblemFragment& fragment, MatrixStore*
     }
 }
 
-void MatrixPrecomputer::computeRHSForNode(unsigned int nodeIndex, const ProblemFragment& fragment, MatrixStore* store, const BaseIntegrals* integrals) const {
+void MatrixPrecomputer::computeRHSForNode(unsigned int nodeIndex, const ProblemFragment& fragment, FragmentSignature* store, const BaseIntegrals* integrals) const {
     REAL* matrixRHS = new REAL[9](); //3x3 matrix in column-major
 
     for (int cell = 0; cell < 8; cell++) {

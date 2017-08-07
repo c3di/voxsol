@@ -6,8 +6,8 @@ public:
     SolutionInspector(DiscreteProblem& problem);
 
     bool solutionDimensionsMatchProblem(std::string& errMessage);
-    bool matrixStoreIdsMatchPositionInVector(std::string& errMessage);
-    bool allMatrixStoresInitialized(std::string& errMessage);
+    bool fragmentSignatureIdsMatchPositionInVector(std::string& errMessage);
+    bool allFragmentSignaturesInitialized(std::string& errMessage);
     bool allVerticesHaveValidSignatureId(std::string& errMessage);
 };
 

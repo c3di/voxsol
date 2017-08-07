@@ -28,11 +28,11 @@ bool SolutionInspector::solutionDimensionsMatchProblem(std::string& errMessage) 
     return true;
 }
 
-bool SolutionInspector::matrixStoreIdsMatchPositionInVector(std::string& errMessage) {
-    for (int i = 0; i < m_matrixStore.size(); i++) {
-        if (m_matrixStore[i].getId() != i) {
+bool SolutionInspector::fragmentSignatureIdsMatchPositionInVector(std::string& errMessage) {
+    for (int i = 0; i < m_fragmentSignatures.size(); i++) {
+        if (m_fragmentSignatures[i].getId() != i) {
             std::stringstream ss;
-            ss << "MatrixStore at position " << i << " should have matching id " << i << ", instead it has id " << m_matrixStore[i].getId();
+            ss << "FragmentSignature at position " << i << " should have matching id " << i << ", instead it has id " << m_fragmentSignatures[i].getId();
             errMessage = ss.str();
             return false;
         }
@@ -40,34 +40,29 @@ bool SolutionInspector::matrixStoreIdsMatchPositionInVector(std::string& errMess
     return true;
 }
 
-bool SolutionInspector::allMatrixStoresInitialized(std::string& errMessage) {
-    for (int i = 0; i < m_matrixStore.size(); i++) {
-        MatrixStore mStore = m_matrixStore[i];
-        if (mStore.getId() < 0) {
+bool SolutionInspector::allFragmentSignaturesInitialized(std::string& errMessage) {
+    for (int i = 0; i < m_fragmentSignatures.size(); i++) {
+        FragmentSignature sig = m_fragmentSignatures[i];
+        if (sig.getId() < 0) {
             std::stringstream ss;
-            ss << "MatrixStore " << i << " has invalid id " << mStore.getId();
+            ss << "FragmentSignature " << i << " has invalid id " << sig.getId();
             errMessage = ss.str();
             return false;
         }
-        const Matrix3x3* lhs = mStore.getLHS();
+
+        const Matrix3x3* lhs = sig.getLHS();
         if (lhs == NULL || *lhs == Matrix3x3::identity) {
             std::stringstream ss;
-            ss << "MatrixStore " << i << " has invalid LHS matrix";
+            ss << "FragmentSignature " << i << " has invalid LHS matrix";
             errMessage = ss.str();
             return false;
         }
+
         for (int j = 0; j < 27; j++) {
-            const Matrix3x3* rhs = mStore.getRHS(j);
-            if (j == 13) {
-                if (rhs == NULL || *rhs != Matrix3x3::identity) {
-                    std::stringstream ss;
-                    ss << "MatrixStore " << i << " has invalid RHS matrix for center vertex 13";
-                    errMessage = ss.str();
-                    return false;
-                }
-            } else if (rhs == NULL || *rhs == Matrix3x3::identity) {
+            const Matrix3x3* rhs = sig.getRHS(j);
+            if (rhs == NULL || *rhs == Matrix3x3::identity) {
                 std::stringstream ss;
-                ss << "MatrixStore " << i << " has invalid RHS matrix for vertex " << j;
+                ss << "FragmentSignature " << i << " has invalid RHS matrix for vertex " << j;
                 errMessage = ss.str();
                 return false;
             }
@@ -79,7 +74,7 @@ bool SolutionInspector::allMatrixStoresInitialized(std::string& errMessage) {
 bool SolutionInspector::allVerticesHaveValidSignatureId(std::string& errMessage) {
     for (int i = 0; i < m_signatureIds.size(); i++) {
         int signatureId = m_signatureIds[i];
-        if (signatureId < 0 || signatureId > m_matrixStore.size()) {
+        if (signatureId < 0 || signatureId > m_fragmentSignatures.size()) {
             std::stringstream ss;
             ss << "Vertex " << i << " has invalid signature Id " << signatureId;
             errMessage = ss.str();

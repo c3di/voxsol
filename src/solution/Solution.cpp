@@ -6,7 +6,8 @@ Solution::Solution(DiscreteProblem& problem) :
     m_size(problem.getSize() + ettention::Vec3ui(1,1,1)),
     m_voxelSize(problem.getVoxelSize()),
     m_problem(&problem),
-    m_signatureIds(m_size.x * m_size.y * m_size.z, -1)
+    m_signatureIds(m_size.x * m_size.y * m_size.z, -1),
+    m_displacements(3 * m_size.x * m_size.y * m_size.z, 0)
 {
 
 }
@@ -15,15 +16,19 @@ Solution::~Solution() {
 
 }
 
-const std::vector<int>& Solution::getSignatureIds() const {
-    return m_signatureIds;
+const std::vector<unsigned short>* Solution::getSignatureIds() const {
+    return &m_signatureIds;
 }
 
-const std::vector<MatrixStore>& Solution::getMatrixStore() const {
-    return m_matrixStore;
+const std::vector<FragmentSignature>* Solution::getFragmentSignatures() const {
+    return &m_fragmentSignatures;
 }
 
-int Solution::getSignatureIdForKey(const ProblemFragmentKey& key) const {
+std::vector<REAL>* Solution::getDisplacements() {
+    return &m_displacements;
+}
+
+unsigned short Solution::getSignatureIdForKey(const ProblemFragmentKey& key) const {
     if (m_signatureToId.count(key) <= 0) {
         throw std::exception("the given problem fragment key is not known in this solution");
     }
@@ -52,7 +57,7 @@ void Solution::precomputeMatrices() {
 }
 
 void Solution::gatherUniqueFragmentSignatures() {
-    int signatureIdCounter = 0;
+    unsigned short signatureIdCounter = 0;
 
     for (unsigned int z = 0; z < m_size.z; z++) {
         for (unsigned int y = 0; y < m_size.y; y++) {
@@ -69,7 +74,7 @@ void Solution::gatherUniqueFragmentSignatures() {
             }
         }
     }
-    m_matrixStore.resize(signatureIdCounter);
+    m_fragmentSignatures.resize(signatureIdCounter);
 }
 
 void Solution::precomputeMatricesForSignatures() {
@@ -77,15 +82,15 @@ void Solution::precomputeMatricesForSignatures() {
 
     for (int i = 0; i < m_signatureIds.size(); i++) {
         int signatureId = m_signatureIds[i];
-        MatrixStore* store = &m_matrixStore[signatureId];
+        FragmentSignature* store = &m_fragmentSignatures[signatureId];
 
-        if (store->getId() == -1) {
+        if (store->getId() == USHRT_MAX) {
             // This matrix store hasn't been initialized yet so lets pre-compute the matrices
             store->setId(signatureId);
             ettention::Vec3ui centerCoord = mapToCoordinate(i);
             ProblemFragment fragment = m_problem->extractLocalProblem(centerCoord);
             ProblemFragmentKey materialConfig = fragment.key();
-            precomputer.initializeMatrixStoreForFragment(store, fragment);
+            precomputer.initializeSignatureForFragment(store, fragment);
         }
     }
 }

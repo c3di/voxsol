@@ -41,24 +41,24 @@ TEST_F(SolutionTests, PrecomputeMatrices) {
     DiscreteProblem problem = Templates::Problem::STEEL_2_2_2();
     Solution sol(problem);
 
-    std::vector<int> fragmentIds = sol.getSignatureIds();
-    ASSERT_EQ(fragmentIds.size(), 27);
+    const std::vector<unsigned short>* signatureIds = sol.getSignatureIds();
+    ASSERT_EQ(signatureIds->size(), 27);
 
     sol.precomputeMatrices();
-    std::vector<MatrixStore> mStore = sol.getMatrixStore();
-    EXPECT_EQ(mStore.size(), 27) << "Expected all vertices to have a unique material configuration";
+    const std::vector<FragmentSignature>* fSigs = sol.getFragmentSignatures();
+    EXPECT_EQ(fSigs->size(), 27) << "Expected all vertices to have a unique fragment signature";
 
-    // Since every vertex has a unique material configuration its fragment ID should be the same as its index
-    fragmentIds = sol.getSignatureIds();
-    for (unsigned int i = 0; i < 27; i++) {
-        if (fragmentIds[i] != i) {
-            FAIL() << "Vertex " << i << " fragment id (" << fragmentIds[i] << ") did not match expected value " << i;
+    // Since every vertex in this problem has a unique material configuration its signature ID should be the same as its index
+    signatureIds = sol.getSignatureIds();
+    for (unsigned short i = 0; i < 27; i++) {
+        if (signatureIds->at(i) != i) {
+            FAIL() << "Vertex " << i << " signature id (" << signatureIds->at(i) << ") did not match expected value " << i;
         }
     }
 
     ProblemFragment frag = problem.extractLocalProblem(ettention::Vec3ui(1, 1, 1));
     ProblemFragmentKey fragKey = frag.key();
-    unsigned int fragId = sol.getSignatureIdForKey(fragKey);
+    unsigned short fragId = sol.getSignatureIdForKey(fragKey);
     EXPECT_EQ(fragId, 13) << "Expected problem fragment for center vertex to have fragment id 13";
 }
 
@@ -72,6 +72,6 @@ TEST_F(SolutionTests, ConsistencyAfterPrecompute) {
     sol.precomputeMatrices();
     
     ASSERT_TRUE(sol.allVerticesHaveValidSignatureId(errMessage)) << errMessage;
-    ASSERT_TRUE(sol.matrixStoreIdsMatchPositionInVector(errMessage)) << errMessage;
-    ASSERT_TRUE(sol.allMatrixStoresInitialized(errMessage)) << errMessage;
+    ASSERT_TRUE(sol.fragmentSignatureIdsMatchPositionInVector(errMessage)) << errMessage;
+    ASSERT_TRUE(sol.allFragmentSignaturesInitialized(errMessage)) << errMessage;
 }
