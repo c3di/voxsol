@@ -19,6 +19,14 @@ ProblemFragment::~ProblemFragment() {
 
 }
 
+REAL ProblemFragment::mu(unsigned int cell) const {
+    return m_materials[cell]->m_mu;
+}
+
+REAL ProblemFragment::lambda(unsigned int cell) const {
+    return m_materials[cell]->m_lambda;
+}
+
 void ProblemFragment::setMaterial(unsigned int index, Material& mat) {
     setMaterial(index, &mat);
 }

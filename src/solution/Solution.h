@@ -1,6 +1,5 @@
 #pragma once
 #include <unordered_map>
-#include <string>
 #include <vector>
 #include <libmmv/math/Vec3.h>
 #include "solution/FragmentSignature.h"
@@ -21,7 +20,6 @@ public:
     const std::vector<unsigned short>* getSignatureIds() const;
     const std::vector<FragmentSignature>* getFragmentSignatures() const;
     std::vector<REAL>* getDisplacements();
-    unsigned short getSignatureIdForKey(const ProblemFragmentKey& key) const;
 
 protected:
     const ettention::Vec3ui m_size;
@@ -30,10 +28,9 @@ protected:
     std::vector<unsigned short> m_signatureIds;
     std::vector<REAL> m_displacements;
     std::vector<FragmentSignature> m_fragmentSignatures;
-    std::unordered_map < ProblemFragmentKey, unsigned short> m_signatureToId;
 
     void gatherUniqueFragmentSignatures();
     void precomputeMatricesForSignatures();
 
-    inline bool outOfBounds(ettention::Vec3ui& coordinate) const;
+    bool outOfBounds(ettention::Vec3ui& coordinate) const;
 };

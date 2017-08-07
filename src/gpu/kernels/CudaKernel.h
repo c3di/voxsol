@@ -1,13 +1,12 @@
 #pragma once
-#include <stdafx.h>
-#include <cuda_runtime.h>
+#include "gpu/CudaCommonFunctions.h"
 
 class CudaKernel {
 public:
     CudaKernel() {};
     ~CudaKernel() {};
     
-    virtual void execute() = 0;
+    virtual void launchKernel() = 0;
 
 protected:
 

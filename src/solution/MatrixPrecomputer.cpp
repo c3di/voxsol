@@ -15,7 +15,7 @@ MatrixPrecomputer::~MatrixPrecomputer() {
 
 }
 
-void MatrixPrecomputer::initializeSignatureForFragment(FragmentSignature* store, const ProblemFragment& fragment) const {
+void MatrixPrecomputer::initializeSignatureForFragment(FragmentSignature* signature, const ProblemFragment& fragment) const {
     const BaseIntegrals* integrals;
     
     //Quadratic integrals can only be used for fragments with uniform materials, mixed materials will cause
@@ -27,11 +27,11 @@ void MatrixPrecomputer::initializeSignatureForFragment(FragmentSignature* store,
         integrals = &m_quadIntegrals;
     }
 
-    computeLHS(fragment, store, integrals);
-    computeRHS(fragment, store, integrals);
+    computeLHS(fragment, signature, integrals);
+    computeRHS(fragment, signature, integrals);
 }
 
-void MatrixPrecomputer::computeLHS(const ProblemFragment& fragment, FragmentSignature* store, const BaseIntegrals* integrals) const {
+void MatrixPrecomputer::computeLHS(const ProblemFragment& fragment, FragmentSignature* signature, const BaseIntegrals* integrals) const {
     REAL* fullIntegralLHS = new REAL[21]();
 
     for (unsigned int cell = 0; cell < 8; cell++) {
@@ -81,22 +81,22 @@ void MatrixPrecomputer::computeLHS(const ProblemFragment& fragment, FragmentSign
     );
     Matrix3x3 lhs(col1, col2, col3);
 
-    store->setLHS(lhs);
+    signature->setLHS(lhs);
 
     delete[] fullIntegralLHS;
 }
 
-void MatrixPrecomputer::computeRHS(const ProblemFragment& fragment, FragmentSignature* store, const BaseIntegrals* integrals) const {
+void MatrixPrecomputer::computeRHS(const ProblemFragment& fragment, FragmentSignature* signature, const BaseIntegrals* integrals) const {
     for (unsigned int nodeIndex = 0; nodeIndex < 27; nodeIndex++) {
         if (nodeIndex == 13) {
             //Don't need to calculate RHS for the center node
             continue;
         }
-        computeRHSForNode(nodeIndex, fragment, store, integrals);
+        computeRHSForNode(nodeIndex, fragment, signature, integrals);
     }
 }
 
-void MatrixPrecomputer::computeRHSForNode(unsigned int nodeIndex, const ProblemFragment& fragment, FragmentSignature* store, const BaseIntegrals* integrals) const {
+void MatrixPrecomputer::computeRHSForNode(unsigned int nodeIndex, const ProblemFragment& fragment, FragmentSignature* signature, const BaseIntegrals* integrals) const {
     REAL* matrixRHS = new REAL[9](); //3x3 matrix in column-major
 
     for (int cell = 0; cell < 8; cell++) {
@@ -129,7 +129,7 @@ void MatrixPrecomputer::computeRHSForNode(unsigned int nodeIndex, const ProblemF
     }
     
     Matrix3x3 rhs(matrixRHS[0], matrixRHS[1], matrixRHS[2], matrixRHS[3], matrixRHS[4], matrixRHS[5], matrixRHS[6], matrixRHS[7], matrixRHS[8]);
-    store->setRHS(nodeIndex, rhs);
+    signature->setRHS(nodeIndex, rhs);
 
     delete[] matrixRHS;
 }

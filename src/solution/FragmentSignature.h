@@ -14,16 +14,13 @@ public:
     void setRHS(unsigned int nodeIndex, Matrix3x3& rhs);
     void setId(unsigned short id);
     unsigned short getId();
+    Matrix3x3* getMatrices();
 
     inline const Matrix3x3* getLHS() const {
         return &m_matrices[13];
     }
     inline const Matrix3x3* getRHS(unsigned int nodeIndex) const {
         return &m_matrices[nodeIndex];
-    }
-
-    Matrix3x3* getMatrices() {
-        return m_matrices.data();
     }
 
 private:

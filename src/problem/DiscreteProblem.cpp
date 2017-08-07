@@ -32,12 +32,7 @@ unsigned int DiscreteProblem::mapToIndex(ettention::Vec3ui& coordinate) const {
 }
 
 ettention::Vec3ui DiscreteProblem::mapToCoordinate(unsigned int index) const {
-    ettention::Vec3ui coord(index % m_size.x, (index / m_size.x) % m_size.y, index / (m_size.x * m_size.y));
-
-    if (outOfBounds(coord)) {
-        throw std::invalid_argument("given index could not be mapped to a valid coordinate because it is outside the problem space");
-    }
-    return coord;
+    return ettention::Vec3ui(index % m_size.x, (index / m_size.x) % m_size.y, index / (m_size.x * m_size.y));
 }
 
 
@@ -65,7 +60,7 @@ std::vector<Material*>* DiscreteProblem::getMaterialVector() {
     return &m_materials;
 }
 
-inline bool DiscreteProblem::outOfBounds(ettention::Vec3ui& coordinate) const {
+bool DiscreteProblem::outOfBounds(ettention::Vec3ui& coordinate) const {
     return coordinate.x < 0 || coordinate.x >= m_size.x || coordinate.y < 0 || coordinate.y >= m_size.y || coordinate.z < 0 || coordinate.z >= m_size.z;
 }
 

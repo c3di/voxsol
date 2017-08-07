@@ -28,13 +28,6 @@ std::vector<REAL>* Solution::getDisplacements() {
     return &m_displacements;
 }
 
-unsigned short Solution::getSignatureIdForKey(const ProblemFragmentKey& key) const {
-    if (m_signatureToId.count(key) <= 0) {
-        throw std::exception("the given problem fragment key is not known in this solution");
-    }
-    return m_signatureToId.at(key);
-}
-
 unsigned int Solution::mapToIndex(ettention::Vec3ui& coordinate) const {
     if (outOfBounds(coordinate)) {
         throw std::invalid_argument("given coordinate cannot be mapped to an index because it is outside the solution space");
@@ -46,7 +39,7 @@ ettention::Vec3ui Solution::mapToCoordinate(unsigned int index) const {
     return ettention::Vec3ui(index % m_size.x, (index / m_size.x) % m_size.y, index / (m_size.x * m_size.y));
 }
 
-inline bool Solution::outOfBounds(ettention::Vec3ui& coordinate) const {
+bool Solution::outOfBounds(ettention::Vec3ui& coordinate) const {
     return coordinate.x < 0 || coordinate.x >= m_size.x || coordinate.y < 0 || coordinate.y >= m_size.y || coordinate.z < 0 || coordinate.z >= m_size.z;
 }
 
@@ -58,19 +51,20 @@ void Solution::precomputeMatrices() {
 
 void Solution::gatherUniqueFragmentSignatures() {
     unsigned short signatureIdCounter = 0;
+    std::unordered_map < ProblemFragmentKey, unsigned short> signatureToId;
 
     for (unsigned int z = 0; z < m_size.z; z++) {
         for (unsigned int y = 0; y < m_size.y; y++) {
             for (unsigned int x = 0; x < m_size.x; x++) {
                 ettention::Vec3ui centerCoord(x, y, z);
                 ProblemFragment fragment = m_problem->extractLocalProblem(centerCoord);
-                ProblemFragmentKey materialConfig = fragment.key();
+                ProblemFragmentKey materialConfiguration = fragment.key();
 
-                if (m_signatureToId.count(materialConfig) <= 0) {
-                    m_signatureToId[materialConfig] = signatureIdCounter;
+                if (signatureToId.count(materialConfiguration) <= 0) {
+                    signatureToId[materialConfiguration] = signatureIdCounter;
                     signatureIdCounter++;
                 }
-                m_signatureIds[mapToIndex(centerCoord)] = m_signatureToId[materialConfig];
+                m_signatureIds[mapToIndex(centerCoord)] = signatureToId[materialConfiguration];
             }
         }
     }
@@ -82,15 +76,15 @@ void Solution::precomputeMatricesForSignatures() {
 
     for (int i = 0; i < m_signatureIds.size(); i++) {
         int signatureId = m_signatureIds[i];
-        FragmentSignature* store = &m_fragmentSignatures[signatureId];
+        FragmentSignature* signature = &m_fragmentSignatures[signatureId];
 
-        if (store->getId() == USHRT_MAX) {
+        if (signature->getId() == USHRT_MAX) {
             // This matrix store hasn't been initialized yet so lets pre-compute the matrices
-            store->setId(signatureId);
+            signature->setId(signatureId);
             ettention::Vec3ui centerCoord = mapToCoordinate(i);
             ProblemFragment fragment = m_problem->extractLocalProblem(centerCoord);
             ProblemFragmentKey materialConfig = fragment.key();
-            precomputer.initializeSignatureForFragment(store, fragment);
+            precomputer.initializeSignatureForFragment(signature, fragment);
         }
     }
 }

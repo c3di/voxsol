@@ -21,6 +21,10 @@ unsigned short FragmentSignature::getId() {
     return m_id;
 }
 
+Matrix3x3* FragmentSignature::getMatrices() {
+    return m_matrices.data();
+}
+
 void FragmentSignature::setId(unsigned short id) {
     m_id = id;
 }

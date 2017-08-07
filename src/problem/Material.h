@@ -6,8 +6,8 @@ class Material {
 public:
     
     Material();
-    Material(REAL massDensity, REAL eModul, REAL poissonRatio, REAL yieldStrength);
-    Material(REAL massDensity, REAL eModul, REAL poissonRatio, REAL yieldStrength, unsigned char id);
+    Material(REAL eModul, REAL poissonRatio);
+    Material(REAL eModul, REAL poissonRatio, unsigned char id);
     ~Material();
 
     const unsigned char m_id;

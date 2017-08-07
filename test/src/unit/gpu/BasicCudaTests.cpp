@@ -23,6 +23,6 @@ TEST_F(BasicCudaTests, CudaInitTest) {
 
     cudaSetDevice(0);
     cudaError_t err = cudaGetLastError();
-    ASSERT_TRUE(err == cudaSuccess);
+    ASSERT_TRUE(err == cudaSuccess) << "Could not initialize a CUDA device: " << cudaGetErrorString(err);
  
 }

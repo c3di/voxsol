@@ -20,7 +20,6 @@ public:
 
     unsigned int mapToIndex(ettention::Vec3ui& coordinate) const;
     ettention::Vec3ui mapToCoordinate(unsigned int index) const;
-
     ProblemFragment extractLocalProblem(ettention::Vec3ui centerCoord) const;
 
 private:
@@ -29,5 +28,5 @@ private:
     const unsigned int m_numberOfCells;
     std::vector<Material*> m_materials;
 
-    inline bool outOfBounds(ettention::Vec3ui& coordinate) const;
+    bool outOfBounds(ettention::Vec3ui& coordinate) const;
 };

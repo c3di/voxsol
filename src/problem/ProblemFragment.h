@@ -17,13 +17,8 @@ public:
     const ProblemFragmentKey& key() const;
     bool containsMixedMaterials() const;
 
-    inline REAL mu(unsigned int cell) const {
-        return m_materials[cell]->m_mu;
-    }
-
-    inline REAL lambda(unsigned int cell) const {
-        return m_materials[cell]->m_lambda;
-    }
+    REAL mu(unsigned int cell) const;
+    REAL lambda(unsigned int cell) const;
 
 private:
     const ettention::Vec3ui m_centerVertexCoord;
