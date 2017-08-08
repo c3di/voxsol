@@ -39,7 +39,7 @@ TEST_F(SolutionTests, BoundsHandling) {
 
 TEST_F(SolutionTests, PrecomputeMatrices) {
     DiscreteProblem problem = Templates::Problem::STEEL_2_2_2();
-    Solution sol(problem);
+    SolutionInspector sol(problem);
 
     const std::vector<unsigned short>* signatureIds = sol.getSignatureIds();
     ASSERT_EQ(signatureIds->size(), 27);
@@ -57,8 +57,7 @@ TEST_F(SolutionTests, PrecomputeMatrices) {
     }
 
     ProblemFragment frag = problem.extractLocalProblem(ettention::Vec3ui(1, 1, 1));
-    ProblemFragmentKey fragKey = frag.key();
-    unsigned short fragId = sol.getSignatureIdForKey(fragKey);
+    unsigned short fragId = sol.getSignatureIdForFragment(frag);
     EXPECT_EQ(fragId, 13) << "Expected problem fragment for center vertex to have fragment id 13";
 }
 

@@ -4,6 +4,7 @@
 
 
 const Matrix3x3 Matrix3x3::identity = Matrix3x3(1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+const size_t Matrix3x3::SizeInBytes = sizeof(REAL) * 9;
 
 Matrix3x3::Matrix3x3(const std::vector<REAL>& values)
 {
@@ -86,6 +87,10 @@ const REAL& Matrix3x3::at(unsigned int column, unsigned int row) const
 REAL& Matrix3x3::at(unsigned int column, unsigned int row)
 {
     return values[3 * column + row];
+}
+
+void Matrix3x3::serialize(void* destination) const {
+    memcpy(destination, &values[0], Matrix3x3::SizeInBytes);
 }
 
 Matrix3x3 Matrix3x3::translationMatrix(ettention::Vec2<REAL>& translate)

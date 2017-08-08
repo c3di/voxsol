@@ -7,6 +7,11 @@ SolutionInspector::SolutionInspector(DiscreteProblem& problem) :
 
 }
 
+unsigned short SolutionInspector::getSignatureIdForFragment(ProblemFragment& fragment) {
+    unsigned int index = mapToIndex(fragment.getCenterVertex());
+    return m_signatureIds[index];
+}
+
 bool SolutionInspector::solutionDimensionsMatchProblem(std::string& errMessage) {
     ettention::Vec3ui expectedSize = m_problem->getSize() + ettention::Vec3ui(1,1,1);
 

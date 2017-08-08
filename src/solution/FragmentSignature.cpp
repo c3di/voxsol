@@ -1,6 +1,8 @@
 #include <stdafx.h>
 #include "FragmentSignature.h"
 
+const size_t FragmentSignature::SizeInBytes = sizeof(REAL) * 9 * 27;
+
 FragmentSignature::FragmentSignature(unsigned short id) : 
     m_id(id)
 {
@@ -23,6 +25,22 @@ unsigned short FragmentSignature::getId() {
 
 Matrix3x3* FragmentSignature::getMatrices() {
     return m_matrices.data();
+}
+
+const Matrix3x3* FragmentSignature::getLHS() const {
+    return &m_matrices[13];
+}
+
+const Matrix3x3* FragmentSignature::getRHS(unsigned int nodeIndex) const {
+    return &m_matrices[nodeIndex];
+}
+
+void FragmentSignature::serialize(void* destination) const {
+    Matrix3x3* dest = (Matrix3x3*)destination;
+
+    for (unsigned int i = 0; i < 27; i++) {
+        m_matrices[i].serialize(&dest[i]);
+    }
 }
 
 void FragmentSignature::setId(unsigned short id) {

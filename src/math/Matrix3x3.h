@@ -15,6 +15,8 @@ public:
     Matrix3x3(const std::vector<REAL>& values);
     Matrix3x3(const Matrix3x3& other);
 
+    const static size_t SizeInBytes;
+
     Matrix3x3& operator=(const Matrix3x3& other);
 
     Matrix3x3 inverse();
@@ -22,6 +24,8 @@ public:
 
     const REAL& at(unsigned int column, unsigned int row) const;
     REAL& at(unsigned int column, unsigned int row);
+
+    void serialize(void* destination) const;
 
     bool operator==(const Matrix3x3& other) const;
 

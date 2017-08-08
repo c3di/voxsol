@@ -40,6 +40,10 @@ const ProblemFragmentKey& ProblemFragment::key() const {
     return m_key;
 }
 
+ettention::Vec3ui ProblemFragment::getCenterVertex() const {
+    return ettention::Vec3ui(m_centerVertexCoord);
+}
+
 bool ProblemFragment::containsMixedMaterials() const {
     for (int i = 1; i < 8; i++) {
         if (m_materials[i] != m_materials[0]) {

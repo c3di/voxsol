@@ -16,6 +16,7 @@ public:
 
     const ProblemFragmentKey& key() const;
     bool containsMixedMaterials() const;
+    ettention::Vec3ui getCenterVertex() const;
 
     REAL mu(unsigned int cell) const;
     REAL lambda(unsigned int cell) const;
