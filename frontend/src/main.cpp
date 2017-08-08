@@ -7,6 +7,7 @@
 #include "problem/DiscreteProblem.h"
 #include "solution/Solution.h"
 #include "libmmv/math/Vec3.h"
+#include "gpu/kernels/CK_SolveDisplacement.h"
 
 int main(int argc, char* argv[]) {
 
@@ -22,16 +23,22 @@ int main(int argc, char* argv[]) {
     }
 
     CudaDebugHelper::PrintDeviceInfo(0);
-    ettention::Vec3ui size(3, 2, 2);
+
+    ettention::Vec3ui size(3, 3, 3);
     ettention::Vec3d voxelSize(1, 1, 1);
 
     DiscreteProblem problem(size, voxelSize);
-    Material mat(7830, 210e9, 0.3, 0.0);
-    Material mat2(6130, 200e9, 0.35, 0.0);
-    problem.setMaterial(0, mat); problem.setMaterial(1, mat); problem.setMaterial(2, mat); problem.setMaterial(3, mat);
-    problem.setMaterial(4, mat); problem.setMaterial(5, mat); problem.setMaterial(6, mat); problem.setMaterial(7, mat);
-    problem.setMaterial(8, mat); problem.setMaterial(9, mat); problem.setMaterial(10, mat); problem.setMaterial(11, mat);
+    Material steel(210e9, 0.3);
+
+    for (int i = 0; i < 27; i++) {
+        problem.setMaterial(i, steel);
+    }
 
     Solution solution(problem);
     solution.precomputeMatrices();
+
+    CK_SolveDisplacement kernel(&solution);
+    kernel.launchKernel();
+
+
 }
