@@ -5,7 +5,7 @@ class CudaKernel {
 public:
     CudaKernel() {};
     ~CudaKernel() {};
-    
+
     virtual void launchKernel() = 0;
 
 protected:
@@ -13,7 +13,7 @@ protected:
     // Check all execution requirements (eg. all inputs supplied, output location supplied)
     virtual bool canExecute() = 0;
     
-    // Frees all device memory that was alloc'd by this kernel
+    // Frees all device memory that was allocated by this kernel
     virtual void freeCudaResources() = 0;
 
 };

@@ -13,7 +13,6 @@ CK_SolveDisplacement::CK_SolveDisplacement(Solution* sol) :
 
 CK_SolveDisplacement::~CK_SolveDisplacement() {
     freeCudaResources();
-    delete[] h_fragmentSignatures;
     assert(d_signatureIds == nullptr);
     assert(d_displacements == nullptr);
     assert(d_fragmentSignatures == nullptr);
@@ -21,10 +20,7 @@ CK_SolveDisplacement::~CK_SolveDisplacement() {
 
 
 void CK_SolveDisplacement::launchKernel() {
-    //TODO: move alloc and data transfer to another function
-    push_signatureIds();
-    push_displacements();
-    push_fragmentSignatures();
+    prepareInputs();
 
     if (canExecute()) {
         unsigned int numVertices = static_cast<unsigned int>(m_solution->getDisplacements()->size());
@@ -51,6 +47,12 @@ void CK_SolveDisplacement::freeCudaResources() {
     d_fragmentSignatures = nullptr;
 }
 
+void CK_SolveDisplacement::prepareInputs() {
+    push_signatureIds();
+    push_displacements();
+    push_fragmentSignatures();
+}
+
 void CK_SolveDisplacement::push_signatureIds() {
     const std::vector<unsigned short>* signatureIds = m_solution->getSignatureIds();
     size_t size = signatureIds->size() * sizeof(unsigned short);
@@ -66,9 +68,14 @@ void CK_SolveDisplacement::push_displacements() {
 };
 
 void CK_SolveDisplacement::push_fragmentSignatures() {
-    size_t size = serializeFragmentSignatures();
+    size_t size = m_solution->getFragmentSignatures()->size() * FragmentSignature::SizeInBytes;
+    void* h_fragmentSignatures = malloc(size);
+    serializeFragmentSignatures(h_fragmentSignatures);
+
     cudaCheckSuccess(cudaMalloc(&d_fragmentSignatures, size));
     cudaCheckSuccess(cudaMemcpy(d_fragmentSignatures, h_fragmentSignatures, size, cudaMemcpyHostToDevice));
+
+    delete[] h_fragmentSignatures;
 };
 
 void CK_SolveDisplacement::pull_displacements() {
@@ -77,16 +84,13 @@ void CK_SolveDisplacement::pull_displacements() {
     cudaCheckSuccess(cudaMemcpy(displacements->data(), d_displacements, size, cudaMemcpyDeviceToHost));
 };
 
-size_t CK_SolveDisplacement::serializeFragmentSignatures() {
+void CK_SolveDisplacement::serializeFragmentSignatures(void* destination) {
     const std::vector<FragmentSignature>* signatures = m_solution->getFragmentSignatures();
     size_t size = FragmentSignature::SizeInBytes * signatures->size();
-    h_fragmentSignatures = malloc(size);
 
-    char* serializationPointer = (char*)h_fragmentSignatures;
+    char* serializationPointer = (char*)destination;
     for (unsigned int i = 0; i < signatures->size(); i++) {
         signatures->at(i).serialize(serializationPointer);
         serializationPointer += FragmentSignature::SizeInBytes;
     }
-
-    return size;
 }

@@ -26,12 +26,12 @@ protected:
 
 private:
     Solution* m_solution;
-    void* h_fragmentSignatures;
 
     unsigned short* d_signatureIds;
     REAL* d_displacements;
     REAL* d_fragmentSignatures;
 
+    void prepareInputs();
 
     void push_signatureIds();
     void push_displacements();
@@ -39,6 +39,6 @@ private:
 
     void pull_displacements();
 
-    size_t serializeFragmentSignatures();
+    void serializeFragmentSignatures(void* destination);
 
 };
