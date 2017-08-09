@@ -3,10 +3,10 @@
 #include "problem/ProblemFragment.h"
 
 DiscreteProblem::DiscreteProblem(ettention::Vec3ui size, ettention::Vec3d voxelSize, MaterialDictionary* matDict) :
-    m_size(size),
-    m_voxelSize(voxelSize),
-    m_numberOfCells(size.x*size.y*size.z),
-    m_materialIds(m_numberOfCells, Material::EMPTY.m_id),
+    size(size),
+    voxelSize(voxelSize),
+    numberOfCells(size.x*size.y*size.z),
+    materialIds(numberOfCells, Material::EMPTY.id),
     materialDictionary(matDict)
 {
     
@@ -22,18 +22,18 @@ void DiscreteProblem::setMaterial(ettention::Vec3ui& coordinate, unsigned char m
 }
 
 void DiscreteProblem::setMaterial(unsigned int index, unsigned char matId) {
-    m_materialIds[index] = matId;
+    materialIds[index] = matId;
 }
 
 unsigned int DiscreteProblem::mapToIndex(ettention::Vec3ui& coordinate) const {
     if (outOfBounds(coordinate)) {
         throw std::invalid_argument("given coordinate cannot be mapped to an index because it is outside the problem space");
     }
-    return coordinate.x + coordinate.y * m_size.x + coordinate.z * m_size.x * m_size.y;
+    return coordinate.x + coordinate.y * size.x + coordinate.z * size.x * size.y;
 }
 
 ettention::Vec3ui DiscreteProblem::mapToCoordinate(unsigned int index) const {
-    return ettention::Vec3ui(index % m_size.x, (index / m_size.x) % m_size.y, index / (m_size.x * m_size.y));
+    return ettention::Vec3ui(index % size.x, (index / size.x) % size.y, index / (size.x * size.y));
 }
 
 
@@ -46,25 +46,25 @@ Material* DiscreteProblem::getMaterial(ettention::Vec3ui& coordinate) const {
 }
 
 Material* DiscreteProblem::getMaterial(unsigned int index) const {
-    unsigned char matId = m_materialIds.at(index);
+    unsigned char matId = materialIds.at(index);
     assert(materialDictionary->contains(matId));
     return materialDictionary->getMaterialById(matId);
 }
 
 ettention::Vec3d DiscreteProblem::getVoxelSize() const {
-    return ettention::Vec3d(m_voxelSize);
+    return ettention::Vec3d(voxelSize);
 }
 
 ettention::Vec3ui DiscreteProblem::getSize() const {
-    return ettention::Vec3ui(m_size);
+    return ettention::Vec3ui(size);
 }
 
 std::vector<unsigned char>* DiscreteProblem::getMaterialIdVector() {
-    return &m_materialIds;
+    return &materialIds;
 }
 
 bool DiscreteProblem::outOfBounds(ettention::Vec3ui& coordinate) const {
-    return coordinate.x < 0 || coordinate.x >= m_size.x || coordinate.y < 0 || coordinate.y >= m_size.y || coordinate.z < 0 || coordinate.z >= m_size.z;
+    return coordinate.x < 0 || coordinate.x >= size.x || coordinate.y < 0 || coordinate.y >= size.y || coordinate.z < 0 || coordinate.z >= size.z;
 }
 
 ProblemFragment DiscreteProblem::extractLocalProblem(ettention::Vec3ui centerCoord) const {

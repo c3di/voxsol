@@ -37,7 +37,7 @@ int main(int argc, char* argv[]) {
     DiscreteProblem problem(size, voxelSize, &mDictionary);
 
     for (int i = 0; i < 27; i++) {
-        problem.setMaterial(i, steel.m_id);
+        problem.setMaterial(i, steel.id);
     }
 
     Solution solution(problem);

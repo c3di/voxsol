@@ -14,7 +14,7 @@ public:
     void setMaterial(unsigned int index, Material& mat);
     void setMaterial(unsigned int index, Material* mat);
 
-    const ProblemFragmentKey& key() const;
+    const ProblemFragmentKey& getKey() const;
     bool containsMixedMaterials() const;
     ettention::Vec3ui getCenterVertex() const;
 
@@ -22,8 +22,8 @@ public:
     REAL lambda(unsigned int cell) const;
 
 private:
-    const ettention::Vec3ui m_centerVertexCoord;
-    std::vector<Material*> m_materials;
-    ProblemFragmentKey m_key;
+    const ettention::Vec3ui centerVertexCoord;
+    std::vector<Material*> materials;
+    ProblemFragmentKey key;
 
 };

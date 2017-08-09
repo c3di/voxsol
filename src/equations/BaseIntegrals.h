@@ -24,17 +24,17 @@ public:
     }
 
     inline REAL* data() const {
-        return (REAL*)&m_data;
+        return (REAL*)&values;
     }
     inline REAL value(unsigned int basisFunc, unsigned int deriv, unsigned int testFunc, unsigned int cell) const {
-        return MAP(m_data, basisFunc, deriv, testFunc, cell);
+        return MAP(values, basisFunc, deriv, testFunc, cell);
     }
 
 protected:
     const REAL dx;
     const REAL dy;
     const REAL dz;
-    REAL m_data[27 * 3 * 3 * 8];
+    REAL values[27 * 3 * 3 * 8];
 
     virtual void init() = 0;
 };

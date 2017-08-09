@@ -24,7 +24,7 @@ public:
     const Matrix3x3* getRHS(unsigned int nodeIndex) const;
 
 private:
-    unsigned short m_id;
-    std::vector<Matrix3x3> m_matrices; 
+    unsigned short id;
+    std::vector<Matrix3x3> matrices; 
     
 };

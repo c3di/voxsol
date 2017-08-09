@@ -4,25 +4,25 @@
 Material Material::EMPTY = Material(0, 0, 0);
 
 Material::Material() :
-    m_id(255),
-    m_mu(0),
-    m_lambda(0)
+    id(255),
+    mu(0),
+    lambda(0)
 {
 
 }
 
 Material::Material(REAL eModul, REAL poissonRatio, unsigned char id) :
-    m_lambda(calculateLambda(eModul, poissonRatio)),
-    m_mu(calculateMu(eModul, poissonRatio)),
-    m_id(id)
+    lambda(calculateLambda(eModul, poissonRatio)),
+    mu(calculateMu(eModul, poissonRatio)),
+    id(id)
 {
     
 }
 
 Material::Material(Material& other) : 
-    m_lambda(other.m_lambda),
-    m_mu(other.m_mu),
-    m_id(other.m_id)
+    lambda(other.lambda),
+    mu(other.mu),
+    id(other.id)
 {
 
 }
@@ -42,5 +42,5 @@ REAL Material::calculateLambda(REAL eModul, REAL poissonRatio) {
 
 bool Material::operator==(const Material& other) const
 {
-    return other.m_id == m_id;
+    return other.id == id;
 }

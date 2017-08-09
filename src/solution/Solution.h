@@ -22,12 +22,12 @@ public:
     std::vector<REAL>* getDisplacements();
 
 protected:
-    const ettention::Vec3ui m_size;
-    const ettention::Vec3<REAL> m_voxelSize;
-    const DiscreteProblem* const m_problem;
-    std::vector<unsigned short> m_signatureIds;
-    std::vector<REAL> m_displacements;
-    std::vector<FragmentSignature> m_fragmentSignatures;
+    const ettention::Vec3ui size;
+    const ettention::Vec3<REAL> voxelSize;
+    const DiscreteProblem* const problem;
+    std::vector<unsigned short> signatureIds;
+    std::vector<REAL> displacements;
+    std::vector<FragmentSignature> fragmentSignatures;
 
     void gatherUniqueFragmentSignatures();
     void precomputeMatricesForSignatures();

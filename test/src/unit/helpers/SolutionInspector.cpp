@@ -9,23 +9,23 @@ SolutionInspector::SolutionInspector(DiscreteProblem& problem) :
 
 unsigned short SolutionInspector::getSignatureIdForFragment(ProblemFragment& fragment) {
     unsigned int index = mapToIndex(fragment.getCenterVertex());
-    return m_signatureIds[index];
+    return signatureIds[index];
 }
 
 bool SolutionInspector::solutionDimensionsMatchProblem(std::string& errMessage) {
-    ettention::Vec3ui expectedSize = m_problem->getSize() + ettention::Vec3ui(1,1,1);
+    ettention::Vec3ui expectedSize = problem->getSize() + ettention::Vec3ui(1,1,1);
 
-    if (m_size.x != expectedSize.x || m_size.y != expectedSize.y || m_size.z != expectedSize.z) {
+    if (size.x != expectedSize.x || size.y != expectedSize.y || size.z != expectedSize.z) {
         std::stringstream ss;
-        ss << "Solution size " << m_size << " does not match expected size " << expectedSize;
+        ss << "Solution size " << size << " does not match expected size " << expectedSize;
         errMessage = ss.str();
         return false;
     }
 
     int expectedNumVertices = expectedSize.x*expectedSize.y*expectedSize.z;
-    if (m_signatureIds.size() != expectedNumVertices) {
+    if (signatureIds.size() != expectedNumVertices) {
         std::stringstream ss;
-        ss << "Number of vertices " << m_signatureIds.size() << " does not match expected number " << expectedNumVertices;
+        ss << "Number of vertices " << signatureIds.size() << " does not match expected number " << expectedNumVertices;
         errMessage = ss.str();
         return false;
     }
@@ -34,10 +34,10 @@ bool SolutionInspector::solutionDimensionsMatchProblem(std::string& errMessage) 
 }
 
 bool SolutionInspector::fragmentSignatureIdsMatchPositionInVector(std::string& errMessage) {
-    for (int i = 0; i < m_fragmentSignatures.size(); i++) {
-        if (m_fragmentSignatures[i].getId() != i) {
+    for (int i = 0; i < fragmentSignatures.size(); i++) {
+        if (fragmentSignatures[i].getId() != i) {
             std::stringstream ss;
-            ss << "FragmentSignature at position " << i << " should have matching id " << i << ", instead it has id " << m_fragmentSignatures[i].getId();
+            ss << "FragmentSignature at position " << i << " should have matching id " << i << ", instead it has id " << fragmentSignatures[i].getId();
             errMessage = ss.str();
             return false;
         }
@@ -46,8 +46,8 @@ bool SolutionInspector::fragmentSignatureIdsMatchPositionInVector(std::string& e
 }
 
 bool SolutionInspector::allFragmentSignaturesInitialized(std::string& errMessage) {
-    for (int i = 0; i < m_fragmentSignatures.size(); i++) {
-        FragmentSignature sig = m_fragmentSignatures[i];
+    for (int i = 0; i < fragmentSignatures.size(); i++) {
+        FragmentSignature sig = fragmentSignatures[i];
         if (sig.getId() < 0) {
             std::stringstream ss;
             ss << "FragmentSignature " << i << " has invalid id " << sig.getId();
@@ -77,9 +77,9 @@ bool SolutionInspector::allFragmentSignaturesInitialized(std::string& errMessage
 }
 
 bool SolutionInspector::allVerticesHaveValidSignatureId(std::string& errMessage) {
-    for (int i = 0; i < m_signatureIds.size(); i++) {
-        int signatureId = m_signatureIds[i];
-        if (signatureId < 0 || signatureId > m_fragmentSignatures.size()) {
+    for (int i = 0; i < signatureIds.size(); i++) {
+        int signatureId = signatureIds[i];
+        if (signatureId < 0 || signatureId > fragmentSignatures.size()) {
             std::stringstream ss;
             ss << "Vertex " << i << " has invalid signature Id " << signatureId;
             errMessage = ss.str();

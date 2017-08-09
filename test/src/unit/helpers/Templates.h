@@ -38,7 +38,7 @@ public:
             DiscreteProblem problem(size, voxelSize, &Templates::Mat.DICTIONARY);
 
             for (int i = 0; i < 8; i++) {
-                problem.setMaterial(i, Templates::Mat.STEEL.m_id);
+                problem.setMaterial(i, Templates::Mat.STEEL.id);
             }
 
             return problem;

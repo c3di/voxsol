@@ -6,14 +6,14 @@ struct ProblemFragmentKey {
     unsigned char ids[8]; 
 
     ProblemFragmentKey(const std::vector<Material*>* mats) {
-        ids[0] = mats->at(0)->m_id;
-        ids[1] = mats->at(1)->m_id;
-        ids[2] = mats->at(2)->m_id;
-        ids[3] = mats->at(3)->m_id;
-        ids[4] = mats->at(4)->m_id;
-        ids[5] = mats->at(5)->m_id;
-        ids[6] = mats->at(6)->m_id;
-        ids[7] = mats->at(7)->m_id;
+        ids[0] = mats->at(0)->id;
+        ids[1] = mats->at(1)->id;
+        ids[2] = mats->at(2)->id;
+        ids[3] = mats->at(3)->id;
+        ids[4] = mats->at(4)->id;
+        ids[5] = mats->at(5)->id;
+        ids[6] = mats->at(6)->id;
+        ids[7] = mats->at(7)->id;
     }
 
     bool operator==(const ProblemFragmentKey& other) const {

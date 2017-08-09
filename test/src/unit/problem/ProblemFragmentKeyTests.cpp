@@ -25,7 +25,7 @@ public:
 TEST_F(ProblemFragmentKeyTests, EmptyInitialization) {
     
     ProblemFragment frag(ettention::Vec3ui(0, 0, 0));
-    ProblemFragmentKey fragKey = frag.key();
+    ProblemFragmentKey fragKey = frag.getKey();
     Material mat(210e9, 0.3, 1);
 
     unsigned char ids = 0;
@@ -37,7 +37,7 @@ TEST_F(ProblemFragmentKeyTests, EmptyInitialization) {
     ASSERT_EQ(ids, 0);
     
     frag.setMaterial(0, &mat);
-    fragKey = frag.key();
+    fragKey = frag.getKey();
     ids = 0;
     for (int i = 0; i < 8; i++) {
         ids += fragKey[i];
@@ -55,13 +55,13 @@ TEST_F(ProblemFragmentKeyTests, KeyHash) {
     Material mat(210e9, 0.3, 1);
     frag.setMaterial(0, &mat);
 
-    ProblemFragmentKey fragKey = frag.key();
+    ProblemFragmentKey fragKey = frag.getKey();
     map[fragKey] = 5;
 
     ASSERT_EQ(map.count(fragKey), 1);
 
     frag.setMaterial(1, &mat);
-    ProblemFragmentKey fragKey2 = frag.key();
+    ProblemFragmentKey fragKey2 = frag.getKey();
     map[fragKey2] = 6;
 
     ASSERT_TRUE(map.count(fragKey) == 1 && map.count(fragKey2) == 1);
@@ -81,18 +81,18 @@ TEST_F(ProblemFragmentKeyTests, Equality) {
     fragTwo.setMaterial(0, &matA);
     fragTwo.setMaterial(4, &matA);
 
-    ProblemFragmentKey keyOne = fragOne.key();
-    ProblemFragmentKey keyTwo = fragTwo.key();
+    ProblemFragmentKey keyOne = fragOne.getKey();
+    ProblemFragmentKey keyTwo = fragTwo.getKey();
 
     ASSERT_EQ(keyOne, keyTwo);
 
     fragTwo.setMaterial(0, &matB);
-    keyTwo = fragTwo.key();
+    keyTwo = fragTwo.getKey();
 
     ASSERT_NE(keyOne, keyTwo);
 
     fragOne.setMaterial(0, &matB);
-    keyOne = fragOne.key();
+    keyOne = fragOne.getKey();
 
     ASSERT_EQ(keyOne, keyTwo);
 }

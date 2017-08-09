@@ -24,10 +24,10 @@ public:
     ProblemFragment extractLocalProblem(ettention::Vec3ui centerCoord) const;
 
 private:
-    const ettention::Vec3ui m_size;
-    const ettention::Vec3d m_voxelSize;
-    const unsigned int m_numberOfCells;
-    std::vector<unsigned char> m_materialIds;
+    const ettention::Vec3ui size;
+    const ettention::Vec3d voxelSize;
+    const unsigned int numberOfCells;
+    std::vector<unsigned char> materialIds;
     MaterialDictionary* materialDictionary;
 
     bool outOfBounds(ettention::Vec3ui& coordinate) const;

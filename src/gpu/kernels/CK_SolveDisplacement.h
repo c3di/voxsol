@@ -25,7 +25,7 @@ protected:
     void freeCudaResources();
 
 private:
-    Solution* m_solution;
+    Solution* solution;
 
     unsigned short* d_signatureIds;
     REAL* d_displacements;

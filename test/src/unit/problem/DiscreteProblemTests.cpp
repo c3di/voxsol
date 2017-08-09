@@ -53,13 +53,13 @@ TEST_F(DiscreteProblemTests, ProblemFragmentExtraction) {
     DiscreteProblem problem = Templates::Problem::STEEL_2_2_2();
 
     ProblemFragment fragment = problem.extractLocalProblem(ettention::Vec3ui(1, 1, 1));
-    ProblemFragmentKey actualKey = fragment.key();
+    ProblemFragmentKey actualKey = fragment.getKey();
     std::vector<Material*> expected(8, &Templates::Mat.STEEL);
     ProblemFragmentKey expectedKey(&expected);
     EXPECT_TRUE(actualKey == expectedKey) << "Expected fragment centered at (1,1,1) to be all STEEL";
 
     ProblemFragment fragment2 = problem.extractLocalProblem(ettention::Vec3ui(1,1,0));
-    ProblemFragmentKey actualKey2 = fragment2.key();
+    ProblemFragmentKey actualKey2 = fragment2.getKey();
     std::vector<Material*> expected2(8, &Templates::Mat.EMPTY);
     expected2[4] = expected2[5] = expected2[6] = expected2[7] = &Templates::Mat.STEEL;
     ProblemFragmentKey expectedKey2(&expected2);

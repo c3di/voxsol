@@ -4,9 +4,9 @@
 
 
 MatrixPrecomputer::MatrixPrecomputer(ettention::Vec3<REAL> voxelSize) :
-    m_voxelSize(voxelSize),
-    m_linearIntegrals(voxelSize),
-    m_quadIntegrals(voxelSize)
+    voxelSize(voxelSize),
+    linearIntegrals(voxelSize),
+    quadIntegrals(voxelSize)
 {
     
 }
@@ -21,10 +21,10 @@ void MatrixPrecomputer::initializeSignatureForFragment(FragmentSignature* signat
     //Quadratic integrals can only be used for fragments with uniform materials, mixed materials will cause
     //the solution to diverge
     if (fragment.containsMixedMaterials()) {
-        integrals = &m_linearIntegrals;
+        integrals = &linearIntegrals;
     }
     else {
-        integrals = &m_quadIntegrals;
+        integrals = &quadIntegrals;
     }
 
     computeLHS(fragment, signature, integrals);

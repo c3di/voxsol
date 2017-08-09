@@ -10,9 +10,9 @@ public:
     Material(Material& other);
     ~Material();
 
-    const unsigned char m_id;
-    const REAL m_lambda;
-    const REAL m_mu;
+    const unsigned char id;
+    const REAL lambda;
+    const REAL mu;
 
     static Material EMPTY;
     static unsigned char NEXT_ID;

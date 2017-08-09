@@ -17,8 +17,8 @@ Material* MaterialDictionary::getMaterialById(unsigned char materialId) {
 }
 
 void MaterialDictionary::addMaterial(Material& material) {
-    assert(materials.count(material.m_id) <= 0);
-    materials.emplace(material.m_id, material);
+    assert(materials.count(material.id) <= 0);
+    materials.emplace(material.id, material);
 }
 
 bool MaterialDictionary::contains(unsigned char materialId) {
