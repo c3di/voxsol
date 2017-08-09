@@ -6,7 +6,7 @@ Solution::Solution(DiscreteProblem& problem) :
     size(problem.getSize() + ettention::Vec3ui(1,1,1)),
     voxelSize(problem.getVoxelSize()),
     problem(&problem),
-    signatureIds(size.x * size.y * size.z, -1),
+    matConfigEquationIds(size.x * size.y * size.z, -1),
     displacements(3 * size.x * size.y * size.z, 0)
 {
 
@@ -16,12 +16,12 @@ Solution::~Solution() {
 
 }
 
-const std::vector<unsigned short>* Solution::getSignatureIds() const {
-    return &signatureIds;
+const std::vector<unsigned short>* Solution::getMaterialConfigurationEquationIds() const {
+    return &matConfigEquationIds;
 }
 
-const std::vector<FragmentSignature>* Solution::getFragmentSignatures() const {
-    return &fragmentSignatures;
+const std::vector<MaterialConfigurationEquations>* Solution::getMaterialConfigurationEquations() const {
+    return &matConfigEquations;
 }
 
 std::vector<REAL>* Solution::getDisplacements() {
@@ -43,15 +43,15 @@ bool Solution::outOfBounds(ettention::Vec3ui& coordinate) const {
     return coordinate.x < 0 || coordinate.x >= size.x || coordinate.y < 0 || coordinate.y >= size.y || coordinate.z < 0 || coordinate.z >= size.z;
 }
 
-void Solution::precomputeMatrices() {
-    // This is separated into two steps to allow matrix pre-computation to be done asynchronously later
-    gatherUniqueFragmentSignatures();
-    precomputeMatricesForSignatures();
+void Solution::computeMaterialConfigurationEquations() {
+    // This is separated into two steps to allow matrix computation to be done asynchronously later
+    gatherUniqueMaterialConfigurations();
+    computeEquationsForUniqueMaterialConfigurations();
 }
 
-void Solution::gatherUniqueFragmentSignatures() {
-    unsigned short signatureIdCounter = 0;
-    std::unordered_map < MaterialConfiguration, unsigned short> signatureToId;
+void Solution::gatherUniqueMaterialConfigurations() {
+    unsigned short equationIdCounter = 0;
+    std::unordered_map < MaterialConfiguration, unsigned short> matConfigToEquationId;
 
     for (unsigned int z = 0; z < size.z; z++) {
         for (unsigned int y = 0; y < size.y; y++) {
@@ -60,31 +60,31 @@ void Solution::gatherUniqueFragmentSignatures() {
                 ProblemFragment fragment = problem->extractLocalProblem(centerCoord);
                 MaterialConfiguration materialConfiguration = fragment.getMaterialConfiguration();
 
-                if (signatureToId.count(materialConfiguration) <= 0) {
-                    signatureToId[materialConfiguration] = signatureIdCounter;
-                    signatureIdCounter++;
+                if (matConfigToEquationId.count(materialConfiguration) <= 0) {
+                    matConfigToEquationId[materialConfiguration] = equationIdCounter;
+                    equationIdCounter++;
                 }
-                signatureIds[mapToIndex(centerCoord)] = signatureToId[materialConfiguration];
+                matConfigEquationIds[mapToIndex(centerCoord)] = matConfigToEquationId[materialConfiguration];
             }
         }
     }
-    fragmentSignatures.resize(signatureIdCounter);
+    matConfigEquations.resize(equationIdCounter);
 }
 
-void Solution::precomputeMatricesForSignatures() {
+void Solution::computeEquationsForUniqueMaterialConfigurations() {
     MatrixPrecomputer precomputer(voxelSize);
 
-    for (int i = 0; i < signatureIds.size(); i++) {
-        int signatureId = signatureIds[i];
-        FragmentSignature* signature = &fragmentSignatures[signatureId];
+    for (int i = 0; i < matConfigEquationIds.size(); i++) {
+        int equationId = matConfigEquationIds[i];
+        MaterialConfigurationEquations* equations = &matConfigEquations[equationId];
 
-        if (signature->getId() == USHRT_MAX) {
+        if (equations->getId() == USHRT_MAX) {
             // This matrix store hasn't been initialized yet so lets pre-compute the matrices
-            signature->setId(signatureId);
+            equations->setId(equationId);
             ettention::Vec3ui centerCoord = mapToCoordinate(i);
             ProblemFragment fragment = problem->extractLocalProblem(centerCoord);
             MaterialConfiguration materialConfig = fragment.getMaterialConfiguration();
-            precomputer.initializeSignatureForFragment(signature, fragment);
+            precomputer.initializeEquationsForFragment(equations, fragment);
         }
     }
 }

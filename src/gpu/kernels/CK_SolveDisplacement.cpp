@@ -5,17 +5,17 @@
 CK_SolveDisplacement::CK_SolveDisplacement(Solution* sol) :
     solution(sol),
     d_displacements(nullptr),
-    d_signatureIds(nullptr),
-    d_fragmentSignatures(nullptr)
+    d_matConfigEquationIds(nullptr),
+    d_matConfigEquations(nullptr)
 {
 
 };
 
 CK_SolveDisplacement::~CK_SolveDisplacement() {
     freeCudaResources();
-    assert(d_signatureIds == nullptr);
+    assert(d_matConfigEquationIds == nullptr);
     assert(d_displacements == nullptr);
-    assert(d_fragmentSignatures == nullptr);
+    assert(d_matConfigEquations == nullptr);
 };
 
 
@@ -24,40 +24,40 @@ void CK_SolveDisplacement::launchKernel() {
 
     if (canExecute()) {
         unsigned int numVertices = static_cast<unsigned int>(solution->getDisplacements()->size());
-        CK_SolveDisplacement_launch(d_displacements, d_signatureIds, d_fragmentSignatures, numVertices);
+        CK_SolveDisplacement_launch(d_displacements, d_matConfigEquationIds, d_matConfigEquations, numVertices);
 
         pull_displacements();
     }
 };
 
 bool CK_SolveDisplacement::canExecute() {
-    assert(d_signatureIds != nullptr);
-    assert(d_displacements != nullptr);
-    assert(d_fragmentSignatures != nullptr);
+    if (d_matConfigEquationIds == nullptr || d_displacements == nullptr || d_matConfigEquations == nullptr) {
+        throw std::runtime_error("Could not execute kernel SolveDisplacement because one or more inputs are missing.");
+    }
 
     return true;
 };
 
 void CK_SolveDisplacement::freeCudaResources() {
-    cudaCheckSuccess(cudaFree(d_signatureIds));
-    d_signatureIds = nullptr;
+    cudaCheckSuccess(cudaFree(d_matConfigEquationIds));
+    d_matConfigEquationIds = nullptr;
     cudaCheckSuccess(cudaFree(d_displacements));
     d_displacements = nullptr;
-    cudaCheckSuccess(cudaFree(d_fragmentSignatures));
-    d_fragmentSignatures = nullptr;
+    cudaCheckSuccess(cudaFree(d_matConfigEquations));
+    d_matConfigEquations = nullptr;
 }
 
 void CK_SolveDisplacement::prepareInputs() {
-    push_signatureIds();
+    push_matConfigEquationIds();
     push_displacements();
-    push_fragmentSignatures();
+    push_matConfigEquations();
 }
 
-void CK_SolveDisplacement::push_signatureIds() {
-    const std::vector<unsigned short>* signatureIds = solution->getSignatureIds();
+void CK_SolveDisplacement::push_matConfigEquationIds() {
+    const std::vector<unsigned short>* signatureIds = solution->getMaterialConfigurationEquationIds();
     size_t size = signatureIds->size() * sizeof(unsigned short);
-    cudaCheckSuccess(cudaMalloc(&d_signatureIds, size));
-    cudaCheckSuccess(cudaMemcpy(d_signatureIds, signatureIds->data(), size, cudaMemcpyHostToDevice));
+    cudaCheckSuccess(cudaMalloc(&d_matConfigEquationIds, size));
+    cudaCheckSuccess(cudaMemcpy(d_matConfigEquationIds, signatureIds->data(), size, cudaMemcpyHostToDevice));
 };
 
 void CK_SolveDisplacement::push_displacements() {
@@ -67,15 +67,15 @@ void CK_SolveDisplacement::push_displacements() {
     cudaCheckSuccess(cudaMemcpy(d_displacements, displacements->data(), size, cudaMemcpyHostToDevice));
 };
 
-void CK_SolveDisplacement::push_fragmentSignatures() {
-    size_t size = solution->getFragmentSignatures()->size() * FragmentSignature::SizeInBytes;
-    void* h_fragmentSignatures = malloc(size);
-    serializeFragmentSignatures(h_fragmentSignatures);
+void CK_SolveDisplacement::push_matConfigEquations() {
+    size_t size = solution->getMaterialConfigurationEquations()->size() * MaterialConfigurationEquations::SizeInBytes;
+    void* h_matConfigEquations = malloc(size);
+    serializeMaterialConfigurationEquations(h_matConfigEquations);
 
-    cudaCheckSuccess(cudaMalloc(&d_fragmentSignatures, size));
-    cudaCheckSuccess(cudaMemcpy(d_fragmentSignatures, h_fragmentSignatures, size, cudaMemcpyHostToDevice));
+    cudaCheckSuccess(cudaMalloc(&d_matConfigEquations, size));
+    cudaCheckSuccess(cudaMemcpy(d_matConfigEquations, h_matConfigEquations, size, cudaMemcpyHostToDevice));
 
-    delete[] h_fragmentSignatures;
+    delete[] h_matConfigEquations;
 };
 
 void CK_SolveDisplacement::pull_displacements() {
@@ -84,13 +84,13 @@ void CK_SolveDisplacement::pull_displacements() {
     cudaCheckSuccess(cudaMemcpy(displacements->data(), d_displacements, size, cudaMemcpyDeviceToHost));
 };
 
-void CK_SolveDisplacement::serializeFragmentSignatures(void* destination) {
-    const std::vector<FragmentSignature>* signatures = solution->getFragmentSignatures();
-    size_t size = FragmentSignature::SizeInBytes * signatures->size();
+void CK_SolveDisplacement::serializeMaterialConfigurationEquations(void* destination) {
+    const std::vector<MaterialConfigurationEquations>* signatures = solution->getMaterialConfigurationEquations();
+    size_t size = MaterialConfigurationEquations::SizeInBytes * signatures->size();
 
     char* serializationPointer = (char*)destination;
     for (unsigned int i = 0; i < signatures->size(); i++) {
         signatures->at(i).serialize(serializationPointer);
-        serializationPointer += FragmentSignature::SizeInBytes;
+        serializationPointer += MaterialConfigurationEquations::SizeInBytes;
     }
 }

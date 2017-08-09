@@ -5,11 +5,11 @@ class SolutionInspector : public Solution {
 public:
     SolutionInspector(DiscreteProblem& problem);
 
-    unsigned short getSignatureIdForFragment(ProblemFragment& fragment);
+    unsigned short getEquationIdForFragment(ProblemFragment& fragment);
 
     bool solutionDimensionsMatchProblem(std::string& errMessage);
-    bool fragmentSignatureIdsMatchPositionInVector(std::string& errMessage);
-    bool allFragmentSignaturesInitialized(std::string& errMessage);
+    bool matConfigEquationIdsMatchPositionInVector(std::string& errMessage);
+    bool allMatConfigEquationsInitialized(std::string& errMessage);
     bool allVerticesHaveValidSignatureId(std::string& errMessage);
 };
 

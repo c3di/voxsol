@@ -7,9 +7,9 @@ SolutionInspector::SolutionInspector(DiscreteProblem& problem) :
 
 }
 
-unsigned short SolutionInspector::getSignatureIdForFragment(ProblemFragment& fragment) {
+unsigned short SolutionInspector::getEquationIdForFragment(ProblemFragment& fragment) {
     unsigned int index = mapToIndex(fragment.getCenterVertex());
-    return signatureIds[index];
+    return matConfigEquationIds[index];
 }
 
 bool SolutionInspector::solutionDimensionsMatchProblem(std::string& errMessage) {
@@ -23,9 +23,9 @@ bool SolutionInspector::solutionDimensionsMatchProblem(std::string& errMessage) 
     }
 
     int expectedNumVertices = expectedSize.x*expectedSize.y*expectedSize.z;
-    if (signatureIds.size() != expectedNumVertices) {
+    if (matConfigEquationIds.size() != expectedNumVertices) {
         std::stringstream ss;
-        ss << "Number of vertices " << signatureIds.size() << " does not match expected number " << expectedNumVertices;
+        ss << "Number of vertices " << matConfigEquationIds.size() << " does not match expected number " << expectedNumVertices;
         errMessage = ss.str();
         return false;
     }
@@ -33,11 +33,11 @@ bool SolutionInspector::solutionDimensionsMatchProblem(std::string& errMessage) 
     return true;
 }
 
-bool SolutionInspector::fragmentSignatureIdsMatchPositionInVector(std::string& errMessage) {
-    for (int i = 0; i < fragmentSignatures.size(); i++) {
-        if (fragmentSignatures[i].getId() != i) {
+bool SolutionInspector::matConfigEquationIdsMatchPositionInVector(std::string& errMessage) {
+    for (int i = 0; i < matConfigEquations.size(); i++) {
+        if (matConfigEquations[i].getId() != i) {
             std::stringstream ss;
-            ss << "FragmentSignature at position " << i << " should have matching id " << i << ", instead it has id " << fragmentSignatures[i].getId();
+            ss << "MaterialConfigEquation at position " << i << " should have matching id " << i << ", instead it has id " << matConfigEquations[i].getId();
             errMessage = ss.str();
             return false;
         }
@@ -45,29 +45,29 @@ bool SolutionInspector::fragmentSignatureIdsMatchPositionInVector(std::string& e
     return true;
 }
 
-bool SolutionInspector::allFragmentSignaturesInitialized(std::string& errMessage) {
-    for (int i = 0; i < fragmentSignatures.size(); i++) {
-        FragmentSignature sig = fragmentSignatures[i];
-        if (sig.getId() < 0) {
+bool SolutionInspector::allMatConfigEquationsInitialized(std::string& errMessage) {
+    for (int i = 0; i < matConfigEquations.size(); i++) {
+        MaterialConfigurationEquations eqn = matConfigEquations[i];
+        if (eqn.getId() < 0) {
             std::stringstream ss;
-            ss << "FragmentSignature " << i << " has invalid id " << sig.getId();
+            ss << "MaterialConfigurationEquation " << i << " has invalid id " << eqn.getId();
             errMessage = ss.str();
             return false;
         }
 
-        const Matrix3x3* lhs = sig.getLHS();
+        const Matrix3x3* lhs = eqn.getLHS();
         if (lhs == NULL || *lhs == Matrix3x3::identity) {
             std::stringstream ss;
-            ss << "FragmentSignature " << i << " has invalid LHS matrix";
+            ss << "MaterialConfigurationEquation " << i << " has invalid LHS matrix";
             errMessage = ss.str();
             return false;
         }
 
         for (int j = 0; j < 27; j++) {
-            const Matrix3x3* rhs = sig.getRHS(j);
+            const Matrix3x3* rhs = eqn.getRHS(j);
             if (rhs == NULL || *rhs == Matrix3x3::identity) {
                 std::stringstream ss;
-                ss << "FragmentSignature " << i << " has invalid RHS matrix for vertex " << j;
+                ss << "MaterialConfigurationEquation " << i << " has invalid RHS matrix for vertex " << j;
                 errMessage = ss.str();
                 return false;
             }
@@ -77,11 +77,11 @@ bool SolutionInspector::allFragmentSignaturesInitialized(std::string& errMessage
 }
 
 bool SolutionInspector::allVerticesHaveValidSignatureId(std::string& errMessage) {
-    for (int i = 0; i < signatureIds.size(); i++) {
-        int signatureId = signatureIds[i];
-        if (signatureId < 0 || signatureId > fragmentSignatures.size()) {
+    for (int i = 0; i < matConfigEquationIds.size(); i++) {
+        int equationId = matConfigEquationIds[i];
+        if (equationId < 0 || equationId > matConfigEquations.size()) {
             std::stringstream ss;
-            ss << "Vertex " << i << " has invalid signature Id " << signatureId;
+            ss << "Vertex " << i << " has invalid material configuration equation Id " << equationId;
             errMessage = ss.str();
             return false;
         }

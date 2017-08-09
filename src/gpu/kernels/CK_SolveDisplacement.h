@@ -8,7 +8,7 @@
 #include "libmmv/math/Vec3.h"
 #include "solution/Solution.h"
 
-extern "C" void CK_SolveDisplacement_launch(REAL* d_displacements, unsigned short* d_signatureIds, REAL* d_fragmentSignatures, unsigned int numVertices);
+extern "C" void CK_SolveDisplacement_launch(REAL* d_displacements, unsigned short* d_matConfigEquationIds, REAL* d_matConfigEquations, unsigned int numVertices);
 
 class CK_SolveDisplacement : public CudaKernel {
 
@@ -27,18 +27,18 @@ protected:
 private:
     Solution* solution;
 
-    unsigned short* d_signatureIds;
+    unsigned short* d_matConfigEquationIds;
     REAL* d_displacements;
-    REAL* d_fragmentSignatures;
+    REAL* d_matConfigEquations;
 
     void prepareInputs();
 
-    void push_signatureIds();
+    void push_matConfigEquationIds();
     void push_displacements();
-    void push_fragmentSignatures();
+    void push_matConfigEquations();
 
     void pull_displacements();
 
-    void serializeFragmentSignatures(void* destination);
+    void serializeMaterialConfigurationEquations(void* destination);
 
 };

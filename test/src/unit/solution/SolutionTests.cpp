@@ -41,24 +41,24 @@ TEST_F(SolutionTests, PrecomputeMatrices) {
     DiscreteProblem problem = Templates::Problem::STEEL_2_2_2();
     SolutionInspector sol(problem);
 
-    const std::vector<unsigned short>* signatureIds = sol.getSignatureIds();
-    ASSERT_EQ(signatureIds->size(), 27);
+    const std::vector<unsigned short>* equationIds = sol.getMaterialConfigurationEquationIds();
+    ASSERT_EQ(equationIds->size(), 27);
 
-    sol.precomputeMatrices();
-    const std::vector<FragmentSignature>* fSigs = sol.getFragmentSignatures();
-    EXPECT_EQ(fSigs->size(), 27) << "Expected all vertices to have a unique fragment signature";
+    sol.computeMaterialConfigurationEquations();
+    const std::vector<MaterialConfigurationEquations>* fSigs = sol.getMaterialConfigurationEquations();
+    EXPECT_EQ(fSigs->size(), 27) << "Expected all vertices to have a unique set of material configuration equations";
 
     // Since every vertex in this problem has a unique material configuration its signature ID should be the same as its index
-    signatureIds = sol.getSignatureIds();
+    equationIds = sol.getMaterialConfigurationEquationIds();
     for (unsigned short i = 0; i < 27; i++) {
-        if (signatureIds->at(i) != i) {
-            FAIL() << "Vertex " << i << " signature id (" << signatureIds->at(i) << ") did not match expected value " << i;
+        if (equationIds->at(i) != i) {
+            FAIL() << "Vertex " << i << " equation id (" << equationIds->at(i) << ") did not match expected value " << i;
         }
     }
 
     ProblemFragment frag = problem.extractLocalProblem(ettention::Vec3ui(1, 1, 1));
-    unsigned short fragId = sol.getSignatureIdForFragment(frag);
-    EXPECT_EQ(fragId, 13) << "Expected problem fragment for center vertex to have fragment id 13";
+    unsigned short fragId = sol.getEquationIdForFragment(frag);
+    EXPECT_EQ(fragId, 13) << "Expected problem fragment for center vertex to have material configuration equation id 13";
 }
 
 TEST_F(SolutionTests, ConsistencyAfterPrecompute) {
@@ -68,9 +68,9 @@ TEST_F(SolutionTests, ConsistencyAfterPrecompute) {
 
     ASSERT_TRUE(sol.solutionDimensionsMatchProblem(errMessage)) << errMessage;
 
-    sol.precomputeMatrices();
+    sol.computeMaterialConfigurationEquations();
     
     ASSERT_TRUE(sol.allVerticesHaveValidSignatureId(errMessage)) << errMessage;
-    ASSERT_TRUE(sol.fragmentSignatureIdsMatchPositionInVector(errMessage)) << errMessage;
-    ASSERT_TRUE(sol.allFragmentSignaturesInitialized(errMessage)) << errMessage;
+    ASSERT_TRUE(sol.matConfigEquationIdsMatchPositionInVector(errMessage)) << errMessage;
+    ASSERT_TRUE(sol.allMatConfigEquationsInitialized(errMessage)) << errMessage;
 }

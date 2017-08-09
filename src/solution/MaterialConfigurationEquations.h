@@ -3,12 +3,12 @@
 #include <vector>
 #include "math/Matrix3x3.h"
 
-class FragmentSignature {
+class MaterialConfigurationEquations {
 
 public:
-    FragmentSignature();
-    FragmentSignature(unsigned short id);
-    ~FragmentSignature();
+    MaterialConfigurationEquations();
+    MaterialConfigurationEquations(unsigned short id);
+    ~MaterialConfigurationEquations();
 
     const static size_t SizeInBytes;
 

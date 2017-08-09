@@ -41,7 +41,7 @@ int main(int argc, char* argv[]) {
     }
 
     Solution solution(problem);
-    solution.precomputeMatrices();
+    solution.computeMaterialConfigurationEquations();
 
     CK_SolveDisplacement kernel(&solution);
     kernel.launchKernel();
