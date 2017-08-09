@@ -4,11 +4,11 @@
 #include "problem/ProblemFragment.h"
 
 
-class ProblemFragmentKeyTests : public ::testing::Test {
+class MaterialConfigurationTests : public ::testing::Test {
 
 public:
-    ProblemFragmentKeyTests() {}
-    ~ProblemFragmentKeyTests() {}
+    MaterialConfigurationTests() {}
+    ~MaterialConfigurationTests() {}
 
     void SetUp() override
     {
@@ -22,10 +22,10 @@ public:
 
 };
 
-TEST_F(ProblemFragmentKeyTests, EmptyInitialization) {
+TEST_F(MaterialConfigurationTests, EmptyInitialization) {
     
     ProblemFragment frag(ettention::Vec3ui(0, 0, 0));
-    ProblemFragmentKey fragKey = frag.getKey();
+    MaterialConfiguration fragKey = frag.getMaterialConfiguration();
     Material mat(210e9, 0.3, 1);
 
     unsigned char ids = 0;
@@ -37,7 +37,7 @@ TEST_F(ProblemFragmentKeyTests, EmptyInitialization) {
     ASSERT_EQ(ids, 0);
     
     frag.setMaterial(0, &mat);
-    fragKey = frag.getKey();
+    fragKey = frag.getMaterialConfiguration();
     ids = 0;
     for (int i = 0; i < 8; i++) {
         ids += fragKey[i];
@@ -48,20 +48,20 @@ TEST_F(ProblemFragmentKeyTests, EmptyInitialization) {
 
 }
 
-TEST_F(ProblemFragmentKeyTests, KeyHash) {
+TEST_F(MaterialConfigurationTests, KeyHash) {
 
-    std::unordered_map<ProblemFragmentKey, unsigned int> map;
+    std::unordered_map<MaterialConfiguration, unsigned int> map;
     ProblemFragment frag(ettention::Vec3ui(0, 0, 0));
     Material mat(210e9, 0.3, 1);
     frag.setMaterial(0, &mat);
 
-    ProblemFragmentKey fragKey = frag.getKey();
+    MaterialConfiguration fragKey = frag.getMaterialConfiguration();
     map[fragKey] = 5;
 
     ASSERT_EQ(map.count(fragKey), 1);
 
     frag.setMaterial(1, &mat);
-    ProblemFragmentKey fragKey2 = frag.getKey();
+    MaterialConfiguration fragKey2 = frag.getMaterialConfiguration();
     map[fragKey2] = 6;
 
     ASSERT_TRUE(map.count(fragKey) == 1 && map.count(fragKey2) == 1);
@@ -69,7 +69,7 @@ TEST_F(ProblemFragmentKeyTests, KeyHash) {
 
 }
 
-TEST_F(ProblemFragmentKeyTests, Equality) {
+TEST_F(MaterialConfigurationTests, Equality) {
 
     ProblemFragment fragOne(ettention::Vec3ui(0, 0, 0));
     ProblemFragment fragTwo(ettention::Vec3ui(0, 0, 0));
@@ -81,18 +81,18 @@ TEST_F(ProblemFragmentKeyTests, Equality) {
     fragTwo.setMaterial(0, &matA);
     fragTwo.setMaterial(4, &matA);
 
-    ProblemFragmentKey keyOne = fragOne.getKey();
-    ProblemFragmentKey keyTwo = fragTwo.getKey();
+    MaterialConfiguration keyOne = fragOne.getMaterialConfiguration();
+    MaterialConfiguration keyTwo = fragTwo.getMaterialConfiguration();
 
     ASSERT_EQ(keyOne, keyTwo);
 
     fragTwo.setMaterial(0, &matB);
-    keyTwo = fragTwo.getKey();
+    keyTwo = fragTwo.getMaterialConfiguration();
 
     ASSERT_NE(keyOne, keyTwo);
 
     fragOne.setMaterial(0, &matB);
-    keyOne = fragOne.getKey();
+    keyOne = fragOne.getMaterialConfiguration();
 
     ASSERT_EQ(keyOne, keyTwo);
 }

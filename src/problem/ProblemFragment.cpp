@@ -4,14 +4,14 @@
 ProblemFragment::ProblemFragment(ettention::Vec3ui& centerVertexCoord, std::vector<Material*>& mats) :
     centerVertexCoord(centerVertexCoord),
     materials(mats),
-    key(&mats)
+    materialConfig(&mats)
 {
 }
 
 ProblemFragment::ProblemFragment(ettention::Vec3ui& centerVertexCoord) :
     centerVertexCoord(centerVertexCoord),
     materials(8, &Material::EMPTY),
-    key(&materials)
+    materialConfig(&materials)
 {
 }
 
@@ -33,11 +33,11 @@ void ProblemFragment::setMaterial(unsigned int index, Material& mat) {
 
 void ProblemFragment::setMaterial(unsigned int index, Material* mat) {
     materials[index] = mat;
-    key = ProblemFragmentKey(&materials);
+    materialConfig = MaterialConfiguration(&materials);
 }
 
-const ProblemFragmentKey& ProblemFragment::getKey() const {
-    return key;
+const MaterialConfiguration& ProblemFragment::getMaterialConfiguration() const {
+    return materialConfig;
 }
 
 ettention::Vec3ui ProblemFragment::getCenterVertex() const {

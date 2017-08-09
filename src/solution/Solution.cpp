@@ -51,14 +51,14 @@ void Solution::precomputeMatrices() {
 
 void Solution::gatherUniqueFragmentSignatures() {
     unsigned short signatureIdCounter = 0;
-    std::unordered_map < ProblemFragmentKey, unsigned short> signatureToId;
+    std::unordered_map < MaterialConfiguration, unsigned short> signatureToId;
 
     for (unsigned int z = 0; z < size.z; z++) {
         for (unsigned int y = 0; y < size.y; y++) {
             for (unsigned int x = 0; x < size.x; x++) {
                 ettention::Vec3ui centerCoord(x, y, z);
                 ProblemFragment fragment = problem->extractLocalProblem(centerCoord);
-                ProblemFragmentKey materialConfiguration = fragment.getKey();
+                MaterialConfiguration materialConfiguration = fragment.getMaterialConfiguration();
 
                 if (signatureToId.count(materialConfiguration) <= 0) {
                     signatureToId[materialConfiguration] = signatureIdCounter;
@@ -83,7 +83,7 @@ void Solution::precomputeMatricesForSignatures() {
             signature->setId(signatureId);
             ettention::Vec3ui centerCoord = mapToCoordinate(i);
             ProblemFragment fragment = problem->extractLocalProblem(centerCoord);
-            ProblemFragmentKey materialConfig = fragment.getKey();
+            MaterialConfiguration materialConfig = fragment.getMaterialConfiguration();
             precomputer.initializeSignatureForFragment(signature, fragment);
         }
     }

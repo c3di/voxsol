@@ -2,7 +2,7 @@
 #include <vector>
 #include "libmmv/math/Vec3.h"
 #include "material/Material.h"
-#include "ProblemFragmentKey.h"
+#include "MaterialConfiguration.h"
 
 class ProblemFragment {
 public:
@@ -14,7 +14,7 @@ public:
     void setMaterial(unsigned int index, Material& mat);
     void setMaterial(unsigned int index, Material* mat);
 
-    const ProblemFragmentKey& getKey() const;
+    const MaterialConfiguration& getMaterialConfiguration() const;
     bool containsMixedMaterials() const;
     ettention::Vec3ui getCenterVertex() const;
 
@@ -24,6 +24,6 @@ public:
 private:
     const ettention::Vec3ui centerVertexCoord;
     std::vector<Material*> materials;
-    ProblemFragmentKey key;
+    MaterialConfiguration materialConfig;
 
 };
