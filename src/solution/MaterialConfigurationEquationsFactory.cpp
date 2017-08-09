@@ -1,9 +1,9 @@
 #include <stdafx.h>
-#include "MatrixPrecomputer.h"
+#include "MaterialConfigurationEquationsFactory.h"
 #include "math/Matrix3x3.h"
 
 
-MatrixPrecomputer::MatrixPrecomputer(ettention::Vec3<REAL> voxelSize) :
+MaterialConfigurationEquationsFactory::MaterialConfigurationEquationsFactory(ettention::Vec3<REAL> voxelSize) :
     voxelSize(voxelSize),
     linearIntegrals(voxelSize),
     quadIntegrals(voxelSize)
@@ -11,11 +11,11 @@ MatrixPrecomputer::MatrixPrecomputer(ettention::Vec3<REAL> voxelSize) :
     
 }
 
-MatrixPrecomputer::~MatrixPrecomputer() {
+MaterialConfigurationEquationsFactory::~MaterialConfigurationEquationsFactory() {
 
 }
 
-void MatrixPrecomputer::initializeEquationsForFragment(MaterialConfigurationEquations* equations, const ProblemFragment& fragment) const {
+void MaterialConfigurationEquationsFactory::initializeEquationsForFragment(MaterialConfigurationEquations* equations, const ProblemFragment& fragment) const {
     const BaseIntegrals* integrals;
     
     //Quadratic integrals can only be used for fragments with uniform materials, mixed materials will cause
@@ -31,7 +31,7 @@ void MatrixPrecomputer::initializeEquationsForFragment(MaterialConfigurationEqua
     computeRHS(fragment, equations, integrals);
 }
 
-void MatrixPrecomputer::computeLHS(const ProblemFragment& fragment, MaterialConfigurationEquations* equations, const BaseIntegrals* integrals) const {
+void MaterialConfigurationEquationsFactory::computeLHS(const ProblemFragment& fragment, MaterialConfigurationEquations* equations, const BaseIntegrals* integrals) const {
     REAL* fullIntegralLHS = new REAL[21]();
 
     for (unsigned int cell = 0; cell < 8; cell++) {
@@ -86,7 +86,7 @@ void MatrixPrecomputer::computeLHS(const ProblemFragment& fragment, MaterialConf
     delete[] fullIntegralLHS;
 }
 
-void MatrixPrecomputer::computeRHS(const ProblemFragment& fragment, MaterialConfigurationEquations* equations, const BaseIntegrals* integrals) const {
+void MaterialConfigurationEquationsFactory::computeRHS(const ProblemFragment& fragment, MaterialConfigurationEquations* equations, const BaseIntegrals* integrals) const {
     for (unsigned int nodeIndex = 0; nodeIndex < 27; nodeIndex++) {
         if (nodeIndex == 13) {
             //Don't need to calculate RHS for the center node
@@ -96,7 +96,7 @@ void MatrixPrecomputer::computeRHS(const ProblemFragment& fragment, MaterialConf
     }
 }
 
-void MatrixPrecomputer::computeRHSForNode(unsigned int nodeIndex, const ProblemFragment& fragment, MaterialConfigurationEquations* equations, const BaseIntegrals* integrals) const {
+void MaterialConfigurationEquationsFactory::computeRHSForNode(unsigned int nodeIndex, const ProblemFragment& fragment, MaterialConfigurationEquations* equations, const BaseIntegrals* integrals) const {
     REAL* matrixRHS = new REAL[9](); //3x3 matrix in column-major
 
     for (int cell = 0; cell < 8; cell++) {

@@ -4,7 +4,7 @@
 #include <libmmv/math/Vec3.h>
 #include "solution/MaterialConfigurationEquations.h"
 #include "problem/DiscreteProblem.h"
-#include "solution/MatrixPrecomputer.h"
+#include "solution/MaterialConfigurationEquationsFactory.h"
 
 class Solution {
 public:

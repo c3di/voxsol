@@ -1,14 +1,14 @@
 #include "stdafx.h"
 #include "gtest/gtest.h"
 #include "libmmv/math/Vec3.h"
-#include "solution/MatrixPrecomputer.h"
+#include "solution/MaterialConfigurationEquationsFactory.h"
 #include "helpers/Templates.h"
 
-class MatrixPrecomputerTests : public ::testing::Test {
+class MCEFactoryTests : public ::testing::Test {
 
 public:
-    MatrixPrecomputerTests() {}
-    ~MatrixPrecomputerTests() {}
+    MCEFactoryTests() {}
+    ~MCEFactoryTests() {}
 
     void SetUp() override
     {
@@ -24,17 +24,17 @@ public:
 
 // NOTE: Hard coded values come from the stomech prototype solver
 
-TEST_F(MatrixPrecomputerTests, UniformSteel) {
+TEST_F(MCEFactoryTests, UniformSteel) {
     ettention::Vec3ui coord(2, 2, 2);
     ettention::Vec3<REAL> voxelSize(1, 1, 1);
-    MatrixPrecomputer precomp(voxelSize);
+    MaterialConfigurationEquationsFactory mceFactory(voxelSize);
 
     std::vector<Material*> mats(8, &Templates::Mat.STEEL);
     ProblemFragment fragment(coord, mats);
 
     // Will use quadratic equations since this fragment is made of a uniform material
     MaterialConfigurationEquations fragEquations;
-    precomp.initializeEquationsForFragment(&fragEquations, fragment);
+    mceFactory.initializeEquationsForFragment(&fragEquations, fragment);
     
     const Matrix3x3* lhs = fragEquations.getLHS();
     std::vector<REAL> lhsExpected({ 1.3478290598290596E12, 0, 0, 0, 1.3478290598290596E12, 0, 0, 0, 1.3478290598290596E12 });
@@ -52,10 +52,10 @@ TEST_F(MatrixPrecomputerTests, UniformSteel) {
     EXPECT_TRUE(*rhs == Matrix3x3(rhsExpected2));
 }
 
-TEST_F(MatrixPrecomputerTests, MixSteelNull) {
+TEST_F(MCEFactoryTests, MixSteelNull) {
     ettention::Vec3ui coord(2, 2, 2);
     ettention::Vec3<REAL> voxelSize(1, 1, 1);
-    MatrixPrecomputer precomp(voxelSize);
+    MaterialConfigurationEquationsFactory mceFactory(voxelSize);
 
     std::vector<Material*> mats(8, &Templates::Mat.EMPTY);
     mats[4] = mats[5] = mats[6] = mats[7] = &Templates::Mat.STEEL;
@@ -64,7 +64,7 @@ TEST_F(MatrixPrecomputerTests, MixSteelNull) {
 
     // Will use linear equations since this fragment is not uniform
     MaterialConfigurationEquations fragEquations;
-    precomp.initializeEquationsForFragment(&fragEquations, fragment);
+    mceFactory.initializeEquationsForFragment(&fragEquations, fragment);
 
     const Matrix3x3* lhs = fragEquations.getLHS();
     std::vector<REAL> lhsExpected({ 1.9743589743589746E11, 0, 0, 0, 1.9743589743589746E11, 0, 0, 0, 1.9743589743589746E11 });
@@ -81,16 +81,16 @@ TEST_F(MatrixPrecomputerTests, MixSteelNull) {
     EXPECT_TRUE(*rhs == Matrix3x3(rhsExpected2));
 }
 
-TEST_F(MatrixPrecomputerTests, SteelNonUniformVoxels) {
+TEST_F(MCEFactoryTests, SteelNonUniformVoxels) {
     ettention::Vec3ui coord(2, 2, 2);
     ettention::Vec3<REAL> voxelSize(1, 0.25, 0.5);
-    MatrixPrecomputer precomp(voxelSize);
+    MaterialConfigurationEquationsFactory mceFactory(voxelSize);
 
     std::vector<Material*> mats(8, &Templates::Mat.STEEL);
 
     ProblemFragment fragment(coord, mats);
     MaterialConfigurationEquations fragEquations;
-    precomp.initializeEquationsForFragment(&fragEquations, fragment);
+    mceFactory.initializeEquationsForFragment(&fragEquations, fragment);
 
     const Matrix3x3* lhs = fragEquations.getLHS();
     std::vector<REAL> lhsExpected({ 7.198632478632479E11, 0, 0, 0, 1.868581196581196E12, 0, 0, 0, 9.496068376068375E11 });
@@ -107,17 +107,17 @@ TEST_F(MatrixPrecomputerTests, SteelNonUniformVoxels) {
     EXPECT_TRUE(*rhs == Matrix3x3(rhsExpected2));
 }
 
-TEST_F(MatrixPrecomputerTests, SteelNullNonUniformVoxels) {
+TEST_F(MCEFactoryTests, SteelNullNonUniformVoxels) {
     ettention::Vec3ui coord(2, 2, 2);
     ettention::Vec3<REAL> voxelSize(1, 0.25, 0.5);
-    MatrixPrecomputer precomp(voxelSize);
+    MaterialConfigurationEquationsFactory mceFactory(voxelSize);
 
     std::vector<Material*> mats(8, &Templates::Mat.EMPTY);
     mats[4] = mats[5] = mats[6] = mats[7] = &Templates::Mat.STEEL;
 
     ProblemFragment fragment(coord, mats);
     MaterialConfigurationEquations fragEquations;
-    precomp.initializeEquationsForFragment(&fragEquations, fragment);
+    mceFactory.initializeEquationsForFragment(&fragEquations, fragment);
 
     const Matrix3x3* lhs = fragEquations.getLHS();
     std::vector<REAL> lhsExpected({ 1.0544871794871796E11, 0, 0, 0, 2.737179487179487E11, 0, 0, 0, 1.391025641025641E11 });

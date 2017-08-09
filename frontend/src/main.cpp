@@ -3,7 +3,6 @@
 #include <iostream>
 #include <algorithm>
 #include "gpu/CudaDebugHelper.h"
-#include "solution/MatrixPrecomputer.h"
 #include "problem/DiscreteProblem.h"
 #include "solution/Solution.h"
 #include "libmmv/math/Vec3.h"

@@ -72,7 +72,7 @@ void Solution::gatherUniqueMaterialConfigurations() {
 }
 
 void Solution::computeEquationsForUniqueMaterialConfigurations() {
-    MatrixPrecomputer precomputer(voxelSize);
+    MaterialConfigurationEquationsFactory mceFactory(voxelSize);
 
     for (int i = 0; i < matConfigEquationIds.size(); i++) {
         int equationId = matConfigEquationIds[i];
@@ -83,7 +83,7 @@ void Solution::computeEquationsForUniqueMaterialConfigurations() {
             ettention::Vec3ui centerCoord = mapToCoordinate(i);
             ProblemFragment fragment = problem->extractLocalProblem(centerCoord);
             MaterialConfiguration materialConfig = fragment.getMaterialConfiguration();
-            precomputer.initializeEquationsForFragment(equations, fragment);
+            mceFactory.initializeEquationsForFragment(equations, fragment);
         }
     }
 }

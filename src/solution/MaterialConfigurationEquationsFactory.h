@@ -5,11 +5,11 @@
 #include "solution/MaterialConfigurationEquations.h"
 #include "problem/ProblemFragment.h"
 
-class MatrixPrecomputer {
+class MaterialConfigurationEquationsFactory {
 public:
 
-    MatrixPrecomputer(ettention::Vec3<REAL> voxelSize);
-    ~MatrixPrecomputer();
+    MaterialConfigurationEquationsFactory(ettention::Vec3<REAL> voxelSize);
+    ~MaterialConfigurationEquationsFactory();
 
     void initializeEquationsForFragment(MaterialConfigurationEquations* equations, const ProblemFragment& fragment) const;
 
