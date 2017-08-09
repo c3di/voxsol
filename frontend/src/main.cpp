@@ -7,7 +7,7 @@
 #include "problem/DiscreteProblem.h"
 #include "solution/Solution.h"
 #include "libmmv/math/Vec3.h"
-#include "gpu/kernels/CK_SolveDisplacement.h"
+#include "gpu/kernels/SolveDisplacementKernel.h"
 #include "material/MaterialFactory.h"
 
 int main(int argc, char* argv[]) {
@@ -43,8 +43,8 @@ int main(int argc, char* argv[]) {
     Solution solution(problem);
     solution.computeMaterialConfigurationEquations();
 
-    CK_SolveDisplacement kernel(&solution);
-    kernel.launchKernel();
+    SolveDisplacementKernel kernel(&solution);
+    kernel.launch();
 
 
 }

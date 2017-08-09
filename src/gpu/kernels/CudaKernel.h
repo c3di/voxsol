@@ -6,7 +6,7 @@ public:
     CudaKernel() {};
     ~CudaKernel() {};
 
-    virtual void launchKernel() = 0;
+    virtual void launch() = 0;
 
 protected:
 

@@ -8,16 +8,16 @@
 #include "libmmv/math/Vec3.h"
 #include "solution/Solution.h"
 
-extern "C" void CK_SolveDisplacement_launch(REAL* d_displacements, unsigned short* d_matConfigEquationIds, REAL* d_matConfigEquations, unsigned int numVertices);
+extern "C" void cudaLaunchSolveDisplacementKernel(REAL* d_displacements, unsigned short* d_matConfigEquationIds, REAL* d_matConfigEquations, unsigned int numVertices);
 
-class CK_SolveDisplacement : public CudaKernel {
+class SolveDisplacementKernel : public CudaKernel {
 
 public:
 
-    CK_SolveDisplacement(Solution* sol);
-    ~CK_SolveDisplacement();
+    SolveDisplacementKernel(Solution* sol);
+    ~SolveDisplacementKernel();
 
-    void launchKernel() override;
+    void launch() override;
 
 protected:
 

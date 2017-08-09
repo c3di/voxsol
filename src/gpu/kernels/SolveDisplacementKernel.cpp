@@ -1,8 +1,8 @@
 #pragma once
 #include "stdafx.h"
-#include "CK_SolveDisplacement.h"
+#include "SolveDisplacementKernel.h"
 
-CK_SolveDisplacement::CK_SolveDisplacement(Solution* sol) :
+SolveDisplacementKernel::SolveDisplacementKernel(Solution* sol) :
     solution(sol),
     d_displacements(nullptr),
     d_matConfigEquationIds(nullptr),
@@ -11,7 +11,7 @@ CK_SolveDisplacement::CK_SolveDisplacement(Solution* sol) :
 
 };
 
-CK_SolveDisplacement::~CK_SolveDisplacement() {
+SolveDisplacementKernel::~SolveDisplacementKernel() {
     freeCudaResources();
     assert(d_matConfigEquationIds == nullptr);
     assert(d_displacements == nullptr);
@@ -19,18 +19,18 @@ CK_SolveDisplacement::~CK_SolveDisplacement() {
 };
 
 
-void CK_SolveDisplacement::launchKernel() {
+void SolveDisplacementKernel::launch() {
     prepareInputs();
 
     if (canExecute()) {
         unsigned int numVertices = static_cast<unsigned int>(solution->getDisplacements()->size());
-        CK_SolveDisplacement_launch(d_displacements, d_matConfigEquationIds, d_matConfigEquations, numVertices);
+        cudaLaunchSolveDisplacementKernel(d_displacements, d_matConfigEquationIds, d_matConfigEquations, numVertices);
 
         pull_displacements();
     }
 };
 
-bool CK_SolveDisplacement::canExecute() {
+bool SolveDisplacementKernel::canExecute() {
     if (d_matConfigEquationIds == nullptr || d_displacements == nullptr || d_matConfigEquations == nullptr) {
         throw std::runtime_error("Could not execute kernel SolveDisplacement because one or more inputs are missing.");
     }
@@ -38,7 +38,7 @@ bool CK_SolveDisplacement::canExecute() {
     return true;
 };
 
-void CK_SolveDisplacement::freeCudaResources() {
+void SolveDisplacementKernel::freeCudaResources() {
     cudaCheckSuccess(cudaFree(d_matConfigEquationIds));
     d_matConfigEquationIds = nullptr;
     cudaCheckSuccess(cudaFree(d_displacements));
@@ -47,27 +47,27 @@ void CK_SolveDisplacement::freeCudaResources() {
     d_matConfigEquations = nullptr;
 }
 
-void CK_SolveDisplacement::prepareInputs() {
+void SolveDisplacementKernel::prepareInputs() {
     push_matConfigEquationIds();
     push_displacements();
     push_matConfigEquations();
 }
 
-void CK_SolveDisplacement::push_matConfigEquationIds() {
+void SolveDisplacementKernel::push_matConfigEquationIds() {
     const std::vector<unsigned short>* signatureIds = solution->getMaterialConfigurationEquationIds();
     size_t size = signatureIds->size() * sizeof(unsigned short);
     cudaCheckSuccess(cudaMalloc(&d_matConfigEquationIds, size));
     cudaCheckSuccess(cudaMemcpy(d_matConfigEquationIds, signatureIds->data(), size, cudaMemcpyHostToDevice));
 };
 
-void CK_SolveDisplacement::push_displacements() {
+void SolveDisplacementKernel::push_displacements() {
     const std::vector<REAL>* displacements = solution->getDisplacements();
     size_t size = displacements->size() * sizeof(REAL);
     cudaCheckSuccess(cudaMalloc(&d_displacements, size));
     cudaCheckSuccess(cudaMemcpy(d_displacements, displacements->data(), size, cudaMemcpyHostToDevice));
 };
 
-void CK_SolveDisplacement::push_matConfigEquations() {
+void SolveDisplacementKernel::push_matConfigEquations() {
     size_t size = solution->getMaterialConfigurationEquations()->size() * MaterialConfigurationEquations::SizeInBytes;
     void* h_matConfigEquations = malloc(size);
     serializeMaterialConfigurationEquations(h_matConfigEquations);
@@ -78,13 +78,13 @@ void CK_SolveDisplacement::push_matConfigEquations() {
     delete[] h_matConfigEquations;
 };
 
-void CK_SolveDisplacement::pull_displacements() {
+void SolveDisplacementKernel::pull_displacements() {
     std::vector<REAL>* displacements = solution->getDisplacements();
     size_t size = displacements->size() * sizeof(REAL);
     cudaCheckSuccess(cudaMemcpy(displacements->data(), d_displacements, size, cudaMemcpyDeviceToHost));
 };
 
-void CK_SolveDisplacement::serializeMaterialConfigurationEquations(void* destination) {
+void SolveDisplacementKernel::serializeMaterialConfigurationEquations(void* destination) {
     const std::vector<MaterialConfigurationEquations>* signatures = solution->getMaterialConfigurationEquations();
     size_t size = MaterialConfigurationEquations::SizeInBytes * signatures->size();
 
