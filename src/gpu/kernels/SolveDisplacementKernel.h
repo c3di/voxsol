@@ -27,17 +27,17 @@ protected:
 private:
     Solution* solution;
 
-    unsigned short* d_matConfigEquationIds;
-    REAL* d_displacements;
-    REAL* d_matConfigEquations;
+    unsigned short* matConfigEquationIdsOnGPU;
+    REAL* displacementsOnGPU;
+    REAL* matConfigEquationsOnGPU;
 
     void prepareInputs();
 
-    void push_matConfigEquationIds();
-    void push_displacements();
-    void push_matConfigEquations();
+    void pushMatConfigEquationIds();
+    void pushDisplacements();
+    void pushMatConfigEquations();
 
-    void pull_displacements();
+    void pullDisplacements();
 
     void serializeMaterialConfigurationEquations(void* destination);
 
