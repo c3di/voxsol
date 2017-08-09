@@ -16,7 +16,7 @@ Solution::~Solution() {
 
 }
 
-const std::vector<unsigned short>* Solution::getMaterialConfigurationEquationIds() const {
+const std::vector<ConfigId>* Solution::getMaterialConfigurationEquationIds() const {
     return &matConfigEquationIds;
 }
 
@@ -50,8 +50,8 @@ void Solution::computeMaterialConfigurationEquations() {
 }
 
 void Solution::gatherUniqueMaterialConfigurations() {
-    unsigned short equationIdCounter = 0;
-    std::unordered_map < MaterialConfiguration, unsigned short> matConfigToEquationId;
+    ConfigId equationIdCounter = 0;
+    std::unordered_map < MaterialConfiguration, ConfigId> matConfigToEquationId;
 
     for (unsigned int z = 0; z < size.z; z++) {
         for (unsigned int y = 0; y < size.y; y++) {

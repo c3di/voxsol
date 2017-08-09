@@ -6,7 +6,7 @@
 
 
 __global__
-void cuda_SolveDisplacement(REAL* d_displacements, unsigned short* d_matConfigEquationIds, REAL* d_matConfigEquations) {
+void cuda_SolveDisplacement(REAL* d_displacements, ConfigId* d_matConfigEquationIds, REAL* d_matConfigEquations) {
     int idx = threadIdx.x*3;
     int equationId = d_matConfigEquationIds[threadIdx.x];
     int equationIndex = equationId * 27 * 9;
@@ -18,7 +18,7 @@ void cuda_SolveDisplacement(REAL* d_displacements, unsigned short* d_matConfigEq
 
 // Is it better to pass raw REAL pointers or create structs for objs like the FragmentSignatures and the displacements (vec3) ?
 // Too many arguments? Maybe better to create a KernelParameters struct to store all this stuff in?
-extern "C" void cudaLaunchSolveDisplacementKernel(REAL* d_displacements, unsigned short* d_matConfigEquationIds, REAL* d_matConfigEquations, unsigned int numVertices) {
+extern "C" void cudaLaunchSolveDisplacementKernel(REAL* d_displacements, ConfigId* d_matConfigEquationIds, REAL* d_matConfigEquations, unsigned int numVertices) {
 
     // setup execution parameters
     dim3 grid(1, 1, 1);

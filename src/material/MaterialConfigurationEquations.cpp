@@ -3,7 +3,7 @@
 
 const size_t MaterialConfigurationEquations::SizeInBytes = sizeof(REAL) * 9 * 27;
 
-MaterialConfigurationEquations::MaterialConfigurationEquations(unsigned short id) : 
+MaterialConfigurationEquations::MaterialConfigurationEquations(ConfigId id) :
     id(id)
 {
     matrices = std::vector<Matrix3x3>(27, Matrix3x3::identity);
@@ -19,7 +19,7 @@ MaterialConfigurationEquations::~MaterialConfigurationEquations() {
 
 }
 
-unsigned short MaterialConfigurationEquations::getId() {
+ConfigId MaterialConfigurationEquations::getId() {
     return id;
 }
 
@@ -47,7 +47,7 @@ void MaterialConfigurationEquations::serialize(void* destination) const {
     }
 }
 
-void MaterialConfigurationEquations::setId(unsigned short id) {
+void MaterialConfigurationEquations::setId(ConfigId id) {
     this->id = id;
 }
 

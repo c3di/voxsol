@@ -54,8 +54,8 @@ void SolveDisplacementKernel::prepareInputs() {
 }
 
 void SolveDisplacementKernel::pushMatConfigEquationIds() {
-    const std::vector<unsigned short>* signatureIds = solution->getMaterialConfigurationEquationIds();
-    size_t size = signatureIds->size() * sizeof(unsigned short);
+    const std::vector<ConfigId>* signatureIds = solution->getMaterialConfigurationEquationIds();
+    size_t size = signatureIds->size() * sizeof(ConfigId);
     cudaCheckSuccess(cudaMalloc(&matConfigEquationIdsOnGPU, size));
     cudaCheckSuccess(cudaMemcpy(matConfigEquationIdsOnGPU, signatureIds->data(), size, cudaMemcpyHostToDevice));
 };

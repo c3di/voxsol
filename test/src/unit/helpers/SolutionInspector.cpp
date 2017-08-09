@@ -7,7 +7,7 @@ SolutionInspector::SolutionInspector(DiscreteProblem& problem) :
 
 }
 
-unsigned short SolutionInspector::getEquationIdForFragment(ProblemFragment& fragment) {
+ConfigId SolutionInspector::getEquationIdForFragment(ProblemFragment& fragment) {
     unsigned int index = mapToIndex(fragment.getCenterVertex());
     return matConfigEquationIds[index];
 }

@@ -2,7 +2,7 @@
 #include <vector>
 #include "libmmv/math/Vec3.h"
 #include "material/Material.h"
-#include "MaterialConfiguration.h"
+#include "material/MaterialConfiguration.h"
 
 class ProblemFragment {
 public:

@@ -5,7 +5,7 @@ class SolutionInspector : public Solution {
 public:
     SolutionInspector(DiscreteProblem& problem);
 
-    unsigned short getEquationIdForFragment(ProblemFragment& fragment);
+    ConfigId getEquationIdForFragment(ProblemFragment& fragment);
 
     bool solutionDimensionsMatchProblem(std::string& errMessage);
     bool matConfigEquationIdsMatchPositionInVector(std::string& errMessage);

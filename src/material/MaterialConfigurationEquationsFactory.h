@@ -2,7 +2,7 @@
 #include <libmmv/math/Vec3.h>
 #include "equations/LinearBaseIntegrals.h"
 #include "equations/QuadraticBaseIntegrals.h"
-#include "solution/MaterialConfigurationEquations.h"
+#include "material/MaterialConfigurationEquations.h"
 #include "problem/ProblemFragment.h"
 
 class MaterialConfigurationEquationsFactory {

@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "gtest/gtest.h"
 #include "libmmv/math/Vec3.h"
-#include "solution/MaterialConfigurationEquationsFactory.h"
+#include "material/MaterialConfigurationEquationsFactory.h"
 #include "helpers/Templates.h"
 
 class MCEFactoryTests : public ::testing::Test {

@@ -13,4 +13,7 @@ typedef double REAL;
 #else
 #pragma message("Compiling with SINGLE precision")
 typedef float REAL;
+
 #endif
+
+typedef unsigned short ConfigId;

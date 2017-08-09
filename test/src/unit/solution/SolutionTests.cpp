@@ -41,7 +41,7 @@ TEST_F(SolutionTests, PrecomputeMatrices) {
     DiscreteProblem problem = Templates::Problem::STEEL_2_2_2();
     SolutionInspector sol(problem);
 
-    const std::vector<unsigned short>* equationIds = sol.getMaterialConfigurationEquationIds();
+    const std::vector<ConfigId>* equationIds = sol.getMaterialConfigurationEquationIds();
     ASSERT_EQ(equationIds->size(), 27);
 
     sol.computeMaterialConfigurationEquations();
@@ -50,14 +50,14 @@ TEST_F(SolutionTests, PrecomputeMatrices) {
 
     // Since every vertex in this problem has a unique material configuration its signature ID should be the same as its index
     equationIds = sol.getMaterialConfigurationEquationIds();
-    for (unsigned short i = 0; i < 27; i++) {
+    for (ConfigId i = 0; i < 27; i++) {
         if (equationIds->at(i) != i) {
             FAIL() << "Vertex " << i << " equation id (" << equationIds->at(i) << ") did not match expected value " << i;
         }
     }
 
     ProblemFragment frag = problem.extractLocalProblem(ettention::Vec3ui(1, 1, 1));
-    unsigned short fragId = sol.getEquationIdForFragment(frag);
+    ConfigId fragId = sol.getEquationIdForFragment(frag);
     EXPECT_EQ(fragId, 13) << "Expected problem fragment for center vertex to have material configuration equation id 13";
 }
 
