@@ -78,8 +78,7 @@ void Solution::computeEquationsForUniqueMaterialConfigurations() {
         int equationId = matConfigEquationIds[i];
         MaterialConfigurationEquations* equations = &matConfigEquations[equationId];
 
-        if (equations->getId() == USHRT_MAX) {
-            // This matrix store hasn't been initialized yet so lets pre-compute the matrices
+        if (!equations->isInitialized()) {
             equations->setId(equationId);
             ettention::Vec3ui centerCoord = mapToCoordinate(i);
             ProblemFragment fragment = problem->extractLocalProblem(centerCoord);

@@ -35,6 +35,10 @@ const Matrix3x3* MaterialConfigurationEquations::getRHS(unsigned int nodeIndex) 
     return &matrices[nodeIndex];
 }
 
+bool MaterialConfigurationEquations::isInitialized() {
+    return id != USHRT_MAX;
+}
+
 void MaterialConfigurationEquations::serialize(void* destination) const {
     Matrix3x3* dest = (Matrix3x3*)destination;
 

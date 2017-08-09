@@ -18,6 +18,7 @@ public:
     unsigned short getId();
     Matrix3x3* getMatrices();
 
+    bool isInitialized();
     void serialize(void* destination) const;
 
     const Matrix3x3* getLHS() const;
