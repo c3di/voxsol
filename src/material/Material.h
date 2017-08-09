@@ -6,8 +6,8 @@ class Material {
 public:
     
     Material();
-    Material(REAL eModul, REAL poissonRatio);
     Material(REAL eModul, REAL poissonRatio, unsigned char id);
+    Material(Material& other);
     ~Material();
 
     const unsigned char m_id;

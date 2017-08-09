@@ -29,7 +29,7 @@ TEST_F(MatrixPrecomputerTests, UniformSteel) {
     ettention::Vec3<REAL> voxelSize(1, 1, 1);
     MatrixPrecomputer precomp(voxelSize);
 
-    std::vector<Material*> mats(8, &Templates::Mat::STEEL);
+    std::vector<Material*> mats(8, &Templates::Mat.STEEL);
     ProblemFragment fragment(coord, mats);
 
     // Will use quadratic equations since this fragment is made of a uniform material
@@ -57,8 +57,8 @@ TEST_F(MatrixPrecomputerTests, MixSteelNull) {
     ettention::Vec3<REAL> voxelSize(1, 1, 1);
     MatrixPrecomputer precomp(voxelSize);
 
-    std::vector<Material*> mats(8, &Templates::Mat::EMPTY);
-    mats[4] = mats[5] = mats[6] = mats[7] = &Templates::Mat::STEEL;
+    std::vector<Material*> mats(8, &Templates::Mat.EMPTY);
+    mats[4] = mats[5] = mats[6] = mats[7] = &Templates::Mat.STEEL;
  
     ProblemFragment fragment(coord, mats);
 
@@ -86,7 +86,7 @@ TEST_F(MatrixPrecomputerTests, SteelNonUniformVoxels) {
     ettention::Vec3<REAL> voxelSize(1, 0.25, 0.5);
     MatrixPrecomputer precomp(voxelSize);
 
-    std::vector<Material*> mats(8, &Templates::Mat::STEEL);
+    std::vector<Material*> mats(8, &Templates::Mat.STEEL);
 
     ProblemFragment fragment(coord, mats);
     FragmentSignature fsig;
@@ -112,8 +112,8 @@ TEST_F(MatrixPrecomputerTests, SteelNullNonUniformVoxels) {
     ettention::Vec3<REAL> voxelSize(1, 0.25, 0.5);
     MatrixPrecomputer precomp(voxelSize);
 
-    std::vector<Material*> mats(8, &Templates::Mat::EMPTY);
-    mats[4] = mats[5] = mats[6] = mats[7] = &Templates::Mat::STEEL;
+    std::vector<Material*> mats(8, &Templates::Mat.EMPTY);
+    mats[4] = mats[5] = mats[6] = mats[7] = &Templates::Mat.STEEL;
 
     ProblemFragment fragment(coord, mats);
     FragmentSignature fsig;

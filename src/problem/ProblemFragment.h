@@ -1,7 +1,7 @@
 #pragma once
 #include <vector>
 #include "libmmv/math/Vec3.h"
-#include "problem/Material.h"
+#include "material/Material.h"
 #include "ProblemFragmentKey.h"
 
 class ProblemFragment {

@@ -1,8 +1,7 @@
 #include "stdafx.h"
-#include "problem/Material.h"
+#include "material/Material.h"
 
 Material Material::EMPTY = Material(0, 0, 0);
-unsigned char Material::NEXT_ID = 1;
 
 Material::Material() :
     m_id(255),
@@ -12,20 +11,20 @@ Material::Material() :
 
 }
 
-Material::Material(REAL eModul, REAL poissonRatio) :
-    m_lambda(calculateLambda(eModul, poissonRatio)),
-    m_mu(calculateMu(eModul, poissonRatio)),
-    m_id(NEXT_ID)
-{
-    NEXT_ID++;
-}
-
 Material::Material(REAL eModul, REAL poissonRatio, unsigned char id) :
     m_lambda(calculateLambda(eModul, poissonRatio)),
     m_mu(calculateMu(eModul, poissonRatio)),
     m_id(id)
 {
     
+}
+
+Material::Material(Material& other) : 
+    m_lambda(other.m_lambda),
+    m_mu(other.m_mu),
+    m_id(other.m_id)
+{
+
 }
 
 Material::~Material() {

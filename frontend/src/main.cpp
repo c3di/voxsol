@@ -8,6 +8,7 @@
 #include "solution/Solution.h"
 #include "libmmv/math/Vec3.h"
 #include "gpu/kernels/CK_SolveDisplacement.h"
+#include "material/MaterialFactory.h"
 
 int main(int argc, char* argv[]) {
 
@@ -27,11 +28,16 @@ int main(int argc, char* argv[]) {
     ettention::Vec3ui size(3, 3, 3);
     ettention::Vec3d voxelSize(1, 1, 1);
 
-    DiscreteProblem problem(size, voxelSize);
-    Material steel(210e9, 0.3);
+    MaterialFactory mFactory;
+    MaterialDictionary mDictionary;
+
+    Material steel = mFactory.createMaterialWithProperties(210e9, 0.3);
+    mDictionary.addMaterial(steel);
+
+    DiscreteProblem problem(size, voxelSize, &mDictionary);
 
     for (int i = 0; i < 27; i++) {
-        problem.setMaterial(i, steel);
+        problem.setMaterial(i, steel.m_id);
     }
 
     Solution solution(problem);

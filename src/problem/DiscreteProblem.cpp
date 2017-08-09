@@ -2,26 +2,27 @@
 #include "DiscreteProblem.h"
 #include "problem/ProblemFragment.h"
 
-DiscreteProblem::DiscreteProblem(ettention::Vec3ui size, ettention::Vec3d voxelSize) :
+DiscreteProblem::DiscreteProblem(ettention::Vec3ui size, ettention::Vec3d voxelSize, MaterialDictionary* matDict) :
     m_size(size),
     m_voxelSize(voxelSize),
     m_numberOfCells(size.x*size.y*size.z),
-    m_materials(m_numberOfCells, &Material::EMPTY)
+    m_materialIds(m_numberOfCells, Material::EMPTY.m_id),
+    materialDictionary(matDict)
 {
-
+    
 }
 
 DiscreteProblem::~DiscreteProblem() {
 
 }
 
-void DiscreteProblem::setMaterial(ettention::Vec3ui& coordinate, Material& mat) {
+void DiscreteProblem::setMaterial(ettention::Vec3ui& coordinate, unsigned char matId) {
     unsigned int index = mapToIndex(coordinate);
-    setMaterial(index, mat);
+    setMaterial(index, matId);
 }
 
-void DiscreteProblem::setMaterial(unsigned int index, Material& mat) {
-    m_materials[index] = &mat;
+void DiscreteProblem::setMaterial(unsigned int index, unsigned char matId) {
+    m_materialIds[index] = matId;
 }
 
 unsigned int DiscreteProblem::mapToIndex(ettention::Vec3ui& coordinate) const {
@@ -45,7 +46,9 @@ Material* DiscreteProblem::getMaterial(ettention::Vec3ui& coordinate) const {
 }
 
 Material* DiscreteProblem::getMaterial(unsigned int index) const {
-    return m_materials.at(index);
+    unsigned char matId = m_materialIds.at(index);
+    assert(materialDictionary->contains(matId));
+    return materialDictionary->getMaterialById(matId);
 }
 
 ettention::Vec3d DiscreteProblem::getVoxelSize() const {
@@ -56,8 +59,8 @@ ettention::Vec3ui DiscreteProblem::getSize() const {
     return ettention::Vec3ui(m_size);
 }
 
-std::vector<Material*>* DiscreteProblem::getMaterialVector() {
-    return &m_materials;
+std::vector<unsigned char>* DiscreteProblem::getMaterialIdVector() {
+    return &m_materialIds;
 }
 
 bool DiscreteProblem::outOfBounds(ettention::Vec3ui& coordinate) const {
