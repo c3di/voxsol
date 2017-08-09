@@ -1,8 +1,9 @@
 #pragma once
+#include <cassert>
+
 #ifndef NOMINMAX
 #define NOMINMAX
 #endif
-
 
 
 #ifdef USE_DOUBLE_PRECISION
