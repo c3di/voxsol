@@ -10,7 +10,7 @@ MaterialConfigurationEquations::MaterialConfigurationEquations(ConfigId id) :
 }
 
 MaterialConfigurationEquations::MaterialConfigurationEquations() :
-    id(USHRT_MAX)
+    id(std::numeric_limits<ConfigId>::max())
 {
     matrices = std::vector<Matrix3x3>(27, Matrix3x3::identity);
 }
@@ -36,7 +36,7 @@ const Matrix3x3* MaterialConfigurationEquations::getRHS(unsigned int nodeIndex) 
 }
 
 bool MaterialConfigurationEquations::isInitialized() {
-    return id != USHRT_MAX;
+    return id != std::numeric_limits<ConfigId>::max();
 }
 
 void MaterialConfigurationEquations::serialize(void* destination) const {
