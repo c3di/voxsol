@@ -1,6 +1,8 @@
 #pragma once
 #include "solution/Solution.h"
 
+class ProblemFragment;
+
 class SolutionInspector : public Solution {
 public:
     SolutionInspector(DiscreteProblem& problem);

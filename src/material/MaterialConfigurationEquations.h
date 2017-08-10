@@ -1,7 +1,6 @@
 #pragma once
-#include <stdafx.h>
-#include <vector>
 #include "math/Matrix3x3.h"
+#include <vector>
 
 class MaterialConfigurationEquations {
 

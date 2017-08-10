@@ -1,6 +1,6 @@
 #pragma once
-#include <unordered_map>
 #include "material/Material.h"
+#include <unordered_map>
 
 class MaterialDictionary {
 public:

@@ -8,6 +8,7 @@
 #include "libmmv/math/Vec3.h"
 #include "gpu/kernels/SolveDisplacementKernel.h"
 #include "material/MaterialFactory.h"
+#include "material/MaterialDictionary.h"
 
 int main(int argc, char* argv[]) {
 

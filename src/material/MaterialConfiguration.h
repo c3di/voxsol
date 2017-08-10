@@ -1,7 +1,7 @@
 #pragma once
+#include "material/Material.h"
 #include <functional>
 #include <vector>
-#include "material/Material.h"
 
 #pragma pack(push, 1)
 struct MaterialConfiguration { 

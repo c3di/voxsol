@@ -1,6 +1,6 @@
 #include <stdafx.h>
 #include "DiscreteProblem.h"
-#include "problem/ProblemFragment.h"
+#include "material/MaterialDictionary.h"
 
 DiscreteProblem::DiscreteProblem(ettention::Vec3ui size, ettention::Vec3d voxelSize, MaterialDictionary* matDict) :
     size(size),

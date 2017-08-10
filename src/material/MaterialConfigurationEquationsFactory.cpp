@@ -1,5 +1,7 @@
 #include <stdafx.h>
 #include "MaterialConfigurationEquationsFactory.h"
+#include "material/MaterialConfigurationEquations.h"
+#include "problem/ProblemFragment.h"
 #include "math/Matrix3x3.h"
 
 

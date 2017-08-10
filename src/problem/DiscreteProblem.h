@@ -1,8 +1,9 @@
 #pragma once
-#include <vector>
 #include "libmmv/math/Vec3.h"
 #include "problem/ProblemFragment.h"
-#include "material/MaterialDictionary.h"
+#include <vector>
+
+class MaterialDictionary;
 
 class DiscreteProblem {
 

@@ -2,8 +2,9 @@
 #include <libmmv/math/Vec3.h>
 #include "equations/LinearBaseIntegrals.h"
 #include "equations/QuadraticBaseIntegrals.h"
-#include "material/MaterialConfigurationEquations.h"
-#include "problem/ProblemFragment.h"
+
+class MaterialConfigurationEquations;
+class ProblemFragment;
 
 class MaterialConfigurationEquationsFactory {
 public:

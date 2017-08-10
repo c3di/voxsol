@@ -1,6 +1,8 @@
 #include <stdafx.h>
 #include "Solution.h"
 #include "problem/ProblemFragment.h"
+#include "problem/DiscreteProblem.h"
+#include "material/MaterialConfigurationEquationsFactory.h"
 
 Solution::Solution(DiscreteProblem& problem) :
     size(problem.getSize() + ettention::Vec3ui(1,1,1)),

@@ -1,4 +1,6 @@
 #include "helpers/SolutionInspector.h"
+#include "problem/ProblemFragment.h"
+#include "problem/DiscreteProblem.h"
 #include <sstream>
 
 SolutionInspector::SolutionInspector(DiscreteProblem& problem) :

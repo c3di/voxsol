@@ -1,5 +1,6 @@
 #include <stdafx.h>
 #include "ProblemFragment.h"
+#include "material/Material.h"
 
 ProblemFragment::ProblemFragment(ettention::Vec3ui& centerVertexCoord, std::vector<Material*>& mats) :
     centerVertexCoord(centerVertexCoord),

@@ -1,8 +1,9 @@
 #pragma once
-#include <vector>
 #include "libmmv/math/Vec3.h"
-#include "material/Material.h"
 #include "material/MaterialConfiguration.h"
+#include <vector>
+
+class Material;
 
 class ProblemFragment {
 public:
