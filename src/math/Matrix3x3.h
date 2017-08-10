@@ -4,9 +4,10 @@
 #include <vector>
 
 #include "libmmv/math/Vec3.h"
+#include "libmmv/math/Matrix3x3.h"
 
 
-class Matrix3x3
+class Matrix3x3 : public ettention::Matrix3x3<REAL>
 {
 public:
     Matrix3x3();
@@ -15,39 +16,7 @@ public:
     Matrix3x3(const std::vector<REAL>& values);
     Matrix3x3(const Matrix3x3& other);
 
-    const static size_t SizeInBytes;
-
-    Matrix3x3& operator=(const Matrix3x3& other);
-
-    Matrix3x3 inverse();
-    REAL determinant();
-
-    const REAL& at(unsigned int column, unsigned int row) const;
-    REAL& at(unsigned int column, unsigned int row);
-
-    void serialize(void* destination) const;
-
-    bool operator==(const Matrix3x3& other) const;
-
     static const Matrix3x3 identity;
-    static Matrix3x3 translationMatrix(ettention::Vec2<REAL>& translate);
-    static Matrix3x3 scaleMatrix(REAL v);
-    static Matrix3x3 rotationMatrix(REAL phi);
-
-private:
-    int indexOfMinor(int i, int droppedIndex);
-    REAL determinantOfMinor(int x, int y);
-
-    REAL values[9];
+    const static size_t SizeInBytes;
+    void serialize(void* destination) const;
 };
-
-
-bool operator!=(const Matrix3x3& one, const Matrix3x3& other);
-
-ettention::Vec2<REAL> multiply(const Matrix3x3& matrix, const ettention::Vec2<REAL>& vector);
-ettention::Vec3<REAL> multiply(const Matrix3x3& matrix, const ettention::Vec3<REAL>& vector);
-Matrix3x3 multiply(const Matrix3x3& a, const Matrix3x3& b);
-
-std::istream &operator >> (std::istream& is, Matrix3x3& value);
-std::ostream &operator<<(std::ostream& os, Matrix3x3 value);
-
