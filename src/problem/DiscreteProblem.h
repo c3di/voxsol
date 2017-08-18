@@ -1,7 +1,12 @@
 #pragma once
 #include "libmmv/math/Vec3.h"
 #include "problem/ProblemFragment.h"
+#include "problem/DirichletBoundary.h"
 #include <vector>
+#include <unordered_map>
+
+typedef ettention::Vec3ui VoxelCoordinate;
+typedef ettention::Vec3ui VertexCoordinate;
 
 class MaterialDictionary;
 
@@ -11,25 +16,35 @@ public:
     DiscreteProblem(ettention::Vec3ui size, ettention::Vec3d voxelSize, MaterialDictionary* matDictionary);
     ~DiscreteProblem();
 
-    void setMaterial(ettention::Vec3ui& coordinate, unsigned char matId);
+    void setMaterial(VoxelCoordinate& coordinate, unsigned char matId);
     void setMaterial(unsigned int index, unsigned char matId);
+    void setDirichletBoundary(VertexCoordinate& coordinate, DirichletBoundary& condition);
+    void setDirichletBoundary(unsigned int index, DirichletBoundary& condition);
 
-    Material* getMaterial(ettention::Vec3ui& coordinate) const;
+    Material* getMaterial(VoxelCoordinate& coordinate) const;
     Material* getMaterial(unsigned int index) const;
     ettention::Vec3d getVoxelSize() const;
     ettention::Vec3ui getSize() const;
     std::vector<unsigned char>* getMaterialIdVector();
+    DirichletBoundary getDirichletBoundaryAtVertex(VertexCoordinate& coordinate);
+    DirichletBoundary getDirichletBoundaryAtVertex(unsigned int index);
 
-    unsigned int mapToIndex(ettention::Vec3ui& coordinate) const;
-    ettention::Vec3ui mapToCoordinate(unsigned int index) const;
+    unsigned int mapToVoxelIndex(VoxelCoordinate& coordinate) const;
+    VoxelCoordinate mapToVoxelCoordinate(unsigned int index) const;
+    unsigned int mapToVertexIndex(VertexCoordinate& coordinate) const;
+    VertexCoordinate mapToVertexCoordinate(unsigned int index) const;
     ProblemFragment extractLocalProblem(ettention::Vec3ui centerCoord) const;
 
-private:
-    const ettention::Vec3ui size;
+protected:
+    const ettention::Vec3ui problemSize;
+    const ettention::Vec3ui solutionSize;
     const ettention::Vec3d voxelSize;
     const unsigned int numberOfCells;
+    std::unordered_map<unsigned int, DirichletBoundary> dirichletBoundaryConditions;
     std::vector<unsigned char> materialIds;
     MaterialDictionary* materialDictionary;
 
-    bool outOfBounds(ettention::Vec3ui& coordinate) const;
+    bool outOfVoxelBounds(VoxelCoordinate& coordinate) const;
+    bool outOfVertexBounds(VertexCoordinate& coordinate) const;
+    void considerDirichletBoundaryAtLocalProblem(ProblemFragment& fragment) const;
 };

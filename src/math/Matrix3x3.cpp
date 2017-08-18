@@ -26,6 +26,12 @@ Matrix3x3::Matrix3x3(ettention::Vec3<REAL> column0, ettention::Vec3<REAL> column
     
 }
 
+Matrix3x3::Matrix3x3(const ettention::Matrix3x3<REAL>& other) :
+    ettention::Matrix3x3<REAL>(other)
+{
+
+}
+
 Matrix3x3::Matrix3x3(const Matrix3x3& other) 
 {
     memcpy(values, other.values, 9 * sizeof(REAL));
@@ -33,5 +39,11 @@ Matrix3x3::Matrix3x3(const Matrix3x3& other)
 
 void Matrix3x3::serialize(void* destination) const {
     memcpy(destination, &values[0], Matrix3x3::SizeInBytes);
+}
+
+REAL Matrix3x3::conditionNumber() const {
+    REAL max = std::max(std::max(values[0], values[4]), values[8]);
+    REAL min = std::min(std::min(values[0], values[4]), values[8]);
+    return max / min;
 }
 

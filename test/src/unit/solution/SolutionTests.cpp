@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "gtest/gtest.h"
+#include "gtest/internal/gtest-internal.h"
 #include "libmmv/math/Vec3.h"
 #include "solution/Solution.h"
 #include "helpers/Templates.h"
@@ -10,6 +11,16 @@ class SolutionTests : public ::testing::Test {
 public:
     SolutionTests() {}
     ~SolutionTests() {}
+
+    bool closeEqual(const Matrix3x3& a, const Matrix3x3& b) {
+        for (unsigned int i = 0; i < 9; i++) {
+            const testing::internal::FloatingPoint<REAL> lhs(a.at(i % 3, i / 3)), rhs(b.at(i % 3, i / 3));
+            if (!lhs.AlmostEquals(rhs)) {
+                return false;
+            }
+        }
+        return true;
+    }
 
     void SetUp() override
     {
@@ -73,4 +84,34 @@ TEST_F(SolutionTests, ConsistencyAfterPrecompute) {
     ASSERT_TRUE(sol.allVerticesHaveValidSignatureId(errMessage)) << errMessage;
     ASSERT_TRUE(sol.matConfigEquationIdsMatchPositionInVector(errMessage)) << errMessage;
     ASSERT_TRUE(sol.allMatConfigEquationsInitialized(errMessage)) << errMessage;
+}
+
+TEST_F(SolutionTests, DirichletBoundaryAppliedToLHS) {
+    DiscreteProblem problem = Templates::Problem::STEEL_2_2_2();
+
+    problem.setDirichletBoundary(ettention::Vec3ui(1, 0, 0), DirichletBoundary(DirichletBoundary::FIXED_ALL));
+    problem.setDirichletBoundary(ettention::Vec3ui(2, 0, 0), DirichletBoundary(DirichletBoundary::FIXED_X));
+
+    SolutionInspector sol(problem);
+    
+    sol.computeMaterialConfigurationEquations();
+
+    const std::vector<MaterialConfigurationEquations>* equations = sol.getMaterialConfigurationEquations();
+
+    ProblemFragment allFixed = problem.extractLocalProblem(ettention::Vec3ui(1, 0, 0));
+    unsigned short eqId = sol.getEquationIdForFragment(allFixed);
+    const MaterialConfigurationEquations allFixedEqns = equations->at(eqId);
+    const Matrix3x3* allFixedLHS = allFixedEqns.getLHSInverse();
+    Matrix3x3 allFixedExpected(0, 0, 0, 0, 0, 0, 0, 0, 0);
+
+    EXPECT_TRUE(closeEqual(*allFixedLHS, allFixedExpected)) << "Expected LHS matrix for ALL_FIXED to be all zeros";
+
+    ProblemFragment xFixed = problem.extractLocalProblem(ettention::Vec3ui(2, 0, 0));
+    eqId = sol.getEquationIdForFragment(xFixed);
+    const MaterialConfigurationEquations xFixedEqns = equations->at(eqId);
+    const Matrix3x3* xFixedLHS = xFixedEqns.getLHSInverse();
+    //Note: first row is all zeroes => x component zero when multiplied with RHS vector => x is fixed
+    Matrix3x3 xFixedExpected(0.0, 6.2308614032751929e-12, 6.2308614032751929e-12, 0.0, 2.4508054852882432e-11, - 6.2308614032751929e-12, 0.0, - 6.2308614032751929e-12, 2.4508054852882432e-11);
+
+    EXPECT_TRUE(closeEqual(*xFixedLHS, xFixedExpected)) << "Expected LHS matrix for X_FIXED to have zeroes in first row";
 }

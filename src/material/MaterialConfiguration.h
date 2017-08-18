@@ -1,11 +1,24 @@
 #pragma once
 #include "material/Material.h"
-#include <functional>
+#include "problem/DirichletBoundary.h"
 #include <vector>
 
 #pragma pack(push, 1)
 struct MaterialConfiguration { 
     unsigned char ids[8]; 
+    DirichletBoundary boundaryCondition;
+
+    MaterialConfiguration(const std::vector<Material*>* mats, const DirichletBoundary condition) {
+        ids[0] = mats->at(0)->id;
+        ids[1] = mats->at(1)->id;
+        ids[2] = mats->at(2)->id;
+        ids[3] = mats->at(3)->id;
+        ids[4] = mats->at(4)->id;
+        ids[5] = mats->at(5)->id;
+        ids[6] = mats->at(6)->id;
+        ids[7] = mats->at(7)->id;
+        boundaryCondition = DirichletBoundary(condition);
+    }
 
     MaterialConfiguration(const std::vector<Material*>* mats) {
         ids[0] = mats->at(0)->id;
@@ -16,16 +29,16 @@ struct MaterialConfiguration {
         ids[5] = mats->at(5)->id;
         ids[6] = mats->at(6)->id;
         ids[7] = mats->at(7)->id;
+        boundaryCondition = DirichletBoundary(DirichletBoundary::NONE);
     }
 
     bool operator==(const MaterialConfiguration& other) const {
         return ids[0] == other[0] && ids[1] == other[1] && ids[2] == other[2] && ids[3] == other[3] &&
-            ids[4] == other[4] && ids[5] == other[5] && ids[6] == other[6] && ids[7] == other[7];
+            ids[4] == other[4] && ids[5] == other[5] && ids[6] == other[6] && ids[7] == other[7] && boundaryCondition == other.boundaryCondition;
     }
 
     bool operator!=(const MaterialConfiguration& other) const {
-        return !(ids[0] == other[0] && ids[1] == other[1] && ids[2] == other[2] && ids[3] == other[3] &&
-            ids[4] == other[4] && ids[5] == other[5] && ids[6] == other[6] && ids[7] == other[7]);
+        return !(*this == other);
     }
 
     const unsigned char& operator[](int index) const {
@@ -37,12 +50,23 @@ struct MaterialConfiguration {
 
 namespace std {
 
+    // Hash combine function as implemented in the boost library
+    template <class T>
+    inline void hash_combine(std::size_t& seed, const T& v)
+    {
+        std::hash<T> hasher;
+        seed ^= hasher(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+    }
+
     template<>
     struct hash<MaterialConfiguration> 
     {
         std::size_t operator()(const MaterialConfiguration& k) const 
         {
-            return std::hash<unsigned long long>()(*reinterpret_cast<const unsigned long long*> (&k));
+            std::size_t hashValue = std::hash<unsigned long long>()(*reinterpret_cast<const unsigned long long*> (&k));
+            hash_combine(hashValue, k.boundaryCondition);
+            return hashValue;
         }
     };
+
 }

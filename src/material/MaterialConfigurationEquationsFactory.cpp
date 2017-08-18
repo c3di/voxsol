@@ -82,10 +82,34 @@ void MaterialConfigurationEquationsFactory::computeLHS(const ProblemFragment& fr
         fullIntegralLHS[14] + fullIntegralLHS[18] + fullIntegralLHS[20]
     );
     Matrix3x3 lhs(col1, col2, col3);
+    checkMatrixConditionNumber(lhs);
+    lhs = Matrix3x3(lhs.inverse());
 
-    equations->setLHS(lhs);
+    applyDirichletBoundaryConditionsToLHS(lhs, fragment);
+
+    equations->setLHSInverse(lhs);
 
     delete[] fullIntegralLHS;
+}
+
+void MaterialConfigurationEquationsFactory::checkMatrixConditionNumber(const Matrix3x3& mat) const {
+    REAL condition = mat.conditionNumber();
+    if (condition > CONDITION_NUMBER_MAX) {
+        std::cerr << "Warning: Inverting an ill-conditioned matrix: Cond = " << condition << " for matrix " << mat << std::endl;
+    }
+}
+
+void MaterialConfigurationEquationsFactory::applyDirichletBoundaryConditionsToLHS(Matrix3x3& lhsInverse, const ProblemFragment& fragment) const {
+    DirichletBoundary condition = fragment.getDirichletBoundaryConditions();
+    if (condition.isXFixed()) {
+        lhsInverse = Matrix3x3(0, lhsInverse.at(0, 1), lhsInverse.at(0, 2), 0, lhsInverse.at(1, 1), lhsInverse.at(1, 2), 0, lhsInverse.at(2, 1), lhsInverse.at(2, 2));
+    }
+    if (condition.isYFixed()) {
+        lhsInverse = Matrix3x3(lhsInverse.at(0, 0), 0, lhsInverse.at(0, 2), lhsInverse.at(1, 0), 0, lhsInverse.at(1, 2), lhsInverse.at(2, 0), 0, lhsInverse.at(2, 2));
+    }
+    if (condition.isZFixed()) {
+        lhsInverse = Matrix3x3(lhsInverse.at(0, 0), lhsInverse.at(0, 1), 0, lhsInverse.at(1, 0), lhsInverse.at(1, 1), 0, lhsInverse.at(2, 0), lhsInverse.at(2, 1), 0);
+    }
 }
 
 void MaterialConfigurationEquationsFactory::computeRHS(const ProblemFragment& fragment, MaterialConfigurationEquations* equations, const BaseIntegrals* integrals) const {

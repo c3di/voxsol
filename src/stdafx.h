@@ -1,10 +1,11 @@
 #pragma once
-#include <cassert>
+#include <assert.h>
 
 #ifndef NOMINMAX
 #define NOMINMAX
 #endif
 
+typedef unsigned short ConfigId;
 
 #ifdef USE_DOUBLE_PRECISION
 
@@ -15,5 +16,3 @@ typedef double REAL;
 typedef float REAL;
 
 #endif
-
-typedef unsigned short ConfigId;

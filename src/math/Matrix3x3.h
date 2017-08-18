@@ -6,6 +6,7 @@
 #include "libmmv/math/Vec3.h"
 #include "libmmv/math/Matrix3x3.h"
 
+#define CLOSE_EQ_EPSILON std::numeric_limits<REAL>::epsilon
 
 class Matrix3x3 : public ettention::Matrix3x3<REAL>
 {
@@ -15,8 +16,11 @@ public:
     Matrix3x3(ettention::Vec3<REAL> column0, ettention::Vec3<REAL> column1, ettention::Vec3<REAL> column2);
     Matrix3x3(const std::vector<REAL>& values);
     Matrix3x3(const Matrix3x3& other);
+    Matrix3x3(const ettention::Matrix3x3<REAL>& other);
 
     static const Matrix3x3 identity;
     const static size_t SizeInBytes;
     void serialize(void* destination) const;
+
+    REAL conditionNumber() const;
 };

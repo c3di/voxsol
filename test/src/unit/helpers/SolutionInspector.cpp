@@ -57,7 +57,7 @@ bool SolutionInspector::allMatConfigEquationsInitialized(std::string& errMessage
             return false;
         }
 
-        const Matrix3x3* lhs = eqn.getLHS();
+        const Matrix3x3* lhs = eqn.getLHSInverse();
         if (lhs == NULL || *lhs == Matrix3x3::identity) {
             std::stringstream ss;
             ss << "MaterialConfigurationEquation " << i << " has invalid LHS matrix";

@@ -1,6 +1,7 @@
 #include <stdafx.h>
 #include "MaterialConfigurationEquations.h"
 
+// 27 3x3 matrices
 const size_t MaterialConfigurationEquations::SizeInBytes = sizeof(REAL) * 9 * 27;
 
 MaterialConfigurationEquations::MaterialConfigurationEquations(ConfigId id) :
@@ -11,6 +12,13 @@ MaterialConfigurationEquations::MaterialConfigurationEquations(ConfigId id) :
 
 MaterialConfigurationEquations::MaterialConfigurationEquations() :
     id(std::numeric_limits<ConfigId>::max())
+{
+    matrices = std::vector<Matrix3x3>(27, Matrix3x3::identity);
+}
+
+MaterialConfigurationEquations::MaterialConfigurationEquations(ConfigId id, DirichletBoundary& condition) :
+    id(id),
+    dirichletBoundaryCondition(condition)
 {
     matrices = std::vector<Matrix3x3>(27, Matrix3x3::identity);
 }
@@ -27,7 +35,7 @@ Matrix3x3* MaterialConfigurationEquations::getMatrices() {
     return matrices.data();
 }
 
-const Matrix3x3* MaterialConfigurationEquations::getLHS() const {
+const Matrix3x3* MaterialConfigurationEquations::getLHSInverse() const {
     return &matrices[13];
 }
 
@@ -40,19 +48,21 @@ bool MaterialConfigurationEquations::isInitialized() {
 }
 
 void MaterialConfigurationEquations::serialize(void* destination) const {
-    Matrix3x3* dest = (Matrix3x3*)destination;
+    unsigned char* serializationPointer = (unsigned char*)destination;
 
-    for (unsigned int i = 0; i < 27; i++) {
-        matrices[i].serialize(&dest[i]);
+    for (unsigned char i = 0; i < 27; i++) {
+        matrices[i].serialize(serializationPointer);
+        serializationPointer += Matrix3x3::SizeInBytes;
     }
+
 }
 
 void MaterialConfigurationEquations::setId(ConfigId id) {
     this->id = id;
 }
 
-void MaterialConfigurationEquations::setLHS(Matrix3x3& lhs) {
-    matrices[13] = Matrix3x3(lhs);
+void MaterialConfigurationEquations::setLHSInverse(Matrix3x3& lhsInverse) {
+    matrices[13] = Matrix3x3(lhsInverse);
 }
 
 void MaterialConfigurationEquations::setRHS(unsigned int nodeIndex, Matrix3x3& rhs) {

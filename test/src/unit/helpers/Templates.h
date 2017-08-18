@@ -43,6 +43,18 @@ public:
 
             return problem;
         }
+
+        static DiscreteProblem STEEL_3_3_3() {
+            ettention::Vec3ui size(3, 3, 3);
+            ettention::Vec3<REAL> voxelSize(1, 1, 1);
+            DiscreteProblem problem(size, voxelSize, &Templates::Mat.DICTIONARY);
+
+            for (int i = 0; i < 27; i++) {
+                problem.setMaterial(i, Templates::Mat.STEEL.id);
+            }
+
+            return problem;
+        }
     };
 
 };

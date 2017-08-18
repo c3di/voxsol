@@ -3,7 +3,8 @@
 #include "material/MaterialDictionary.h"
 
 DiscreteProblem::DiscreteProblem(ettention::Vec3ui size, ettention::Vec3d voxelSize, MaterialDictionary* matDict) :
-    size(size),
+    problemSize(size),
+    solutionSize(size + ettention::Vec3ui(1,1,1)),
     voxelSize(voxelSize),
     numberOfCells(size.x*size.y*size.z),
     materialIds(numberOfCells, Material::EMPTY.id),
@@ -16,8 +17,8 @@ DiscreteProblem::~DiscreteProblem() {
 
 }
 
-void DiscreteProblem::setMaterial(ettention::Vec3ui& coordinate, unsigned char matId) {
-    unsigned int index = mapToIndex(coordinate);
+void DiscreteProblem::setMaterial(VoxelCoordinate& coordinate, unsigned char matId) {
+    unsigned int index = mapToVoxelIndex(coordinate);
     setMaterial(index, matId);
 }
 
@@ -25,23 +26,42 @@ void DiscreteProblem::setMaterial(unsigned int index, unsigned char matId) {
     materialIds[index] = matId;
 }
 
-unsigned int DiscreteProblem::mapToIndex(ettention::Vec3ui& coordinate) const {
-    if (outOfBounds(coordinate)) {
-        throw std::invalid_argument("given coordinate cannot be mapped to an index because it is outside the problem space");
+void DiscreteProblem::setDirichletBoundary(VertexCoordinate& coordinate, DirichletBoundary& condition) {
+    unsigned int index = mapToVertexIndex(coordinate);
+    setDirichletBoundary(index, condition);
+}
+
+void DiscreteProblem::setDirichletBoundary(unsigned int index, DirichletBoundary& condition) {
+    dirichletBoundaryConditions[index] = condition;
+}
+
+unsigned int DiscreteProblem::mapToVoxelIndex(VoxelCoordinate& coordinate) const {
+    if (outOfVoxelBounds(coordinate)) {
+        throw std::invalid_argument("coordinate " + coordinate.to_string() + " cannot be mapped to an index because it is outside the voxel space");
     }
-    return coordinate.x + coordinate.y * size.x + coordinate.z * size.x * size.y;
+    return coordinate.x + coordinate.y * problemSize.x + coordinate.z * problemSize.x * problemSize.y;
 }
 
-ettention::Vec3ui DiscreteProblem::mapToCoordinate(unsigned int index) const {
-    return ettention::Vec3ui(index % size.x, (index / size.x) % size.y, index / (size.x * size.y));
+unsigned int DiscreteProblem::mapToVertexIndex(VertexCoordinate& coordinate) const {
+    if (outOfVertexBounds(coordinate)) {
+        throw std::invalid_argument("coordinate "+coordinate.to_string()+" cannot be mapped to an index because it is outside the vertex space");
+    }
+    return coordinate.x + coordinate.y * solutionSize.x + coordinate.z * solutionSize.x * solutionSize.y;
 }
 
+VoxelCoordinate DiscreteProblem::mapToVoxelCoordinate(unsigned int index) const {
+    return ettention::Vec3ui(index % problemSize.x, (index / problemSize.x) % problemSize.y, index / (problemSize.x * problemSize.y));
+}
 
-Material* DiscreteProblem::getMaterial(ettention::Vec3ui& coordinate) const {
-    if (outOfBounds(coordinate)) {
+VertexCoordinate DiscreteProblem::mapToVertexCoordinate(unsigned int index) const {
+    return ettention::Vec3ui(index % solutionSize.x, (index / solutionSize.x) % solutionSize.y, index / (solutionSize.x * solutionSize.y));
+}
+
+Material* DiscreteProblem::getMaterial(VoxelCoordinate& coordinate) const {
+    if (outOfVoxelBounds(coordinate)) {
         return &Material::EMPTY;
     }
-    unsigned int index = mapToIndex(coordinate);
+    unsigned int index = mapToVoxelIndex(coordinate);
     return getMaterial(index);
 }
 
@@ -56,15 +76,33 @@ ettention::Vec3d DiscreteProblem::getVoxelSize() const {
 }
 
 ettention::Vec3ui DiscreteProblem::getSize() const {
-    return ettention::Vec3ui(size);
+    return ettention::Vec3ui(problemSize);
 }
 
 std::vector<unsigned char>* DiscreteProblem::getMaterialIdVector() {
     return &materialIds;
 }
 
-bool DiscreteProblem::outOfBounds(ettention::Vec3ui& coordinate) const {
-    return coordinate.x < 0 || coordinate.x >= size.x || coordinate.y < 0 || coordinate.y >= size.y || coordinate.z < 0 || coordinate.z >= size.z;
+DirichletBoundary DiscreteProblem::getDirichletBoundaryAtVertex(VertexCoordinate& coordinate) {
+    unsigned int index = mapToVertexIndex(coordinate);
+    return getDirichletBoundaryAtVertex(index);
+}
+
+DirichletBoundary DiscreteProblem::getDirichletBoundaryAtVertex(unsigned int index) {
+    if (dirichletBoundaryConditions.count(index) > 0) {
+        return dirichletBoundaryConditions[index];
+    }
+    else {
+        return DirichletBoundary(DirichletBoundary::NONE);
+    }
+}
+
+bool DiscreteProblem::outOfVoxelBounds(VoxelCoordinate& coordinate) const {
+    return coordinate.x < 0 || coordinate.x >= problemSize.x || coordinate.y < 0 || coordinate.y >= problemSize.y || coordinate.z < 0 || coordinate.z >= problemSize.z;
+}
+
+bool DiscreteProblem::outOfVertexBounds(VertexCoordinate& coordinate) const {
+    return coordinate.x < 0 || coordinate.x >= solutionSize.x || coordinate.y < 0 || coordinate.y >= solutionSize.y || coordinate.z < 0 || coordinate.z >= solutionSize.z;
 }
 
 ProblemFragment DiscreteProblem::extractLocalProblem(ettention::Vec3ui centerCoord) const {
@@ -78,6 +116,14 @@ ProblemFragment DiscreteProblem::extractLocalProblem(ettention::Vec3ui centerCoo
             }
         }
     }
+    ProblemFragment fragment(centerCoord, mats);
+    considerDirichletBoundaryAtLocalProblem(fragment);
+    return fragment;
+}
 
-    return ProblemFragment(centerCoord, mats);
+void DiscreteProblem::considerDirichletBoundaryAtLocalProblem(ProblemFragment& fragment) const {
+    unsigned int index = mapToVertexIndex(fragment.getCenterVertex());
+    if (dirichletBoundaryConditions.count(index) > 0) {
+        fragment.setDirichletBoundary(dirichletBoundaryConditions.at(index));
+    }
 }

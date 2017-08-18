@@ -34,7 +34,16 @@ void ProblemFragment::setMaterial(unsigned int index, Material& mat) {
 
 void ProblemFragment::setMaterial(unsigned int index, Material* mat) {
     materials[index] = mat;
-    materialConfig = MaterialConfiguration(&materials);
+    updateMaterialConfig();
+}
+
+void ProblemFragment::setDirichletBoundary(const DirichletBoundary& fixed) {
+    dirichletBoundaryCondition = DirichletBoundary(fixed);
+    updateMaterialConfig();
+}
+
+const DirichletBoundary& ProblemFragment::getDirichletBoundaryConditions() const {
+    return dirichletBoundaryCondition;
 }
 
 const MaterialConfiguration& ProblemFragment::getMaterialConfiguration() const {
@@ -52,4 +61,8 @@ bool ProblemFragment::containsMixedMaterials() const {
         }
     }
     return false;
+}
+
+void ProblemFragment::updateMaterialConfig() {
+    materialConfig = MaterialConfiguration(&materials, dirichletBoundaryCondition);
 }
