@@ -9,13 +9,13 @@
 __global__
 void cuda_SolveDisplacement(Vertex* verticesOnGPU, REAL* matConfigEquations) {
     int idx = threadIdx.x*3;
-    Vertex vertex = verticesOnGPU[threadIdx.x];
-    int equationId = vertex.materialConfigId;
-    int equationIndex = equationId * (27 * 9);
+    Vertex* vertex = &verticesOnGPU[threadIdx.x];
+    int equationId = vertex->materialConfigId;
+    int equationIndex = equationId * (27 * 9 + 3);
 
-    vertex.x = equationId;
-    vertex.y = matConfigEquations[equationIndex + 9*13];
-    vertex.z = matConfigEquations[equationIndex + 9*13+1];
+    vertex->x = matConfigEquations[equationIndex + 9 * 13];
+    vertex->y = matConfigEquations[equationIndex + 9*13+4];
+    vertex->z = matConfigEquations[equationIndex + 9*13+5];
 }
 
 extern "C" void cudaLaunchSolveDisplacementKernel(Vertex* vertices, REAL* matConfigEquations, unsigned int numVertices) {
