@@ -27,8 +27,8 @@ protected:
 private:
     Solution* solution;
 
-    Vertex* verticesOnGPU;
-    REAL* matConfigEquationsOnGPU;
+    Vertex* serializedVertices;
+    REAL* serializedMatConfigEquations;
 
     void prepareInputs();
 
