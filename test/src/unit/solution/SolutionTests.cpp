@@ -53,18 +53,18 @@ TEST_F(SolutionTests, PrecomputeMatrices) {
     DiscreteProblem problem = Templates::Problem::STEEL_2_2_2();
     SolutionInspector sol(problem);
 
-    const std::vector<ConfigId>* equationIds = sol.getMaterialConfigurationEquationIds();
-    ASSERT_EQ(equationIds->size(), 27);
+    const std::vector<Vertex>* vertices = sol.getVertices();
+    ASSERT_EQ(vertices->size(), 27);
 
     sol.computeMaterialConfigurationEquations();
     const std::vector<MaterialConfigurationEquations>* fSigs = sol.getMaterialConfigurationEquations();
     EXPECT_EQ(fSigs->size(), 27) << "Expected all vertices to have a unique set of material configuration equations";
 
     // Since every vertex in this problem has a unique material configuration its signature ID should be the same as its index
-    equationIds = sol.getMaterialConfigurationEquationIds();
+    vertices = sol.getVertices();
     for (ConfigId i = 0; i < 27; i++) {
-        if (equationIds->at(i) != i) {
-            FAIL() << "Vertex " << i << " equation id (" << equationIds->at(i) << ") did not match expected value " << i;
+        if (vertices->at(i).materialConfigId != i) {
+            FAIL() << "Vertex " << i << " equation id (" << vertices->at(i).materialConfigId << ") did not match expected value " << i;
         }
     }
 

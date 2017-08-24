@@ -11,7 +11,7 @@ SolutionInspector::SolutionInspector(DiscreteProblem& problem) :
 
 ConfigId SolutionInspector::getEquationIdForFragment(ProblemFragment& fragment) {
     unsigned int index = mapToIndex(fragment.getCenterVertex());
-    return matConfigEquationIds[index];
+    return vertices[index].materialConfigId;
 }
 
 bool SolutionInspector::solutionDimensionsMatchProblem(std::string& errMessage) {
@@ -25,9 +25,9 @@ bool SolutionInspector::solutionDimensionsMatchProblem(std::string& errMessage) 
     }
 
     int expectedNumVertices = expectedSize.x*expectedSize.y*expectedSize.z;
-    if (matConfigEquationIds.size() != expectedNumVertices) {
+    if (vertices.size() != expectedNumVertices) {
         std::stringstream ss;
-        ss << "Number of vertices " << matConfigEquationIds.size() << " does not match expected number " << expectedNumVertices;
+        ss << "Number of vertices " << vertices.size() << " does not match expected number " << expectedNumVertices;
         errMessage = ss.str();
         return false;
     }
@@ -79,8 +79,8 @@ bool SolutionInspector::allMatConfigEquationsInitialized(std::string& errMessage
 }
 
 bool SolutionInspector::allVerticesHaveValidSignatureId(std::string& errMessage) {
-    for (int i = 0; i < matConfigEquationIds.size(); i++) {
-        int equationId = matConfigEquationIds[i];
+    for (int i = 0; i < vertices.size(); i++) {
+        int equationId = vertices[i].materialConfigId;
         if (equationId < 0 || equationId > matConfigEquations.size()) {
             std::stringstream ss;
             ss << "Vertex " << i << " has invalid material configuration equation Id " << equationId;

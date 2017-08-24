@@ -4,18 +4,16 @@
 
 SolveDisplacementKernel::SolveDisplacementKernel(Solution* sol) :
     solution(sol),
-    displacementsOnGPU(nullptr),
-    matConfigEquationIdsOnGPU(nullptr),
-    matConfigEquationsOnGPU(nullptr)
+    matConfigEquationsOnGPU(nullptr),
+    verticesOnGPU(nullptr)
 {
 
 };
 
 SolveDisplacementKernel::~SolveDisplacementKernel() {
     freeCudaResources();
-    assert(matConfigEquationIdsOnGPU == nullptr);
-    assert(displacementsOnGPU == nullptr);
     assert(matConfigEquationsOnGPU == nullptr);
+    assert(verticesOnGPU == nullptr);
 };
 
 
@@ -23,15 +21,15 @@ void SolveDisplacementKernel::launch() {
     prepareInputs();
 
     if (canExecute()) {
-        unsigned int numVertices = static_cast<unsigned int>(solution->getDisplacements()->size());
-        cudaLaunchSolveDisplacementKernel(displacementsOnGPU, matConfigEquationIdsOnGPU, matConfigEquationsOnGPU, numVertices);
+        unsigned int numVertices = static_cast<unsigned int>(solution->getVertices()->size());
+        cudaLaunchSolveDisplacementKernel(verticesOnGPU, matConfigEquationsOnGPU, numVertices);
 
-        pullDisplacements();
+        pullVertices();
     }
 };
 
 bool SolveDisplacementKernel::canExecute() {
-    if (matConfigEquationIdsOnGPU == nullptr || displacementsOnGPU == nullptr || matConfigEquationsOnGPU == nullptr) {
+    if (matConfigEquationsOnGPU == nullptr || verticesOnGPU == nullptr) {
         throw std::runtime_error("Could not execute kernel SolveDisplacement because one or more inputs are missing.");
     }
 
@@ -39,33 +37,16 @@ bool SolveDisplacementKernel::canExecute() {
 };
 
 void SolveDisplacementKernel::freeCudaResources() {
-    cudaCheckSuccess(cudaFree(matConfigEquationIdsOnGPU));
-    matConfigEquationIdsOnGPU = nullptr;
-    cudaCheckSuccess(cudaFree(displacementsOnGPU));
-    displacementsOnGPU = nullptr;
     cudaCheckSuccess(cudaFree(matConfigEquationsOnGPU));
     matConfigEquationsOnGPU = nullptr;
+    cudaCheckSuccess(cudaFree(verticesOnGPU));
+    verticesOnGPU = nullptr;
 }
 
 void SolveDisplacementKernel::prepareInputs() {
-    pushMatConfigEquationIds();
-    pushDisplacements();
     pushMatConfigEquations();
+    pushVertices();
 }
-
-void SolveDisplacementKernel::pushMatConfigEquationIds() {
-    const std::vector<ConfigId>* signatureIds = solution->getMaterialConfigurationEquationIds();
-    size_t size = signatureIds->size() * sizeof(ConfigId);
-    cudaCheckSuccess(cudaMalloc(&matConfigEquationIdsOnGPU, size));
-    cudaCheckSuccess(cudaMemcpy(matConfigEquationIdsOnGPU, signatureIds->data(), size, cudaMemcpyHostToDevice));
-};
-
-void SolveDisplacementKernel::pushDisplacements() {
-    const std::vector<REAL>* displacements = solution->getDisplacements();
-    size_t size = displacements->size() * sizeof(REAL);
-    cudaCheckSuccess(cudaMalloc(&displacementsOnGPU, size));
-    cudaCheckSuccess(cudaMemcpy(displacementsOnGPU, displacements->data(), size, cudaMemcpyHostToDevice));
-};
 
 void SolveDisplacementKernel::pushMatConfigEquations() {
     size_t size = solution->getMaterialConfigurationEquations()->size() * MaterialConfigurationEquations::SizeInBytes;
@@ -78,19 +59,26 @@ void SolveDisplacementKernel::pushMatConfigEquations() {
     delete[] h_matConfigEquations;
 };
 
-void SolveDisplacementKernel::pullDisplacements() {
-    std::vector<REAL>* displacements = solution->getDisplacements();
-    size_t size = displacements->size() * sizeof(REAL);
-    cudaCheckSuccess(cudaMemcpy(displacements->data(), displacementsOnGPU, size, cudaMemcpyDeviceToHost));
+void SolveDisplacementKernel::pushVertices() {
+    const std::vector<Vertex>* vertices = solution->getVertices();
+    size_t size = vertices->size() * sizeof(Vertex);
+    cudaCheckSuccess(cudaMalloc(&verticesOnGPU, size));
+    cudaCheckSuccess(cudaMemcpy(verticesOnGPU, vertices->data(), size, cudaMemcpyHostToDevice));
+}
+
+void SolveDisplacementKernel::pullVertices() {
+    std::vector<Vertex>* vertices = solution->getVertices();
+    size_t size = vertices->size() * sizeof(Vertex);
+    cudaCheckSuccess(cudaMemcpy(vertices->data(), verticesOnGPU, size, cudaMemcpyDeviceToHost));
 };
 
 void SolveDisplacementKernel::serializeMaterialConfigurationEquations(void* destination) {
-    const std::vector<MaterialConfigurationEquations>* equations = solution->getMaterialConfigurationEquations();
-    size_t size = MaterialConfigurationEquations::SizeInBytes * equations->size();
+    const std::vector<MaterialConfigurationEquations>* signatures = solution->getMaterialConfigurationEquations();
+    size_t size = MaterialConfigurationEquations::SizeInBytes * signatures->size();
 
     char* serializationPointer = (char*)destination;
-    for (unsigned int i = 0; i < equations->size(); i++) {
-        equations->at(i).serialize(serializationPointer);
+    for (unsigned int i = 0; i < signatures->size(); i++) {
+        signatures->at(i).serialize(serializationPointer);
         serializationPointer += MaterialConfigurationEquations::SizeInBytes;
     }
 }

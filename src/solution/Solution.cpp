@@ -2,15 +2,14 @@
 #include "Solution.h"
 #include "problem/ProblemFragment.h"
 #include "problem/DiscreteProblem.h"
-#include "material/MaterialConfiguration.h"
 #include "material/MaterialConfigurationEquationsFactory.h"
+#include "material/MaterialConfiguration.h"
 
 Solution::Solution(DiscreteProblem& problem) :
     size(problem.getSize() + ettention::Vec3ui(1,1,1)),
     voxelSize(problem.getVoxelSize()),
     problem(&problem),
-    matConfigEquationIds(size.x * size.y * size.z, -1),
-    displacements(3 * size.x * size.y * size.z, 0)
+    vertices(size.x * size.y * size.z)
 {
 
 }
@@ -19,16 +18,12 @@ Solution::~Solution() {
 
 }
 
-const std::vector<ConfigId>* Solution::getMaterialConfigurationEquationIds() const {
-    return &matConfigEquationIds;
+std::vector<Vertex>* Solution::getVertices() {
+    return &vertices;
 }
 
 const std::vector<MaterialConfigurationEquations>* Solution::getMaterialConfigurationEquations() const {
     return &matConfigEquations;
-}
-
-std::vector<REAL>* Solution::getDisplacements() {
-    return &displacements;
 }
 
 unsigned int Solution::mapToIndex(ettention::Vec3ui& coordinate) const {
@@ -67,8 +62,7 @@ void Solution::gatherUniqueMaterialConfigurations() {
                     matConfigToEquationId[materialConfiguration] = equationIdCounter;
                     equationIdCounter++;
                 }
-
-                matConfigEquationIds[mapToIndex(centerCoord)] = matConfigToEquationId[materialConfiguration];
+                vertices[mapToIndex(centerCoord)].materialConfigId = matConfigToEquationId[materialConfiguration];
             }
         }
     }
@@ -78,8 +72,8 @@ void Solution::gatherUniqueMaterialConfigurations() {
 void Solution::computeEquationsForUniqueMaterialConfigurations() {
     MaterialConfigurationEquationsFactory mceFactory(voxelSize);
 
-    for (int i = 0; i < matConfigEquationIds.size(); i++) {
-        int equationId = matConfigEquationIds[i];
+    for (int i = 0; i < vertices.size(); i++) {
+        int equationId = vertices[i].materialConfigId;
         MaterialConfigurationEquations* equations = &matConfigEquations[equationId];
 
         if (!equations->isInitialized()) {

@@ -8,7 +8,7 @@
 #include "libmmv/math/Vec3.h"
 #include "solution/Solution.h"
 
-extern "C" void cudaLaunchSolveDisplacementKernel(REAL* displacementsOnGPU, ConfigId* matConfigEquationIdsOnGPU, REAL* matConfigEquationsOnGPU, unsigned int numVertices);
+extern "C" void cudaLaunchSolveDisplacementKernel(Vertex* verticesOnGPU, REAL* matConfigEquationsOnGPU, unsigned int numVertices);
 
 class SolveDisplacementKernel : public CudaKernel {
 
@@ -27,17 +27,15 @@ protected:
 private:
     Solution* solution;
 
-    ConfigId* matConfigEquationIdsOnGPU;
-    REAL* displacementsOnGPU;
+    Vertex* verticesOnGPU;
     REAL* matConfigEquationsOnGPU;
 
     void prepareInputs();
 
-    void pushMatConfigEquationIds();
-    void pushDisplacements();
     void pushMatConfigEquations();
+    void pushVertices();
 
-    void pullDisplacements();
+    void pullVertices();
 
     void serializeMaterialConfigurationEquations(void* destination);
 
