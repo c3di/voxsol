@@ -1,18 +1,17 @@
 #include <stdafx.h>
 #include "ProblemFragment.h"
 #include "material/Material.h"
+#include "material/MaterialConfiguration.h"
 
 ProblemFragment::ProblemFragment(ettention::Vec3ui& centerVertexCoord, std::vector<Material*>& mats) :
     centerVertexCoord(centerVertexCoord),
-    materials(mats),
-    materialConfig(&mats)
+    materials(mats)
 {
 }
 
 ProblemFragment::ProblemFragment(ettention::Vec3ui& centerVertexCoord) :
     centerVertexCoord(centerVertexCoord),
-    materials(8, &Material::EMPTY),
-    materialConfig(&materials)
+    materials(8, &Material::EMPTY)
 {
 }
 
@@ -34,20 +33,30 @@ void ProblemFragment::setMaterial(unsigned int index, Material& mat) {
 
 void ProblemFragment::setMaterial(unsigned int index, Material* mat) {
     materials[index] = mat;
-    updateMaterialConfig();
 }
 
 void ProblemFragment::setDirichletBoundary(const DirichletBoundary& fixed) {
     dirichletBoundaryCondition = DirichletBoundary(fixed);
-    updateMaterialConfig();
 }
 
-const DirichletBoundary& ProblemFragment::getDirichletBoundaryConditions() const {
+void ProblemFragment::setNeumannBoundary(const NeumannBoundary& stress) {
+    neumannBoundaryCondition = NeumannBoundary(stress);
+}
+
+const DirichletBoundary& ProblemFragment::getDirichletBoundaryCondition() const {
     return dirichletBoundaryCondition;
 }
 
-const MaterialConfiguration& ProblemFragment::getMaterialConfiguration() const {
-    return materialConfig;
+const NeumannBoundary& ProblemFragment::getNeumannBoundaryCondition() const {
+    return neumannBoundaryCondition;
+}
+
+const std::vector<Material*>* ProblemFragment::getMaterials() const {
+    return &materials;
+}
+
+const MaterialConfiguration ProblemFragment::getMaterialConfiguration() const {
+    return MaterialConfiguration(this);
 }
 
 ettention::Vec3ui ProblemFragment::getCenterVertex() const {
@@ -61,8 +70,4 @@ bool ProblemFragment::containsMixedMaterials() const {
         }
     }
     return false;
-}
-
-void ProblemFragment::updateMaterialConfig() {
-    materialConfig = MaterialConfiguration(&materials, dirichletBoundaryCondition);
 }

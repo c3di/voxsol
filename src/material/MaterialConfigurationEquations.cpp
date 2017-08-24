@@ -1,24 +1,19 @@
 #include <stdafx.h>
 #include "MaterialConfigurationEquations.h"
 
-// 27 3x3 matrices
-const size_t MaterialConfigurationEquations::SizeInBytes = sizeof(REAL) * 9 * 27;
+// 27 3x3 matrices, 1 vec3 for neumann boundary condition (stress)
+const size_t MaterialConfigurationEquations::SizeInBytes = sizeof(REAL) * 9 * 27 + 3 * sizeof(REAL);
 
 MaterialConfigurationEquations::MaterialConfigurationEquations(ConfigId id) :
-    id(id)
+    id(id),
+    neumannBoundaryCondition()
 {
     matrices = std::vector<Matrix3x3>(27, Matrix3x3::identity);
 }
 
 MaterialConfigurationEquations::MaterialConfigurationEquations() :
-    id(std::numeric_limits<ConfigId>::max())
-{
-    matrices = std::vector<Matrix3x3>(27, Matrix3x3::identity);
-}
-
-MaterialConfigurationEquations::MaterialConfigurationEquations(ConfigId id, DirichletBoundary& condition) :
-    id(id),
-    dirichletBoundaryCondition(condition)
+    id(std::numeric_limits<ConfigId>::max()),
+    neumannBoundaryCondition()
 {
     matrices = std::vector<Matrix3x3>(27, Matrix3x3::identity);
 }
@@ -43,6 +38,10 @@ const Matrix3x3* MaterialConfigurationEquations::getRHS(unsigned int nodeIndex) 
     return &matrices[nodeIndex];
 }
 
+const NeumannBoundary* MaterialConfigurationEquations::getNeumannBoundaryCondition() const {
+    return &neumannBoundaryCondition;
+}
+
 bool MaterialConfigurationEquations::isInitialized() {
     return id != std::numeric_limits<ConfigId>::max();
 }
@@ -55,6 +54,7 @@ void MaterialConfigurationEquations::serialize(void* destination) const {
         serializationPointer += Matrix3x3::SizeInBytes;
     }
 
+    memcpy(serializationPointer, &neumannBoundaryCondition.stress.dim, sizeof(REAL)*3);
 }
 
 void MaterialConfigurationEquations::setId(ConfigId id) {
@@ -67,4 +67,8 @@ void MaterialConfigurationEquations::setLHSInverse(Matrix3x3& lhsInverse) {
 
 void MaterialConfigurationEquations::setRHS(unsigned int nodeIndex, Matrix3x3& rhs) {
     matrices[nodeIndex] = Matrix3x3(rhs);
+}
+
+void MaterialConfigurationEquations::setNeumannBoundaryCondition(const NeumannBoundary& stress) {
+    neumannBoundaryCondition = stress;
 }

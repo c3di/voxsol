@@ -2,6 +2,7 @@
 #include "Solution.h"
 #include "problem/ProblemFragment.h"
 #include "problem/DiscreteProblem.h"
+#include "material/MaterialConfiguration.h"
 #include "material/MaterialConfigurationEquationsFactory.h"
 
 Solution::Solution(DiscreteProblem& problem) :
@@ -66,6 +67,7 @@ void Solution::gatherUniqueMaterialConfigurations() {
                     matConfigToEquationId[materialConfiguration] = equationIdCounter;
                     equationIdCounter++;
                 }
+
                 matConfigEquationIds[mapToIndex(centerCoord)] = matConfigToEquationId[materialConfiguration];
             }
         }

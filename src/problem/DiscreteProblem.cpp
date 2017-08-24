@@ -26,13 +26,22 @@ void DiscreteProblem::setMaterial(unsigned int index, unsigned char matId) {
     materialIds[index] = matId;
 }
 
-void DiscreteProblem::setDirichletBoundary(VertexCoordinate& coordinate, DirichletBoundary& condition) {
+void DiscreteProblem::setDirichletBoundaryAtVertex(VertexCoordinate& coordinate, DirichletBoundary& condition) {
     unsigned int index = mapToVertexIndex(coordinate);
-    setDirichletBoundary(index, condition);
+    setDirichletBoundaryAtVertex(index, condition);
 }
 
-void DiscreteProblem::setDirichletBoundary(unsigned int index, DirichletBoundary& condition) {
+void DiscreteProblem::setDirichletBoundaryAtVertex(unsigned int index, DirichletBoundary& condition) {
     dirichletBoundaryConditions[index] = condition;
+}
+
+void DiscreteProblem::setNeumannBoundaryAtVertex(VertexCoordinate& coordinate, NeumannBoundary& condition) {
+    unsigned int index = mapToVertexIndex(coordinate);
+    setNeumannBoundaryAtVertex(index, condition);
+}
+
+void DiscreteProblem::setNeumannBoundaryAtVertex(unsigned int index, NeumannBoundary& condition) {
+    neumannBoundaryConditions[index] = condition;
 }
 
 unsigned int DiscreteProblem::mapToVoxelIndex(VoxelCoordinate& coordinate) const {
@@ -97,6 +106,20 @@ DirichletBoundary DiscreteProblem::getDirichletBoundaryAtVertex(unsigned int ind
     }
 }
 
+NeumannBoundary DiscreteProblem::getNeumannBoundaryAtVertex(VertexCoordinate& coordinate) {
+    unsigned int index = mapToVertexIndex(coordinate);
+    return getNeumannBoundaryAtVertex(index);
+}
+
+NeumannBoundary DiscreteProblem::getNeumannBoundaryAtVertex(unsigned int index) {
+    if (neumannBoundaryConditions.count(index) > 0) {
+        return neumannBoundaryConditions[index];
+    }
+    else {
+        return NeumannBoundary();
+    }
+}
+
 bool DiscreteProblem::outOfVoxelBounds(VoxelCoordinate& coordinate) const {
     return coordinate.x < 0 || coordinate.x >= problemSize.x || coordinate.y < 0 || coordinate.y >= problemSize.y || coordinate.z < 0 || coordinate.z >= problemSize.z;
 }
@@ -118,6 +141,7 @@ ProblemFragment DiscreteProblem::extractLocalProblem(ettention::Vec3ui centerCoo
     }
     ProblemFragment fragment(centerCoord, mats);
     considerDirichletBoundaryAtLocalProblem(fragment);
+    considerNeumannBoundaryAtLocalProblem(fragment);
     return fragment;
 }
 
@@ -125,5 +149,12 @@ void DiscreteProblem::considerDirichletBoundaryAtLocalProblem(ProblemFragment& f
     unsigned int index = mapToVertexIndex(fragment.getCenterVertex());
     if (dirichletBoundaryConditions.count(index) > 0) {
         fragment.setDirichletBoundary(dirichletBoundaryConditions.at(index));
+    }
+}
+
+void DiscreteProblem::considerNeumannBoundaryAtLocalProblem(ProblemFragment& fragment) const {
+    unsigned int index = mapToVertexIndex(fragment.getCenterVertex());
+    if (neumannBoundaryConditions.count(index) > 0) {
+        fragment.setNeumannBoundary(neumannBoundaryConditions.at(index));
     }
 }

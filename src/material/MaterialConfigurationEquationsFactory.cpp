@@ -31,6 +31,7 @@ void MaterialConfigurationEquationsFactory::initializeEquationsForFragment(Mater
 
     computeLHS(fragment, equations, integrals);
     computeRHS(fragment, equations, integrals);
+    setNeumannBoundary(fragment, equations);
 }
 
 void MaterialConfigurationEquationsFactory::computeLHS(const ProblemFragment& fragment, MaterialConfigurationEquations* equations, const BaseIntegrals* integrals) const {
@@ -100,8 +101,9 @@ void MaterialConfigurationEquationsFactory::checkMatrixConditionNumber(const Mat
 }
 
 void MaterialConfigurationEquationsFactory::applyDirichletBoundaryConditionsToLHS(Matrix3x3& lhsInverse, const ProblemFragment& fragment) const {
-    DirichletBoundary condition = fragment.getDirichletBoundaryConditions();
+    DirichletBoundary condition = fragment.getDirichletBoundaryCondition();
     if (condition.isXFixed()) {
+        // Set first row to 0's, when multiplied with RHS vector later the x component will always be 0 => fixed. Same strategy for y and z below
         lhsInverse = Matrix3x3(0, lhsInverse.at(0, 1), lhsInverse.at(0, 2), 0, lhsInverse.at(1, 1), lhsInverse.at(1, 2), 0, lhsInverse.at(2, 1), lhsInverse.at(2, 2));
     }
     if (condition.isYFixed()) {
@@ -159,3 +161,8 @@ void MaterialConfigurationEquationsFactory::computeRHSForNode(unsigned int nodeI
 
     delete[] matrixRHS;
 }
+
+void MaterialConfigurationEquationsFactory::setNeumannBoundary(const ProblemFragment& fragment, MaterialConfigurationEquations* equations) const {
+    equations->setNeumannBoundaryCondition(fragment.getNeumannBoundaryCondition());
+}
+

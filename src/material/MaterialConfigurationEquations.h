@@ -1,6 +1,7 @@
 #pragma once
 #include "math/Matrix3x3.h"
 #include "problem/DirichletBoundary.h"
+#include "problem/NeumannBoundary.h"
 #include <vector>
 
 class MaterialConfigurationEquations {
@@ -8,7 +9,6 @@ class MaterialConfigurationEquations {
 public:
     MaterialConfigurationEquations();
     MaterialConfigurationEquations(ConfigId id);
-    MaterialConfigurationEquations(ConfigId id, DirichletBoundary& dirichletBoundaryCondition);
     ~MaterialConfigurationEquations();
 
     const static size_t SizeInBytes;
@@ -16,6 +16,7 @@ public:
     void setLHSInverse(Matrix3x3& lhs);
     void setRHS(unsigned int nodeIndex, Matrix3x3& rhs);
     void setId(ConfigId id);
+    void setNeumannBoundaryCondition(const NeumannBoundary& stress);
 
     ConfigId getId();
     Matrix3x3* getMatrices();
@@ -25,10 +26,11 @@ public:
 
     const Matrix3x3* getLHSInverse() const;
     const Matrix3x3* getRHS(unsigned int nodeIndex) const;
+    const NeumannBoundary* getNeumannBoundaryCondition() const;
 
 private:
     ConfigId id;
-    DirichletBoundary dirichletBoundaryCondition;
     std::vector<Matrix3x3> matrices; 
+    NeumannBoundary neumannBoundaryCondition;
     
 };

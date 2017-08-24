@@ -85,12 +85,12 @@ void SolveDisplacementKernel::pullDisplacements() {
 };
 
 void SolveDisplacementKernel::serializeMaterialConfigurationEquations(void* destination) {
-    const std::vector<MaterialConfigurationEquations>* signatures = solution->getMaterialConfigurationEquations();
-    size_t size = MaterialConfigurationEquations::SizeInBytes * signatures->size();
+    const std::vector<MaterialConfigurationEquations>* equations = solution->getMaterialConfigurationEquations();
+    size_t size = MaterialConfigurationEquations::SizeInBytes * equations->size();
 
     char* serializationPointer = (char*)destination;
-    for (unsigned int i = 0; i < signatures->size(); i++) {
-        signatures->at(i).serialize(serializationPointer);
+    for (unsigned int i = 0; i < equations->size(); i++) {
+        equations->at(i).serialize(serializationPointer);
         serializationPointer += MaterialConfigurationEquations::SizeInBytes;
     }
 }

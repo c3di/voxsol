@@ -2,6 +2,7 @@
 #include <unordered_map>
 #include "gtest/gtest.h"
 #include "problem/ProblemFragment.h"
+#include "material/MaterialConfiguration.h"
 
 
 class MaterialConfigurationTests : public ::testing::Test {

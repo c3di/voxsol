@@ -9,11 +9,11 @@ __global__
 void cuda_SolveDisplacement(REAL* displacements, ConfigId* matConfigEquationIds, REAL* matConfigEquations) {
     int idx = threadIdx.x*3;
     int equationId = matConfigEquationIds[threadIdx.x];
-    int equationIndex = equationId * (27 * 9);
+    int equationIndex = equationId * (27 * 9 + 3);
 
     displacements[idx    ] = equationId;
     displacements[idx + 1] = matConfigEquations[equationIndex + 9*13];
-    displacements[idx + 2] = matConfigEquations[equationIndex + 9*13+1];
+    displacements[idx + 2] = matConfigEquations[equationIndex + 9*27];
 }
 
 // Is it better to pass raw REAL pointers or create structs for objs like the FragmentSignatures and the displacements (vec3) ?

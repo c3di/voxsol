@@ -5,6 +5,7 @@
 #include "solution/Solution.h"
 #include "helpers/Templates.h"
 #include "helpers/SolutionInspector.h"
+#include "problem/NeumannBoundary.h"
 
 class SolutionTests : public ::testing::Test {
 
@@ -89,8 +90,8 @@ TEST_F(SolutionTests, ConsistencyAfterPrecompute) {
 TEST_F(SolutionTests, DirichletBoundaryAppliedToLHS) {
     DiscreteProblem problem = Templates::Problem::STEEL_2_2_2();
 
-    problem.setDirichletBoundary(ettention::Vec3ui(1, 0, 0), DirichletBoundary(DirichletBoundary::FIXED_ALL));
-    problem.setDirichletBoundary(ettention::Vec3ui(2, 0, 0), DirichletBoundary(DirichletBoundary::FIXED_X));
+    problem.setDirichletBoundaryAtVertex(ettention::Vec3ui(1, 0, 0), DirichletBoundary(DirichletBoundary::FIXED_ALL));
+    problem.setDirichletBoundaryAtVertex(ettention::Vec3ui(2, 0, 0), DirichletBoundary(DirichletBoundary::FIXED_X));
 
     SolutionInspector sol(problem);
     
@@ -114,4 +115,30 @@ TEST_F(SolutionTests, DirichletBoundaryAppliedToLHS) {
     Matrix3x3 xFixedExpected(0.0, 6.2308614032751929e-12, 6.2308614032751929e-12, 0.0, 2.4508054852882432e-11, - 6.2308614032751929e-12, 0.0, - 6.2308614032751929e-12, 2.4508054852882432e-11);
 
     EXPECT_TRUE(closeEqual(*xFixedLHS, xFixedExpected)) << "Expected LHS matrix for X_FIXED to have zeroes in first row";
+}
+
+TEST_F(SolutionTests, NeumannBoundaryAppliedToEquations) {
+    DiscreteProblem problem = Templates::Problem::STEEL_2_2_2();
+
+    problem.setNeumannBoundaryAtVertex(ettention::Vec3ui(1, 0, 0), NeumannBoundary(ettention::Vec3<REAL>(9999, 0, 0)));
+    problem.setNeumannBoundaryAtVertex(ettention::Vec3ui(2, 0, 0), NeumannBoundary(ettention::Vec3<REAL>(100, 100, 100)));
+
+    SolutionInspector sol(problem);
+
+    sol.computeMaterialConfigurationEquations();
+
+    const std::vector<MaterialConfigurationEquations>* equations = sol.getMaterialConfigurationEquations();
+
+    ProblemFragment stressInX = problem.extractLocalProblem(ettention::Vec3ui(1, 0, 0));
+    unsigned short eqId = sol.getEquationIdForFragment(stressInX);
+    const MaterialConfigurationEquations stressInXEqns = equations->at(eqId);
+
+    EXPECT_TRUE(stressInXEqns.getNeumannBoundaryCondition()->stress.x == 9999) << "Expected material config equation to store the right neumann boundary stress";
+
+    ProblemFragment uniformStress = problem.extractLocalProblem(ettention::Vec3ui(2, 0, 0));
+    eqId = sol.getEquationIdForFragment(uniformStress);
+    const MaterialConfigurationEquations uniformStressEqns = equations->at(eqId);
+    ettention::Vec3<REAL> stress = uniformStressEqns.getNeumannBoundaryCondition()->stress;
+
+    EXPECT_TRUE(stress.x == 100 && stress.y == 100 && stress.z == 100) << "Expected material config to store the right neumann boundary stress";
 }

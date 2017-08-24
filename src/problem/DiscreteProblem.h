@@ -2,6 +2,7 @@
 #include "libmmv/math/Vec3.h"
 #include "problem/ProblemFragment.h"
 #include "problem/DirichletBoundary.h"
+#include "problem/NeumannBoundary.h"
 #include <vector>
 #include <unordered_map>
 
@@ -18,8 +19,10 @@ public:
 
     void setMaterial(VoxelCoordinate& coordinate, unsigned char matId);
     void setMaterial(unsigned int index, unsigned char matId);
-    void setDirichletBoundary(VertexCoordinate& coordinate, DirichletBoundary& condition);
-    void setDirichletBoundary(unsigned int index, DirichletBoundary& condition);
+    void setDirichletBoundaryAtVertex(VertexCoordinate& coordinate, DirichletBoundary& condition);
+    void setDirichletBoundaryAtVertex(unsigned int index, DirichletBoundary& condition);
+    void setNeumannBoundaryAtVertex(VertexCoordinate& coordinate, NeumannBoundary& condition);
+    void setNeumannBoundaryAtVertex(unsigned int index, NeumannBoundary& condition);
 
     Material* getMaterial(VoxelCoordinate& coordinate) const;
     Material* getMaterial(unsigned int index) const;
@@ -28,6 +31,8 @@ public:
     std::vector<unsigned char>* getMaterialIdVector();
     DirichletBoundary getDirichletBoundaryAtVertex(VertexCoordinate& coordinate);
     DirichletBoundary getDirichletBoundaryAtVertex(unsigned int index);
+    NeumannBoundary getNeumannBoundaryAtVertex(VertexCoordinate& coordinate);
+    NeumannBoundary getNeumannBoundaryAtVertex(unsigned int index);
 
     unsigned int mapToVoxelIndex(VoxelCoordinate& coordinate) const;
     VoxelCoordinate mapToVoxelCoordinate(unsigned int index) const;
@@ -41,10 +46,12 @@ protected:
     const ettention::Vec3d voxelSize;
     const unsigned int numberOfCells;
     std::unordered_map<unsigned int, DirichletBoundary> dirichletBoundaryConditions;
+    std::unordered_map<unsigned int, NeumannBoundary> neumannBoundaryConditions;
     std::vector<unsigned char> materialIds;
     MaterialDictionary* materialDictionary;
 
     bool outOfVoxelBounds(VoxelCoordinate& coordinate) const;
     bool outOfVertexBounds(VertexCoordinate& coordinate) const;
     void considerDirichletBoundaryAtLocalProblem(ProblemFragment& fragment) const;
+    void considerNeumannBoundaryAtLocalProblem(ProblemFragment& fragment) const;
 };

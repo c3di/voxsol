@@ -1,14 +1,18 @@
 #pragma once
-#include "material/Material.h"
+#include "problem/ProblemFragment.h"
 #include "problem/DirichletBoundary.h"
+#include "problem/NeumannBoundary.h"
+#include "material/Material.h"
 #include <vector>
 
 #pragma pack(push, 1)
 struct MaterialConfiguration { 
     unsigned char ids[8]; 
-    DirichletBoundary boundaryCondition;
+    DirichletBoundary dirichletBoundaryCondition;
+    NeumannBoundary neumannBoundaryCondition;
 
-    MaterialConfiguration(const std::vector<Material*>* mats, const DirichletBoundary condition) {
+    MaterialConfiguration(const ProblemFragment* fragment) {
+        const std::vector<Material*>* mats = fragment->getMaterials();
         ids[0] = mats->at(0)->id;
         ids[1] = mats->at(1)->id;
         ids[2] = mats->at(2)->id;
@@ -17,7 +21,8 @@ struct MaterialConfiguration {
         ids[5] = mats->at(5)->id;
         ids[6] = mats->at(6)->id;
         ids[7] = mats->at(7)->id;
-        boundaryCondition = DirichletBoundary(condition);
+        dirichletBoundaryCondition = fragment->getDirichletBoundaryCondition();
+        neumannBoundaryCondition = fragment->getNeumannBoundaryCondition();
     }
 
     MaterialConfiguration(const std::vector<Material*>* mats) {
@@ -29,12 +34,14 @@ struct MaterialConfiguration {
         ids[5] = mats->at(5)->id;
         ids[6] = mats->at(6)->id;
         ids[7] = mats->at(7)->id;
-        boundaryCondition = DirichletBoundary(DirichletBoundary::NONE);
+        dirichletBoundaryCondition = DirichletBoundary(DirichletBoundary::NONE);
     }
 
     bool operator==(const MaterialConfiguration& other) const {
         return ids[0] == other[0] && ids[1] == other[1] && ids[2] == other[2] && ids[3] == other[3] &&
-            ids[4] == other[4] && ids[5] == other[5] && ids[6] == other[6] && ids[7] == other[7] && boundaryCondition == other.boundaryCondition;
+            ids[4] == other[4] && ids[5] == other[5] && ids[6] == other[6] && ids[7] == other[7] && 
+            dirichletBoundaryCondition == other.dirichletBoundaryCondition && 
+            neumannBoundaryCondition == other.neumannBoundaryCondition;
     }
 
     bool operator!=(const MaterialConfiguration& other) const {
@@ -50,21 +57,14 @@ struct MaterialConfiguration {
 
 namespace std {
 
-    // Hash combine function as implemented in the boost library
-    template <class T>
-    inline void hash_combine(std::size_t& seed, const T& v)
-    {
-        std::hash<T> hasher;
-        seed ^= hasher(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-    }
-
     template<>
     struct hash<MaterialConfiguration> 
     {
         std::size_t operator()(const MaterialConfiguration& k) const 
         {
             std::size_t hashValue = std::hash<unsigned long long>()(*reinterpret_cast<const unsigned long long*> (&k));
-            hash_combine(hashValue, k.boundaryCondition);
+            hash_combine(hashValue, k.dirichletBoundaryCondition);
+            hash_combine(hashValue, k.neumannBoundaryCondition);
             return hashValue;
         }
     };
