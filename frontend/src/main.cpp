@@ -9,6 +9,8 @@
 #include "gpu/kernels/SolveDisplacementKernel.h"
 #include "material/MaterialFactory.h"
 #include "material/MaterialDictionary.h"
+#include "problem/DirichletBoundary.h"
+#include "problem/NeumannBoundary.h"
 
 int main(int argc, char* argv[]) {
 
@@ -31,14 +33,22 @@ int main(int argc, char* argv[]) {
     MaterialFactory mFactory;
     MaterialDictionary mDictionary;
 
-    Material steel = mFactory.createMaterialWithProperties(210e9, 0.3);
+    DirichletBoundary fixed(DirichletBoundary::FIXED_ALL);
+    NeumannBoundary stress(ettention::Vec3<REAL>(9999, 0, 0));
+
+    Material steel = mFactory.createMaterialWithProperties(asREAL(210e9), asREAL(0.3));
     mDictionary.addMaterial(steel);
 
     DiscreteProblem problem(size, voxelSize, &mDictionary);
 
     for (int i = 0; i < 27; i++) {
         problem.setMaterial(i, steel.id);
+        if (i > 18) {
+            problem.setDirichletBoundaryAtVertex(i, fixed);
+        }
     }
+
+    problem.setNeumannBoundaryAtVertex(ettention::Vec3ui(3, 3, 3), stress);
 
     Solution solution(problem);
     solution.computeMaterialConfigurationEquations();
@@ -46,5 +56,16 @@ int main(int argc, char* argv[]) {
     SolveDisplacementKernel kernel(&solution);
     kernel.launch();
 
+    std::vector<Vertex>* vertices = solution.getVertices();
+    std::cout << "\nEquation Ids: " << std::endl;
+    for (int i = 0; i < vertices->size(); i++) {
+        std::cout << vertices->at(i).materialConfigId << " ";
+    }
+    std::cout << std::endl;
+    std::cout << "\nDisplacements: " << std::endl;
+    for (int i = 0; i < vertices->size(); i++) {
+        Vertex v = vertices->at(i);
+        std::cout << v.x << ", " << v.y << ", " << v.z << std::endl;
+    }
 
 }
