@@ -56,10 +56,9 @@ if (NOT DEFINED CUDA_CUDA_LIBRARY)
 else()
     include_directories(${CUDA_INCLUDE_DIRS})
     # Enable output of kernel memory useage info during compilation
-    set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};--gpu-architecture=sm_50)
-    set(CUDA_NVCC_FLAGS_DEBUG ${CUDA_NVCC_FLAGS_DEBUG};-Xptxas=-v;)
-    set(CUDA_NVCC_FLAGS_RELWITHDEBINFO ${CUDA_NVCC_FLAGS_RELWITHDEBINFO};-Xptxas=-v;)
-	
+    set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS} "--gpu-architecture=sm_50")
+    set(CUDA_NVCC_FLAGS_DEBUG ${CUDA_NVCC_FLAGS_DEBUG} "-Xptxas=-v -G")
+    set(CUDA_NVCC_FLAGS_RELWITHDEBINFO ${CUDA_NVCC_FLAGS_RELWITHDEBINFO} "-Xptxas=-v")
 endif()
 
 ################
