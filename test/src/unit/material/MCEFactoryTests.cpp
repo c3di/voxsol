@@ -49,18 +49,18 @@ TEST_F(MCEFactoryTests, UniformSteel) {
     mceFactory.initializeEquationsForFragment(&fragEquations, fragment);
 
     const Matrix3x3* lhs = fragEquations.getLHSInverse();
-    std::vector<REAL> lhsExpected({ static_cast<REAL>(1) / 1.3478290598290596E12, 0, 0, 0, static_cast<REAL>(1) / 1.3478290598290596E12, 0, 0, 0, static_cast<REAL>(1) / 1.3478290598290596E12 });
+    std::vector<REAL> lhsExpected({ 1 / asREAL(1.3478290598290596e12), 0, 0, 0, 1 / asREAL(1.3478290598290596e12), 0, 0, 0, 1 / asREAL(1.3478290598290596e12) });
     
     EXPECT_TRUE(closeEqual(*lhs, Matrix3x3(lhsExpected)));
 
     const Matrix3x3* rhs = fragEquations.getRHS(1);
-    std::vector<REAL> rhsExpected({-1.723076923076923E10, 0, 0, 0, -6.50940170940171E10, -9.572649572649567E10, 0, -9.572649572649567E10,-6.509401709401708E10 });
+    std::vector<REAL> rhsExpected({asREAL(-1.723076923076923e10), 0, 0, 0, asREAL(-6.50940170940171e10), asREAL(-9.572649572649567e10), 0, asREAL(-9.572649572649567e10),asREAL(-6.509401709401708e10) });
     EXPECT_TRUE(closeEqual(*rhs, Matrix3x3(rhsExpected)));
 
     rhs = fragEquations.getRHS(9);
-    std::vector<REAL> rhsExpected2({ -6.50940170940171E10, -9.572649572649571E10, 2.980232238769531E-7, 
-                                     -9.572649572649571E10, -6.509401709401709E10, 4.172325134277344E-7, 
-                                     -2.980232238769531E-7, -4.172325134277344E-7,-1.7230769230769222E10 });
+    std::vector<REAL> rhsExpected2({ asREAL(-6.50940170940171e10), asREAL(-9.572649572649571e10), asREAL(2.980232238769531e-7),
+                                     asREAL(-9.572649572649571e10), asREAL(-6.509401709401709e10), asREAL(4.172325134277344e-7),
+                                     asREAL(-2.980232238769531e-7), asREAL(-4.172325134277344e-7), asREAL(-1.7230769230769222e10) });
     EXPECT_TRUE(closeEqual(*rhs, Matrix3x3(rhsExpected2)));
 }
 
@@ -79,7 +79,7 @@ TEST_F(MCEFactoryTests, MixSteelNull) {
     mceFactory.initializeEquationsForFragment(&fragEquations, fragment);
 
     const Matrix3x3* lhs = fragEquations.getLHSInverse();
-    std::vector<REAL> lhsExpected({ static_cast<REAL>(1) / 1.9743589743589746E11, 0, 0, 0, static_cast<REAL>(1) / 1.9743589743589746E11, 0, 0, 0, static_cast<REAL>(1) / 1.9743589743589746E11 });
+    std::vector<REAL> lhsExpected({ 1 / asREAL(1.9743589743589746e11), 0, 0, 0, 1 / asREAL(1.9743589743589746e11), 0, 0, 0, 1 / asREAL(1.9743589743589746e11) });
     EXPECT_TRUE(closeEqual(*lhs, Matrix3x3(lhsExpected)));
 
     const Matrix3x3* rhs = fragEquations.getRHS(1);
@@ -87,9 +87,9 @@ TEST_F(MCEFactoryTests, MixSteelNull) {
     EXPECT_TRUE(closeEqual(*rhs, Matrix3x3(rhsExpected)));
 
     rhs = fragEquations.getRHS(9);
-    std::vector<REAL> rhsExpected2({ -1.794871794871795E10, -1.6826923076923077E10, 1.682692307692307E9,
-        -1.6826923076923077E10, -1.794871794871795E10, 1.682692307692307E9,
-        -1.682692307692307E9, -1.682692307692307E9,-1.1217948717948723E9 });
+    std::vector<REAL> rhsExpected2({ asREAL(-1.794871794871795e10), asREAL(-1.6826923076923077e10), asREAL(1.682692307692307e9),
+                                     asREAL(-1.6826923076923077e10), asREAL(-1.794871794871795e10), asREAL(1.682692307692307e9),
+                                     asREAL(-1.682692307692307e9), asREAL(-1.682692307692307e9), asREAL(-1.1217948717948723e9) });
     EXPECT_TRUE(closeEqual(*rhs, Matrix3x3(rhsExpected2)));
 }
 
@@ -105,17 +105,17 @@ TEST_F(MCEFactoryTests, SteelNonUniformVoxels) {
     mceFactory.initializeEquationsForFragment(&fragEquations, fragment);
 
     const Matrix3x3* lhs = fragEquations.getLHSInverse();
-    std::vector<REAL> lhsExpected({ static_cast<REAL>(1) / 7.198632478632479E11, 0, 0, 0, static_cast<REAL>(1) / 1.868581196581196E12, 0, 0, 0, static_cast<REAL>(1) / 9.496068376068375E11 });
+    std::vector<REAL> lhsExpected({ 1 / asREAL(7.198632478632479e11), 0, 0, 0, 1 / asREAL(1.868581196581196e12), 0, 0, 0, 1 / asREAL(9.496068376068375e11) });
     EXPECT_TRUE(closeEqual(*lhs, Matrix3x3(lhsExpected)));
 
     const Matrix3x3* rhs = fragEquations.getRHS(1);
-    std::vector<REAL> rhsExpected({ -3.661538461538461E10, 0, 0, 0, -1.143931623931624E11, -9.572649572649567E10, 0, -9.572649572649567E10, -5.695726495726497E10 });
+    std::vector<REAL> rhsExpected({ asREAL(-3.661538461538461e10), 0, 0, 0, asREAL(-1.143931623931624e11), asREAL(-9.572649572649567e10), 0, asREAL(-9.572649572649567e10), asREAL(-5.695726495726497e10) });
     EXPECT_TRUE(closeEqual(*rhs, Matrix3x3(rhsExpected)));
 
     rhs = fragEquations.getRHS(9);
-    std::vector<REAL> rhsExpected2({ -3.541880341880342E10, -4.7863247863247856E10, 7.450580596923828E-8,
-        -4.7863247863247856E10, -1.072136752136752E11, 4.172325134277344E-7,
-        -7.450580596923828E-8, -4.172325134277344E-7, -2.5846153846153847E10 });
+    std::vector<REAL> rhsExpected2({ asREAL(-3.541880341880342e10), asREAL(-4.7863247863247856e10), asREAL(7.450580596923828e-8),
+                                     asREAL(-4.7863247863247856e10), asREAL(-1.072136752136752e11), asREAL(4.172325134277344e-7),
+                                     asREAL(-7.450580596923828e-8), asREAL(-4.172325134277344e-7), asREAL(-2.5846153846153847e10) });
     EXPECT_TRUE(closeEqual(*rhs, Matrix3x3(rhsExpected2)));
 }
 
@@ -132,7 +132,7 @@ TEST_F(MCEFactoryTests, SteelNullNonUniformVoxels) {
     mceFactory.initializeEquationsForFragment(&fragEquations, fragment);
 
     const Matrix3x3* lhs = fragEquations.getLHSInverse();
-    std::vector<REAL> lhsExpected({ static_cast<REAL>(1) / 1.0544871794871796E11, 0, 0, 0, static_cast<REAL>(1) / 2.737179487179487E11, 0, 0, 0, static_cast<REAL>(1) / 1.391025641025641E11 });
+    std::vector<REAL> lhsExpected({ 1 / asREAL(1.0544871794871796e11), 0, 0, 0, 1 / asREAL(2.737179487179487e11), 0, 0, 0, 1 / asREAL(1.391025641025641E11) });
     EXPECT_TRUE(closeEqual(*lhs, Matrix3x3(lhsExpected)));
 
     const Matrix3x3* rhs = fragEquations.getRHS(1);
@@ -140,8 +140,8 @@ TEST_F(MCEFactoryTests, SteelNullNonUniformVoxels) {
     EXPECT_TRUE(closeEqual(*rhs, Matrix3x3(rhsExpected)));
 
     rhs = fragEquations.getRHS(9);
-    std::vector<REAL> rhsExpected2({ -9.815705128205128E9, -8.413461538461538E9, 4.2067307692307675E8,
-        -8.413461538461538E9, -3.084935897435897E10, 1.682692307692307E9,
-        -4.2067307692307675E8, -1.682692307692307E9, -5.6089743589743595E9 });
+    std::vector<REAL> rhsExpected2({ asREAL(-9.815705128205128e9), asREAL(-8.413461538461538e9), asREAL(4.2067307692307675e8),
+                                     asREAL(-8.413461538461538e9), asREAL(-3.084935897435897e10), asREAL(1.682692307692307e9),
+                                     asREAL(-4.2067307692307675e8), asREAL(-1.682692307692307e9), asREAL(-5.6089743589743595e9) });
     EXPECT_TRUE(closeEqual(*rhs, Matrix3x3(rhsExpected2)));
 }

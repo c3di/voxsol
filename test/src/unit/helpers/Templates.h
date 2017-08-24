@@ -1,4 +1,5 @@
 #pragma once
+#include "stdafx.h"
 #include "material/MaterialDictionary.h"
 #include "problem/DiscreteProblem.h"
 
@@ -6,10 +7,10 @@ class MatStore {
 public:
     MatStore() :
         EMPTY(Material::EMPTY),
-        FEMUR(124000000, 0.4, 201),
-        TIBIA(174000000, 0.4, 202),
-        STEEL(210000000000, 0.3, 203),
-        TITANIUM(110000000000, 0.33, 204)
+        FEMUR(asREAL(124000000), asREAL(0.4), 201),
+        TIBIA(asREAL(174000000), asREAL(0.4), 202),
+        STEEL(asREAL(210000000000), asREAL(0.3), 203),
+        TITANIUM(asREAL(110000000000), asREAL(0.33), 204)
     {
         DICTIONARY.addMaterial(FEMUR);
         DICTIONARY.addMaterial(TIBIA);

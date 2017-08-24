@@ -27,7 +27,7 @@ TEST_F(MaterialConfigurationTests, EmptyInitialization) {
     
     ProblemFragment frag(ettention::Vec3ui(0, 0, 0));
     MaterialConfiguration fragKey = frag.getMaterialConfiguration();
-    Material mat(210e9, 0.3, 1);
+    Material mat(asREAL(210e9), asREAL(0.3), 1);
 
     unsigned char ids = 0;
     for (int i = 0; i < 8; i++) {
@@ -53,7 +53,7 @@ TEST_F(MaterialConfigurationTests, KeyHash) {
 
     std::unordered_map<MaterialConfiguration, unsigned int> map;
     ProblemFragment frag(ettention::Vec3ui(0, 0, 0));
-    Material mat(210e9, 0.3, 1);
+    Material mat(asREAL(210e9), asREAL(0.3), 1);
     frag.setMaterial(0, &mat);
 
     MaterialConfiguration fragKey = frag.getMaterialConfiguration();
@@ -74,8 +74,8 @@ TEST_F(MaterialConfigurationTests, Equality) {
 
     ProblemFragment fragOne(ettention::Vec3ui(0, 0, 0));
     ProblemFragment fragTwo(ettention::Vec3ui(0, 0, 0));
-    Material matA(210e9, 0.3, 1);
-    Material matB(220e9, 0.4, 2);
+    Material matA(asREAL(210e9), asREAL(0.3), 1);
+    Material matB(asREAL(220e9), asREAL(0.4), 2);
     
     fragOne.setMaterial(0, &matA);
     fragOne.setMaterial(4, &matA);

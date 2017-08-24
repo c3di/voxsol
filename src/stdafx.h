@@ -16,3 +16,6 @@ typedef double REAL;
 typedef float REAL;
 
 #endif
+
+#define asREAL(num) static_cast<REAL>(num)
+

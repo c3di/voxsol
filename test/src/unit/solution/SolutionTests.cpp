@@ -112,7 +112,7 @@ TEST_F(SolutionTests, DirichletBoundaryAppliedToLHS) {
     const MaterialConfigurationEquations xFixedEqns = equations->at(eqId);
     const Matrix3x3* xFixedLHS = xFixedEqns.getLHSInverse();
     //Note: first row is all zeroes => x component zero when multiplied with RHS vector => x is fixed
-    Matrix3x3 xFixedExpected(0.0, 6.2308614032751929e-12, 6.2308614032751929e-12, 0.0, 2.4508054852882432e-11, - 6.2308614032751929e-12, 0.0, - 6.2308614032751929e-12, 2.4508054852882432e-11);
+    Matrix3x3 xFixedExpected(0.0, asREAL(6.2308614032751929e-12), asREAL(6.2308614032751929e-12), 0.0, asREAL(2.4508054852882432e-11), asREAL(-6.2308614032751929e-12), 0.0, asREAL(-6.2308614032751929e-12), asREAL(2.4508054852882432e-11));
 
     EXPECT_TRUE(closeEqual(*xFixedLHS, xFixedExpected)) << "Expected LHS matrix for X_FIXED to have zeroes in first row";
 }

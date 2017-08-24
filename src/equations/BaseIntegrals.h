@@ -8,17 +8,17 @@ class BaseIntegrals {
 public:
 
     BaseIntegrals(ettention::Vec3f& voxelSize) :
-        dx(voxelSize.x),
-        dy(voxelSize.y),
-        dz(voxelSize.z)
+        dx(asREAL(voxelSize.x)),
+        dy(asREAL(voxelSize.y)),
+        dz(asREAL(voxelSize.z))
     {
 
     }
 
     BaseIntegrals(ettention::Vec3d& voxelSize) :
-        dx(voxelSize.x),
-        dy(voxelSize.y),
-        dz(voxelSize.z)
+        dx(asREAL(voxelSize.x)),
+        dy(asREAL(voxelSize.y)),
+        dz(asREAL(voxelSize.z))
     {
 
     }

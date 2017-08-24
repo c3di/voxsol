@@ -32,11 +32,11 @@ Material::~Material() {
 }
 
 REAL Material::calculateMu(REAL eModul, REAL poissonRatio) {
-    return eModul / (2.0 * (1.0 + poissonRatio));
+    return asREAL(eModul / (2.0 * (1.0 + poissonRatio)));
 }
 
 REAL Material::calculateLambda(REAL eModul, REAL poissonRatio) {
-    REAL divisor = (1.0 + poissonRatio) * (1.0 - 2.0 * poissonRatio);
+    REAL divisor = asREAL((1.0 + poissonRatio) * (1.0 - 2.0 * poissonRatio));
     return (eModul * poissonRatio) / divisor;
 }
 

@@ -41,7 +41,7 @@ void MaterialConfigurationEquationsFactory::computeLHS(const ProblemFragment& fr
         REAL mu = fragment.mu(cell);
         REAL lambda = fragment.lambda(cell);
 
-        fullIntegralLHS[0] += (lambda + 2.0 * mu) * integrals->value(13,0,0,cell);
+        fullIntegralLHS[0] += (lambda + asREAL(2.0) * mu) * integrals->value(13,0,0,cell);
         fullIntegralLHS[1] += lambda * integrals->value(13,1,0,cell);
         fullIntegralLHS[2] += lambda * integrals->value(13,2,0,cell);
         fullIntegralLHS[3] += mu * integrals->value(13,1,1,cell);
@@ -49,7 +49,7 @@ void MaterialConfigurationEquationsFactory::computeLHS(const ProblemFragment& fr
 
         fullIntegralLHS[5] += mu * integrals->value(13,2,2,cell);
         fullIntegralLHS[6] += mu * integrals->value(13,0,2,cell);
-        fullIntegralLHS[7] += (lambda + 2.0 * mu) * integrals->value(13,1,1,cell);
+        fullIntegralLHS[7] += (lambda + asREAL(2.0) * mu) * integrals->value(13,1,1,cell);
         fullIntegralLHS[8] += lambda * integrals->value(13,0,1,cell);
         fullIntegralLHS[9] += lambda * integrals->value(13,2,1,cell);
 
@@ -57,7 +57,7 @@ void MaterialConfigurationEquationsFactory::computeLHS(const ProblemFragment& fr
         fullIntegralLHS[11] += mu * integrals->value(13,0,0,cell);
         fullIntegralLHS[12] += mu * integrals->value(13,2,2,cell);
         fullIntegralLHS[13] += mu * integrals->value(13,1,2,cell);
-        fullIntegralLHS[14] += (lambda + 2.0 * mu) * integrals->value(13,2,2,cell);
+        fullIntegralLHS[14] += (lambda + asREAL(2.0) * mu) * integrals->value(13,2,2,cell);
 
         fullIntegralLHS[15] += lambda * integrals->value(13,0,2,cell);
         fullIntegralLHS[16] += lambda * integrals->value(13,1,2,cell);
@@ -128,7 +128,7 @@ void MaterialConfigurationEquationsFactory::computeRHSForNode(unsigned int nodeI
     REAL* matrixRHS = new REAL[9](); //3x3 matrix in column-major
 
     for (int cell = 0; cell < 8; cell++) {
-        double lambda = fragment.lambda(cell);
+        REAL lambda = fragment.lambda(cell);
         //Column 1
         matrixRHS[0] += lambda * integrals->value(nodeIndex,0,0,cell);
         matrixRHS[1] += lambda * integrals->value(nodeIndex,0,1,cell);
@@ -142,7 +142,7 @@ void MaterialConfigurationEquationsFactory::computeRHSForNode(unsigned int nodeI
         matrixRHS[7] += lambda * integrals->value(nodeIndex,2,1,cell);
         matrixRHS[8] += lambda * integrals->value(nodeIndex,2,2,cell);
 
-        double mu = fragment.mu(cell);
+        REAL mu = fragment.mu(cell);
         matrixRHS[0] += mu * (2 * integrals->value(nodeIndex,0,0,cell) + integrals->value(nodeIndex,1,1,cell) + integrals->value(nodeIndex,2,2,cell));
         matrixRHS[1] += mu * integrals->value(nodeIndex,1,0,cell);
         matrixRHS[2] += mu * integrals->value(nodeIndex,2,0,cell);
