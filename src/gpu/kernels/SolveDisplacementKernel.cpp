@@ -2,19 +2,27 @@
 #include "stdafx.h"
 #include "SolveDisplacementKernel.h"
 
+//__constant__, defined in SolveDisplacementCuda.cu
+extern unsigned short solutionDimensions[3];
+
 SolveDisplacementKernel::SolveDisplacementKernel(Solution* sol) :
     solution(sol),
     serializedMatConfigEquations(nullptr),
     serializedVertices(nullptr)
 {
-
-};
+    ettention::Vec3ui size = sol->getSize();
+    constantSolutionDimensions = new unsigned short[3];
+    constantSolutionDimensions[0] = (unsigned short)size.x;
+    constantSolutionDimensions[1] = (unsigned short)size.y;
+    constantSolutionDimensions[2] = (unsigned short)size.z;
+}
 
 SolveDisplacementKernel::~SolveDisplacementKernel() {
     freeCudaResources();
+    delete[] constantSolutionDimensions;
     assert(serializedMatConfigEquations == nullptr);
     assert(serializedVertices == nullptr);
-};
+}
 
 
 void SolveDisplacementKernel::launch() {
@@ -26,7 +34,7 @@ void SolveDisplacementKernel::launch() {
         cudaDeviceSynchronize();
         pullVertices();
     }
-};
+}
 
 bool SolveDisplacementKernel::canExecute() {
     if (serializedMatConfigEquations == nullptr || serializedVertices == nullptr) {
@@ -34,7 +42,7 @@ bool SolveDisplacementKernel::canExecute() {
     }
 
     return true;
-};
+}
 
 void SolveDisplacementKernel::freeCudaResources() {
     cudaCheckSuccess(cudaFree(serializedMatConfigEquations));
@@ -46,13 +54,18 @@ void SolveDisplacementKernel::freeCudaResources() {
 void SolveDisplacementKernel::prepareInputs() {
     pushMatConfigEquations();
     pushVertices();
+    pushSolutionDimensions();
 }
 
 void SolveDisplacementKernel::pushMatConfigEquations() {
     size_t size = solution->getMaterialConfigurationEquations()->size() * MaterialConfigurationEquations::SizeInBytes;
     cudaCheckSuccess(cudaMallocManaged(&serializedMatConfigEquations, size));
     serializeMaterialConfigurationEquations(serializedMatConfigEquations);
-};
+}
+
+void SolveDisplacementKernel::pushSolutionDimensions() {
+    cudaCheckSuccess(cudaMemcpyToSymbol(solutionDimensions, constantSolutionDimensions, sizeof(unsigned short) * 3));
+}
 
 void SolveDisplacementKernel::pushVertices() {
     const std::vector<Vertex>* vertices = solution->getVertices();
@@ -65,7 +78,7 @@ void SolveDisplacementKernel::pullVertices() {
     std::vector<Vertex>* vertices = solution->getVertices();
     size_t size = vertices->size() * sizeof(Vertex);
     memcpy(vertices->data(), serializedVertices, size);
-};
+}
 
 void SolveDisplacementKernel::serializeMaterialConfigurationEquations(void* destination) {
     const std::vector<MaterialConfigurationEquations>* signatures = solution->getMaterialConfigurationEquations();

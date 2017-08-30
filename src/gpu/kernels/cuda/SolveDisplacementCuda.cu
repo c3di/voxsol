@@ -5,6 +5,7 @@
 #include "gpu/CudaCommonFunctions.h"
 #include "solution/Vertex.h"
 
+__constant__ unsigned short solutionDimensions[3];
 
 __global__
 void cuda_SolveDisplacement(Vertex* verticesOnGPU, REAL* matConfigEquations) {

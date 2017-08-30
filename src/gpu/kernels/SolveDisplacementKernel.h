@@ -29,11 +29,13 @@ private:
 
     Vertex* serializedVertices;
     REAL* serializedMatConfigEquations;
+    unsigned short* constantSolutionDimensions;
 
     void prepareInputs();
 
     void pushMatConfigEquations();
     void pushVertices();
+    void pushSolutionDimensions();
 
     void pullVertices();
 

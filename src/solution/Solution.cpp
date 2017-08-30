@@ -22,6 +22,10 @@ std::vector<Vertex>* Solution::getVertices() {
     return &vertices;
 }
 
+const ettention::Vec3ui Solution::getSize() const {
+    return size;
+}
+
 const std::vector<MaterialConfigurationEquations>* Solution::getMaterialConfigurationEquations() const {
     return &matConfigEquations;
 }

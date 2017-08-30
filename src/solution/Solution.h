@@ -17,6 +17,7 @@ public:
 
     unsigned int mapToIndex(ettention::Vec3ui& coordinate) const;
     ettention::Vec3ui mapToCoordinate(unsigned int index) const;
+    const ettention::Vec3ui getSize() const;
 
     const std::vector<MaterialConfigurationEquations>* getMaterialConfigurationEquations() const;
     std::vector<Vertex>* getVertices();
