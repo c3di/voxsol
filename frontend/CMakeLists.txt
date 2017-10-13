@@ -1,7 +1,7 @@
-cmake_minimum_required(VERSION 3.4)
+cmake_minimum_required(VERSION 3.10)
 SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}")
 
-project(stomech_solver)
+project(stomech_solver CUDA)
 
 # find all directories containing source files
 set(FILE_TYPES *.c *.cc *.cu *.cpp *.h *.hpp *.tcc)
@@ -13,7 +13,7 @@ include_directories(${LIBMMV_INCLUDE_DIR}
                     ${STOMECH_SOLVER_INCLUDE_DIR}
 )
 
-CUDA_ADD_EXECUTABLE(${PROJECT_NAME}
+add_executable(${PROJECT_NAME}
                     ${HOST_SOURCES}
 )
 
