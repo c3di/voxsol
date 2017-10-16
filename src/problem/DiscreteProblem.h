@@ -3,6 +3,7 @@
 #include "problem/ProblemFragment.h"
 #include "problem/DirichletBoundary.h"
 #include "problem/NeumannBoundary.h"
+#include "material/Material.h"
 #include <vector>
 #include <unordered_map>
 
@@ -28,6 +29,7 @@ public:
     Material* getMaterial(unsigned int index) const;
     ettention::Vec3d getVoxelSize() const;
     ettention::Vec3ui getSize() const;
+    unsigned int getNumberOfVoxels() const;
     std::vector<unsigned char>* getMaterialIdVector();
     DirichletBoundary getDirichletBoundaryAtVertex(VertexCoordinate& coordinate);
     DirichletBoundary getDirichletBoundaryAtVertex(unsigned int index);
@@ -39,6 +41,9 @@ public:
     unsigned int mapToVertexIndex(VertexCoordinate& coordinate) const;
     VertexCoordinate mapToVertexCoordinate(unsigned int index) const;
     ProblemFragment extractLocalProblem(ettention::Vec3ui centerCoord) const;
+
+    ettention::Vec3<REAL> getVertexPosition(unsigned int index) const;
+    ettention::Vec3<REAL> getVertexPosition(VertexCoordinate& coordinate) const;
 
 protected:
     const ettention::Vec3ui problemSize;

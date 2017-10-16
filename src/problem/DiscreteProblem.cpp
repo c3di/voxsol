@@ -88,6 +88,10 @@ ettention::Vec3ui DiscreteProblem::getSize() const {
     return ettention::Vec3ui(problemSize);
 }
 
+unsigned int DiscreteProblem::getNumberOfVoxels() const {
+    return problemSize.x * problemSize.y * problemSize.z;
+}
+
 std::vector<unsigned char>* DiscreteProblem::getMaterialIdVector() {
     return &materialIds;
 }
@@ -157,4 +161,16 @@ void DiscreteProblem::considerNeumannBoundaryAtLocalProblem(ProblemFragment& fra
     if (neumannBoundaryConditions.count(index) > 0) {
         fragment.setNeumannBoundary(neumannBoundaryConditions.at(index));
     }
+}
+
+ettention::Vec3<REAL> DiscreteProblem::getVertexPosition(unsigned int index) const {
+    VertexCoordinate coordinate = mapToVertexCoordinate(index);
+    return getVertexPosition(coordinate);
+}
+
+ettention::Vec3<REAL> DiscreteProblem::getVertexPosition(VertexCoordinate& coordinates) const {
+    REAL x = static_cast<REAL>(coordinates.x) * voxelSize.x;
+    REAL y = static_cast<REAL>(coordinates.y) * voxelSize.y;
+    REAL z = static_cast<REAL>(coordinates.z) * voxelSize.z;
+    return ettention::Vec3<REAL>(x, y, z);
 }

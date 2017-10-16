@@ -26,6 +26,10 @@ const ettention::Vec3ui Solution::getSize() const {
     return size;
 }
 
+DiscreteProblem* Solution::getProblem() {
+    return problem;
+}
+
 const std::vector<MaterialConfigurationEquations>* Solution::getMaterialConfigurationEquations() const {
     return &matConfigEquations;
 }
@@ -84,7 +88,6 @@ void Solution::computeEquationsForUniqueMaterialConfigurations() {
             equations->setId(equationId);
             ettention::Vec3ui centerCoord = mapToCoordinate(i);
             ProblemFragment fragment = problem->extractLocalProblem(centerCoord);
-            MaterialConfiguration materialConfig = fragment.getMaterialConfiguration();
             mceFactory.initializeEquationsForFragment(equations, fragment);
         }
     }

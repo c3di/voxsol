@@ -4,8 +4,8 @@
 #include "Vertex.h"
 #include <unordered_map>
 #include <vector>
+#include <problem\DiscreteProblem.h>
 
-class DiscreteProblem;
 
 class Solution {
 public:
@@ -22,10 +22,12 @@ public:
     const std::vector<MaterialConfigurationEquations>* getMaterialConfigurationEquations() const;
     std::vector<Vertex>* getVertices();
 
+    DiscreteProblem* getProblem();
+
 protected:
     const ettention::Vec3ui size;
     const ettention::Vec3<REAL> voxelSize;
-    const DiscreteProblem* const problem;
+    DiscreteProblem* problem;
     std::vector<Vertex> vertices;
     std::vector<MaterialConfigurationEquations> matConfigEquations;
 
