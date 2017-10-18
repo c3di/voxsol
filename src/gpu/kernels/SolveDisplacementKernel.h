@@ -8,7 +8,7 @@
 #include "libmmv/math/Vec3.h"
 #include "solution/Solution.h"
 
-extern "C" void cudaLaunchSolveDisplacementKernel(Vertex* verticesOnGPU, REAL* matConfigEquationsOnGPU, unsigned int numVertices);
+extern "C" void cudaLaunchSolveDisplacementKernel(Vertex* verticesOnGPU, REAL* matConfigEquationsOnGPU, const SolutionDim solutionDims);
 
 class SolveDisplacementKernel : public CudaKernel {
 
@@ -18,6 +18,10 @@ public:
     ~SolveDisplacementKernel();
 
     void launch() override;
+    void solveCPU();
+
+    void debugOutputEquationsCPU();
+    void debugOutputEquationsGPU();
 
 protected:
 
@@ -26,19 +30,20 @@ protected:
 
 private:
     Solution* solution;
+	SolutionDim solutionDimensions;
 
     Vertex* serializedVertices;
     REAL* serializedMatConfigEquations;
-    unsigned short* constantSolutionDimensions;
 
     void prepareInputs();
 
     void pushMatConfigEquations();
     void pushVertices();
-    void pushSolutionDimensions();
 
     void pullVertices();
 
     void serializeMaterialConfigurationEquations(void* destination);
 
+    void cpuBuildRHSVector(ettention::Vec3<REAL>* rhsVec, const MaterialConfigurationEquations* matrices, int x, int y, int z);
+    void cpuSolveIteration();
 };

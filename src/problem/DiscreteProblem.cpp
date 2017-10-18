@@ -132,14 +132,15 @@ bool DiscreteProblem::outOfVertexBounds(VertexCoordinate& coordinate) const {
     return coordinate.x < 0 || coordinate.x >= solutionSize.x || coordinate.y < 0 || coordinate.y >= solutionSize.y || coordinate.z < 0 || coordinate.z >= solutionSize.z;
 }
 
-ProblemFragment DiscreteProblem::extractLocalProblem(ettention::Vec3ui centerCoord) const {
-    std::vector<Material*> mats;
+ProblemFragment DiscreteProblem::extractLocalProblem(VertexCoordinate& centerCoord) const {
+    std::vector<Material*> mats(8);
     
-    for (int z = -1; z < 1; z++) {
-        for (int y = -1; y < 1; y++) {
-            for (int x = -1; x < 1; x++) {
-                ettention::Vec3ui offset(centerCoord.x + x, centerCoord.y + y, centerCoord.z + z);
-                mats.push_back(getMaterial(offset));
+    for (int z = 0; z < 2; z++) {
+        for (int y = 0; y < 2; y++) {
+            for (int x = 0; x < 2; x++) {
+                VertexCoordinate globalCoordinate(centerCoord.x + x - 1, centerCoord.y + y - 1, centerCoord.z + z -1);
+                int matIndex = x + y * 2 + z * 4;
+                mats[matIndex] = getMaterial(globalCoordinate);
             }
         }
     }

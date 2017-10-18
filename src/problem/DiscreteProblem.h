@@ -40,7 +40,7 @@ public:
     VoxelCoordinate mapToVoxelCoordinate(unsigned int index) const;
     unsigned int mapToVertexIndex(VertexCoordinate& coordinate) const;
     VertexCoordinate mapToVertexCoordinate(unsigned int index) const;
-    ProblemFragment extractLocalProblem(ettention::Vec3ui centerCoord) const;
+    ProblemFragment extractLocalProblem(VertexCoordinate& centerCoord) const;
 
     ettention::Vec3<REAL> getVertexPosition(unsigned int index) const;
     ettention::Vec3<REAL> getVertexPosition(VertexCoordinate& coordinate) const;
