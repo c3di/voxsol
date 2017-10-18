@@ -20,14 +20,8 @@ MaterialConfigurationEquationsFactory::~MaterialConfigurationEquationsFactory() 
 void MaterialConfigurationEquationsFactory::initializeEquationsForFragment(MaterialConfigurationEquations* equations, const ProblemFragment& fragment) const {
     const BaseIntegrals* integrals;
     
-    //Quadratic integrals can only be used for fragments with uniform materials, mixed materials will cause
-    //the solution to diverge
-    if (fragment.containsMixedMaterials()) {
-        integrals = &linearIntegrals;
-    }
-    else {
-        integrals = &quadIntegrals;
-    }
+    // Quadratic integrals are disabled until the equations can be re-worked to not rely on having uniform materials inside the problem fragment
+    integrals = &linearIntegrals;
 
     computeLHS(fragment, equations, integrals);
     computeRHS(fragment, equations, integrals);
