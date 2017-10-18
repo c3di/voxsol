@@ -11,6 +11,44 @@
 #include "material/MaterialDictionary.h"
 #include "problem/DirichletBoundary.h"
 #include "problem/NeumannBoundary.h"
+#include "io/VTKVisualizer.h"
+
+void solveCPU(DiscreteProblem& problem) {
+    Solution solution(problem);
+    solution.computeMaterialConfigurationEquations();
+
+    VTKVisualizer visualizer(&solution);
+    visualizer.writeToFile("c:\\tmp\\step_0.vtk");
+    SolveDisplacementKernel kernel(&solution);
+
+    for (int i = 0; i < 1; i++) {
+        kernel.solveCPU();
+        std::stringstream fp;
+        fp << "c:\\tmp\\step_cpu.vtk";
+        visualizer.writeToFile(fp.str());
+    }
+
+    kernel.debugOutputEquationsCPU();
+    kernel.debugOutputEquationsGPU();
+}
+
+void solveGPU(DiscreteProblem& problem) {
+    Solution solution(problem);
+    solution.computeMaterialConfigurationEquations();
+
+    VTKVisualizer visualizer(&solution);
+    visualizer.writeToFile("c:\\tmp\\step_0.vtk");
+    SolveDisplacementKernel kernel(&solution);
+
+    for (int i = 0; i < 1; i++) {
+        kernel.launch();
+        std::stringstream fp;
+        fp << "c:\\tmp\\step_gpu.vtk";
+        visualizer.writeToFile(fp.str());
+    }
+    kernel.debugOutputEquationsCPU();
+    kernel.debugOutputEquationsGPU();
+}
 
 int main(int argc, char* argv[]) {
 
@@ -27,45 +65,48 @@ int main(int argc, char* argv[]) {
 
     CudaDebugHelper::PrintDeviceInfo(0);
 
-    ettention::Vec3ui size(3, 3, 3);
+    ettention::Vec3ui size(2, 2, 2);
     ettention::Vec3d voxelSize(1, 1, 1);
 
     MaterialFactory mFactory;
     MaterialDictionary mDictionary;
 
     DirichletBoundary fixed(DirichletBoundary::FIXED_ALL);
-    NeumannBoundary stress(ettention::Vec3<REAL>(9999, 0, 0));
+    std::vector<NeumannBoundary> boundaries;
 
     Material steel = mFactory.createMaterialWithProperties(asREAL(210e9), asREAL(0.3));
     mDictionary.addMaterial(steel);
 
     DiscreteProblem problem(size, voxelSize, &mDictionary);
 
-    for (int i = 0; i < 27; i++) {
+    for (int i = 0; i < 8; i++) {
         problem.setMaterial(i, steel.id);
-        if (i > 18) {
-            problem.setDirichletBoundaryAtVertex(i, fixed);
+    }
+
+    for (int z = 0; z < 3; z++) {
+        for (int y = 0; y < 3; y++) {
+            for (int x = 0; x < 3; x++) {
+                if (x == 2) {
+                    REAL zFactor = 1;
+                    REAL yFactor = 1;
+                    if (z == 0 || z == 2) {
+                        zFactor = static_cast<REAL>(0.5);
+                    }
+                    if (y == 0 || y == 2) {
+                        yFactor = static_cast<REAL>(0.5);
+                    }
+                    NeumannBoundary stress(ettention::Vec3<REAL>(static_cast<REAL>(1e11 * zFactor * yFactor), 0, 0));
+                    boundaries.push_back(stress);
+                    problem.setNeumannBoundaryAtVertex(ettention::Vec3ui(2, y, z), stress);
+                }
+                if (x == 0) {
+                    problem.setDirichletBoundaryAtVertex(ettention::Vec3ui(0, y, z), fixed);
+                }
+            }
         }
     }
 
-    problem.setNeumannBoundaryAtVertex(ettention::Vec3ui(3, 3, 3), stress);
-
-    Solution solution(problem);
-    solution.computeMaterialConfigurationEquations();
-
-    SolveDisplacementKernel kernel(&solution);
-    kernel.launch();
-
-    std::vector<Vertex>* vertices = solution.getVertices();
-    std::cout << "\nEquation Ids: " << std::endl;
-    for (int i = 0; i < vertices->size(); i++) {
-        std::cout << vertices->at(i).materialConfigId << " ";
-    }
-    std::cout << std::endl;
-    std::cout << "\nDisplacements: " << std::endl;
-    for (int i = 0; i < vertices->size(); i++) {
-        Vertex v = vertices->at(i);
-        std::cout << v.x << ", " << v.y << ", " << v.z << std::endl;
-    }
+    solveCPU(problem);
+    solveGPU(problem);
 
 }
