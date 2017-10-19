@@ -110,7 +110,7 @@ void SolveDisplacementKernel::cpuBuildRHSVector(ettention::Vec3<REAL>* rhsVec, c
 
                 //Local problem size is always 3x3x3 vertices
                 localNeighborIndex = offsetZ * 9 + offsetY * 3 + offsetX;
-                globalNeighborIndex = oz * 9 + oy * 3 + ox;
+                globalNeighborIndex = oz * solutionDimensions.x*solutionDimensions.y + oy * solutionDimensions.x + ox;
 
                 //vertices outside the solution space contribute nothing, so we can skip them
                 const Vertex* neighbor = &zero;
@@ -145,7 +145,7 @@ void SolveDisplacementKernel::cpuBuildRHSVector(ettention::Vec3<REAL>* rhsVec, c
 void SolveDisplacementKernel::cpuSolveIteration() {
     std::vector<Vertex>* vertices = solution->getVertices();
     int flatIndex = -1;
-    for (int z = 0; z < solutionDimensions.x; z++) {
+    for (int z = 0; z < solutionDimensions.z; z++) {
         for (int y = 0; y < solutionDimensions.y; y++) {
             for (int x = 0; x < solutionDimensions.x; x++) {
                 flatIndex++;
