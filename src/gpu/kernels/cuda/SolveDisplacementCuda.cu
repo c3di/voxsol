@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include <algorithm>
+#include <random>
 #include <cuda_runtime.h>
 #include <curand_kernel.h>
 #include <device_functions.h>
@@ -12,21 +13,40 @@
 
 #define LHS_MATRIX_INDEX 13            // Position of the LHS matrix in the material config equations
 #define EQUATION_ENTRY_SIZE 9 * 27 + 3 // 27 3x3 matrices and one 1x3 vector for Neumann stress
-#define BLOCK_SIZE 3                   // Number of threads in one block dimension (total threads per block is BLOCK_SIZE^3)
+#define BLOCK_SIZE 4                   // Number of threads in one block dimension (total threads per block is BLOCK_SIZE^3)
 #define NEUMANN_OFFSET 9 * 27          // Offset to the start of the Neumann stress vector inside an equation block
 
+__device__
+int getGlobalIdx_1D_3D() {
+    return blockIdx.x * blockDim.x * blockDim.y * blockDim.z
+        + threadIdx.z * blockDim.y * blockDim.x
+        + threadIdx.y * blockDim.x + threadIdx.x;
+}
+
+__device__
+int getGlobalIdx_3D_3D() {
+    int blockId = blockIdx.x + blockIdx.y * gridDim.x
+        + gridDim.x * gridDim.y * blockIdx.z;
+    int threadId = blockId * (blockDim.x * blockDim.y * blockDim.z)
+        + (threadIdx.z * (blockDim.x * blockDim.y))
+        + (threadIdx.y * blockDim.x) + threadIdx.x;
+    return threadId;
+}
+
 __global__
-void cuda_SolveDisplacement(Vertex* verticesOnGPU, REAL* matConfigEquations, const SolutionDim solutionDimensions, curandState* globalRNGStates) {
-    curandState localRNGState = globalRNGStates[threadIdx.x];
+void cuda_SolveDisplacement(Vertex* verticesOnGPU, REAL* matConfigEquations, const SolutionDim solutionDimensions, curandState* globalRNGStates, uint3* blockOrigins) {
+    uint3* blockOriginCoord = blockOrigins + blockIdx.x;
+    curandState localRNGState = globalRNGStates[getGlobalIdx_1D_3D()];
 
-    for (int i = 0; i < 100; i++) {
-        // choose vertex to update
-        int centerCoordX = lroundf(curand_uniform(&localRNGState) * (BLOCK_SIZE-1));
-        int centerCoordY = lroundf(curand_uniform(&localRNGState) * (BLOCK_SIZE-1));
-        int centerCoordZ = lroundf(curand_uniform(&localRNGState) * (BLOCK_SIZE-1));
-        int indexOfCenterVertex = centerCoordZ * BLOCK_SIZE * BLOCK_SIZE + centerCoordY * BLOCK_SIZE + centerCoordX;
+    for (int i = 0; i < 20; i++) {
+        // global coordinate of vertex to update
+        int vertexToUpdateX = blockOriginCoord->x + lroundf(curand_uniform(&localRNGState) * (BLOCK_SIZE));
+        int vertexToUpdateY = blockOriginCoord->y + lroundf(curand_uniform(&localRNGState) * (BLOCK_SIZE));
+        int vertexToUpdateZ = blockOriginCoord->z + lroundf(curand_uniform(&localRNGState) * (BLOCK_SIZE));
 
-        Vertex* globalCenterVertex = &verticesOnGPU[indexOfCenterVertex];
+        int globalIndexOfCenterVertex = vertexToUpdateZ * solutionDimensions.x * solutionDimensions.y + vertexToUpdateY * solutionDimensions.x + vertexToUpdateX;
+
+        Vertex* globalCenterVertex = &verticesOnGPU[globalIndexOfCenterVertex];
 
         int equationId = globalCenterVertex->materialConfigId;
         int equationIndex = equationId * (EQUATION_ENTRY_SIZE);
@@ -35,6 +55,7 @@ void cuda_SolveDisplacement(Vertex* verticesOnGPU, REAL* matConfigEquations, con
 
         REAL rhsVec[3] = { 0,0,0 };
         int localNeighborIndex = 0;
+        int globalNeighborIndex = 0;
         Vertex zero;
 
         // Build RHS vector by multiplying each neighbor's displacement with its RHS matrix
@@ -47,21 +68,26 @@ void cuda_SolveDisplacement(Vertex* verticesOnGPU, REAL* matConfigEquations, con
                         continue;
                     }
 
-                    int globalCoordX = centerCoordX + localOffsetX - 1;
-                    int globalCoordY = centerCoordY + localOffsetY - 1;
-                    int globalCoordZ = centerCoordZ + localOffsetZ - 1;
+                    // Note: globalcoord could be negative which will wrap around to max_int, both would be outside the solution space and caught by the 
+                    // if statement below
+                    uint3 globalNeighborCoord;
+                    globalNeighborCoord.x = vertexToUpdateX + localOffsetX - 1;
+                    globalNeighborCoord.y = vertexToUpdateY + localOffsetY - 1;
+                    globalNeighborCoord.z = vertexToUpdateZ + localOffsetZ - 1;
 
                     //Local problem size is always 3x3x3 vertices, regardless of solution size
                     localNeighborIndex = localOffsetZ * 9 + localOffsetY * 3 + localOffsetX;
+                    globalNeighborIndex = globalNeighborCoord.z * solutionDimensions.x * solutionDimensions.y + globalNeighborCoord.y * solutionDimensions.x + globalNeighborCoord.x;
 
                     const Vertex* neighbor;
 
-                    if (globalCoordX >= 0 && globalCoordX < solutionDimensions.x && 
-                        globalCoordY >= 0 && globalCoordY < solutionDimensions.y &&
-                        globalCoordZ >= 0 && globalCoordZ < solutionDimensions.z) 
+                    // coords are unsigned but could have wrapped around to max_int, either way they'd be outside the solution space
+                    if (globalNeighborCoord.x < solutionDimensions.x &&
+                        globalNeighborCoord.y < solutionDimensions.y &&
+                        globalNeighborCoord.z < solutionDimensions.z)
                     {
                         //Neighbor exists
-                        neighbor = &verticesOnGPU[globalCoordZ * 9 + globalCoordY * 3 + globalCoordX];
+                        neighbor = &verticesOnGPU[globalNeighborIndex];
                     }
                     else {
                         //Neighbor is outside the solution space, so the contribution is always zero displacement
@@ -89,9 +115,13 @@ void cuda_SolveDisplacement(Vertex* verticesOnGPU, REAL* matConfigEquations, con
         }
 
         //Move to right side of equation and apply force
-        rhsVec[0] = -rhsVec[0] + matrices[NEUMANN_OFFSET];
-        rhsVec[1] = -rhsVec[1] + matrices[NEUMANN_OFFSET+1];
-        rhsVec[2] = -rhsVec[2] + matrices[NEUMANN_OFFSET+2];
+        REAL nux = matrices[NEUMANN_OFFSET];
+        REAL nuy = matrices[NEUMANN_OFFSET+1];
+        REAL nuz = matrices[NEUMANN_OFFSET+2];
+
+        rhsVec[0] = -rhsVec[0] + nux;
+        rhsVec[1] = -rhsVec[1] + nuy;
+        rhsVec[2] = -rhsVec[2] + nuz;
 
         //rhsVec * LHS^-1
         globalCenterVertex->x =
@@ -115,26 +145,63 @@ void cuda_SolveDisplacement(Vertex* verticesOnGPU, REAL* matConfigEquations, con
 
 __global__
 void cuda_init_curand_state(curandState* rngState) {
-    int id = threadIdx.x;
+    int id = getGlobalIdx_3D_3D();
     // seed, sequence number, offset, curandState
     curand_init(id, 0, 0, &rngState[id]);
 }
 
 __host__
-extern "C" void cudaLaunchSolveDisplacementKernel(Vertex* vertices, REAL* matConfigEquations, const SolutionDim solutionDims) {
-
-    // setup execution parameters
-    //dim3 grid(solutionDims.x / BLOCK_SIZE, solutionDims.y / BLOCK_SIZE, solutionDims.z / BLOCK_SIZE);
-    int numThreads = BLOCK_SIZE * BLOCK_SIZE * BLOCK_SIZE;
-    // setup curand
+curandState* initializeRNGStates(int numConcurrentBlocks, dim3 threadsPerBlock) {
+    int numThreads = numConcurrentBlocks * BLOCK_SIZE*BLOCK_SIZE*BLOCK_SIZE;
     curandState* rngStateOnGPU;
-    cudaMalloc(&rngStateOnGPU, sizeof(curandState) * numThreads);
-    cuda_init_curand_state << <1, numThreads >> > (rngStateOnGPU);
+    cudaCheckSuccess(cudaMalloc(&rngStateOnGPU, sizeof(curandState) * numThreads));
+    cuda_init_curand_state<<< numConcurrentBlocks, threadsPerBlock >>> (rngStateOnGPU);
+    cudaCheckExecution();
+    return rngStateOnGPU;
+}
 
-    cuda_SolveDisplacement << < 1, numThreads >> >(vertices, matConfigEquations, solutionDims, rngStateOnGPU);
+__host__
+void generateBlockOrigins(uint3* blockOrigins, int numConcurrentBlocks, const SolutionDim solutionDims) {
+    std::random_device rd;
+    std::mt19937 rng(rd());
+    // Choose a vertex as the origin for each block, only choose from vertices that can accommodate a full block around them without
+    // any of the vertices inside it being outside the problem space
+    std::uniform_int_distribution<int> distX(0, solutionDims.x - BLOCK_SIZE - 1);
+    std::uniform_int_distribution<int> distY(0, solutionDims.y - BLOCK_SIZE - 1);
+    std::uniform_int_distribution<int> distZ(0, solutionDims.z - BLOCK_SIZE - 1);
 
-    cudaError_t err = cudaGetLastError();
-    if (err != cudaSuccess) {
-        fprintf(stderr, "Cuda launch failed: %s", cudaGetErrorString(err));
+    for (int b = 0; b < numConcurrentBlocks; b++) {
+        blockOrigins[b].x = distX(rng);
+        blockOrigins[b].y = distY(rng);
+        blockOrigins[b].z = distZ(rng);
     }
 }
+
+__host__
+extern "C" void cudaLaunchSolveDisplacementKernel(Vertex* vertices, REAL* matConfigEquations, const SolutionDim solutionDims) {
+    cudaDeviceProp deviceProperties;
+    cudaGetDeviceProperties(&deviceProperties, 0);
+
+    // setup execution parameters
+    dim3 threadsPerBlock(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+    int numConcurrentBlocks = deviceProperties.multiProcessorCount;
+
+    // setup curand
+    curandState* rngStateOnGPU = initializeRNGStates(numConcurrentBlocks, threadsPerBlock);
+    cudaDeviceSynchronize();
+   
+    uint3* blockOrigins;
+    cudaCheckSuccess(cudaMallocManaged(&blockOrigins, sizeof(uint3) * numConcurrentBlocks));
+
+    for (int i = 0; i < 100; i++) {
+        generateBlockOrigins(blockOrigins, numConcurrentBlocks, solutionDims);
+        cuda_SolveDisplacement<<< numConcurrentBlocks, threadsPerBlock >>>(vertices, matConfigEquations, solutionDims, rngStateOnGPU, blockOrigins);
+        cudaCheckExecution();
+        cudaDeviceSynchronize();
+    }
+
+    cudaCheckSuccess(cudaFree(blockOrigins));
+    cudaCheckSuccess(cudaFree(rngStateOnGPU));
+}
+
+
