@@ -1,9 +1,9 @@
 #include "stdafx.h"
-#include "VTKVisualizer.h"
+#include "VTKSolutionVisualizer.h"
 
 using namespace std;
 
-VTKVisualizer::VTKVisualizer(Solution* sol) :
+VTKSolutionVisualizer::VTKSolutionVisualizer(Solution* sol) :
     solution(sol),
     numberOfCells(sol->getProblem()->getNumberOfVoxels()),
     numberOfVertices(static_cast<unsigned int>(sol->getVertices()->size()))
@@ -11,11 +11,11 @@ VTKVisualizer::VTKVisualizer(Solution* sol) :
 
 }
 
-VTKVisualizer::~VTKVisualizer() {
+VTKSolutionVisualizer::~VTKSolutionVisualizer() {
 
 }
 
-void VTKVisualizer::writeToFile(const string& filename) {
+void VTKSolutionVisualizer::writeToFile(const string& filename) {
     outFile.open(filename, ios::out);
 
     writeHeader();
@@ -28,14 +28,14 @@ void VTKVisualizer::writeToFile(const string& filename) {
     outFile.close();
 }
 
-void VTKVisualizer::writeHeader() {
+void VTKSolutionVisualizer::writeHeader() {
     outFile << "# vtk DataFile Version 2.0" << endl;
     outFile << "Stochastic Mechanical Solver Debug Output" << endl;
     outFile << "ASCII" << endl;
     outFile << "DATASET UNSTRUCTURED_GRID" << endl << endl;
 }
 
-void VTKVisualizer::writePositions() {
+void VTKSolutionVisualizer::writePositions() {
     outFile << "POINTS " << numberOfVertices << " float" << endl;
 
     for (unsigned int i = 0; i < numberOfVertices; i++) {
@@ -46,7 +46,7 @@ void VTKVisualizer::writePositions() {
     outFile << endl;
 }
 
-void VTKVisualizer::writeCells() {
+void VTKSolutionVisualizer::writeCells() {
     const DiscreteProblem* problem = solution->getProblem();
 
     outFile << "CELLS " << numberOfCells << " " << numberOfCells * 9 << endl;
@@ -60,7 +60,7 @@ void VTKVisualizer::writeCells() {
     outFile << endl;
 }
 
-void VTKVisualizer::writeCell(VoxelCoordinate& coord) {
+void VTKSolutionVisualizer::writeCell(VoxelCoordinate& coord) {
     outFile << "8 ";
     writeVertexToCell(0, 0, 0, coord);
     writeVertexToCell(1, 0, 0, coord);
@@ -73,13 +73,13 @@ void VTKVisualizer::writeCell(VoxelCoordinate& coord) {
     outFile << endl;
 }
 
-void VTKVisualizer::writeVertexToCell(unsigned int xi, unsigned int yi, unsigned int zi, VoxelCoordinate& coord) {
+void VTKSolutionVisualizer::writeVertexToCell(unsigned int xi, unsigned int yi, unsigned int zi, VoxelCoordinate& coord) {
     VertexCoordinate corner = coord + VoxelCoordinate(xi, yi, zi);
     int flatIndexOfCorner = solution->getProblem()->mapToVertexIndex(corner);
     outFile << flatIndexOfCorner << " ";
 }
 
-void VTKVisualizer::writeCellTypes() {
+void VTKSolutionVisualizer::writeCellTypes() {
     outFile << "CELL_TYPES " << numberOfCells << endl;
     for (unsigned int i = 0; i < numberOfCells; i++) {
         outFile << "12" << endl;
@@ -87,12 +87,12 @@ void VTKVisualizer::writeCellTypes() {
     outFile << endl;
 }
 
-void VTKVisualizer::writeCellData() {
+void VTKSolutionVisualizer::writeCellData() {
     outFile << "CELL_DATA " << numberOfCells << endl;
     writeMaterials();
 }
 
-void VTKVisualizer::writeMaterials() {
+void VTKSolutionVisualizer::writeMaterials() {
     outFile << "SCALARS material_id int 1" << endl;
     outFile << "LOOKUP_TABLE default" << endl;
     
@@ -103,14 +103,15 @@ void VTKVisualizer::writeMaterials() {
     outFile << endl;
 }
 
-void VTKVisualizer::writePointData() {
+void VTKSolutionVisualizer::writePointData() {
     outFile << "POINT_DATA " << numberOfVertices << endl;
 
     writeDisplacements();
     writeBoundaries();
+    writeDeltas();
 }
 
-void VTKVisualizer::writeDisplacements() {
+void VTKSolutionVisualizer::writeDisplacements() {
     outFile << "VECTORS displacement float" << endl;
 
     std::vector<Vertex>* vertices = solution->getVertices();
@@ -121,7 +122,7 @@ void VTKVisualizer::writeDisplacements() {
     outFile << endl;
 }
 
-void VTKVisualizer::writeBoundaries() {
+void VTKSolutionVisualizer::writeBoundaries() {
     DiscreteProblem* problem = solution->getProblem();
     
     outFile << "VECTORS dirichlet_border float" << endl;
@@ -135,6 +136,17 @@ void VTKVisualizer::writeBoundaries() {
     for (unsigned int i = 0; i < numberOfVertices; i++) {
         NeumannBoundary boundary = problem->getNeumannBoundaryAtVertex(i);
         outFile << boundary.stress.x << " " << boundary.stress.y << " " << boundary.stress.z << endl;
+    }
+    outFile << endl;
+}
+
+void VTKSolutionVisualizer::writeDeltas() {
+    outFile << "VECTORS delta float" << endl;
+
+    std::vector<Vertex>* vertices = solution->getDifferences();
+    for (unsigned int i = 0; i < numberOfVertices; i++) {
+        Vertex v = vertices->at(i);
+        outFile << v.x << " " << v.y << " " << v.z << endl;
     }
     outFile << endl;
 }

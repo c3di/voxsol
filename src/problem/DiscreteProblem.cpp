@@ -2,7 +2,7 @@
 #include "DiscreteProblem.h"
 #include "material/MaterialDictionary.h"
 
-DiscreteProblem::DiscreteProblem(ettention::Vec3ui size, ettention::Vec3d voxelSize, MaterialDictionary* matDict) :
+DiscreteProblem::DiscreteProblem(ettention::Vec3ui size, ettention::Vec3<REAL> voxelSize, MaterialDictionary* matDict) :
     problemSize(size),
     solutionSize(size + ettention::Vec3ui(1,1,1)),
     voxelSize(voxelSize),

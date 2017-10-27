@@ -21,6 +21,8 @@ public:
 
     const std::vector<MaterialConfigurationEquations>* getMaterialConfigurationEquations() const;
     std::vector<Vertex>* getVertices();
+    std::vector<Vertex>* getDifferences();
+    void updateDisplacements(Vertex* serializedVertices);
 
     DiscreteProblem* getProblem();
 
@@ -29,6 +31,7 @@ protected:
     const ettention::Vec3<REAL> voxelSize;
     DiscreteProblem* problem;
     std::vector<Vertex> vertices;
+    std::vector<Vertex> vertexDiff;
     std::vector<MaterialConfigurationEquations> matConfigEquations;
 
     void gatherUniqueMaterialConfigurations();

@@ -15,7 +15,7 @@ class MaterialDictionary;
 class DiscreteProblem {
 
 public:
-    DiscreteProblem(ettention::Vec3ui size, ettention::Vec3d voxelSize, MaterialDictionary* matDictionary);
+    DiscreteProblem(ettention::Vec3ui size, ettention::Vec3<REAL> voxelSize, MaterialDictionary* matDictionary);
     ~DiscreteProblem();
 
     void setMaterial(VoxelCoordinate& coordinate, unsigned char matId);
@@ -48,7 +48,7 @@ public:
 protected:
     const ettention::Vec3ui problemSize;
     const ettention::Vec3ui solutionSize;
-    const ettention::Vec3d voxelSize;
+    const ettention::Vec3<REAL> voxelSize;
     const unsigned int numberOfCells;
     std::unordered_map<unsigned int, DirichletBoundary> dirichletBoundaryConditions;
     std::unordered_map<unsigned int, NeumannBoundary> neumannBoundaryConditions;

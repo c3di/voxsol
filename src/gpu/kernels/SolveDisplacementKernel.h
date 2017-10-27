@@ -7,8 +7,9 @@
 #include "CudaKernel.h"
 #include "libmmv/math/Vec3.h"
 #include "solution/Solution.h"
+#include "solution/samplers/RandomBlockSampler.h"
 
-extern "C" void cudaLaunchSolveDisplacementKernel(Vertex* verticesOnGPU, REAL* matConfigEquationsOnGPU, const SolutionDim solutionDims);
+extern "C" void cudaLaunchSolveDisplacementKernel(Vertex* verticesOnGPU, REAL* matConfigEquationsOnGPU, BlockSampler& sampler, const SolutionDim solutionDims);
 
 class SolveDisplacementKernel : public CudaKernel {
 
@@ -31,6 +32,7 @@ protected:
 private:
     Solution* solution;
 	SolutionDim solutionDimensions;
+    RandomBlockSampler sampler;
 
     Vertex* serializedVertices;
     REAL* serializedMatConfigEquations;

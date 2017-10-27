@@ -5,10 +5,10 @@
 #include <solution\Solution.h>
 
 
-class VTKVisualizer {
+class VTKSolutionVisualizer {
 public:
-    VTKVisualizer(Solution* solution);
-    ~VTKVisualizer();
+    VTKSolutionVisualizer(Solution* solution);
+    ~VTKSolutionVisualizer();
 
     void writeToFile(const std::string& filename);
 
@@ -32,5 +32,6 @@ private:
 
     // Point data
     void writeDisplacements();
+    void writeDeltas();
     void writeBoundaries();
 };

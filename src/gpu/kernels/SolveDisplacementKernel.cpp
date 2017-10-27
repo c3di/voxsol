@@ -8,7 +8,8 @@
 SolveDisplacementKernel::SolveDisplacementKernel(Solution* sol) :
     solution(sol),
     serializedMatConfigEquations(nullptr),
-    serializedVertices(nullptr)
+    serializedVertices(nullptr),
+    sampler(sol, WORKING_AREA_SIZE)
 {
 	solutionDimensions.x = sol->getSize().x;
 	solutionDimensions.y = sol->getSize().y;
@@ -26,8 +27,7 @@ void SolveDisplacementKernel::launch() {
     prepareInputs();
 
     if (canExecute()) {
-        cudaLaunchSolveDisplacementKernel(serializedVertices, serializedMatConfigEquations, solutionDimensions);
-        cudaDeviceSynchronize();
+        cudaLaunchSolveDisplacementKernel(serializedVertices, serializedMatConfigEquations, sampler, solutionDimensions);
         pullVertices();
     }
 }
@@ -68,7 +68,8 @@ void SolveDisplacementKernel::pushVertices() {
 void SolveDisplacementKernel::pullVertices() {
     std::vector<Vertex>* vertices = solution->getVertices();
     size_t size = vertices->size() * sizeof(Vertex);
-    memcpy(vertices->data(), serializedVertices, size);
+    solution->updateDisplacements(serializedVertices);
+    //memcpy(vertices->data(), serializedVertices, size);
 }
 
 void SolveDisplacementKernel::serializeMaterialConfigurationEquations(void* destination) {
@@ -84,7 +85,7 @@ void SolveDisplacementKernel::serializeMaterialConfigurationEquations(void* dest
 
 void SolveDisplacementKernel::solveCPU() {
     prepareInputs();
-    for (int iterations = 0; iterations < 100; iterations++) {
+    for (int iterations = 0; iterations < 1700; iterations++) {
         cpuSolveIteration();
     }
 }
@@ -212,7 +213,6 @@ void SolveDisplacementKernel::debugOutputEquationsCPU() {
     }
 
     outFile.close();
-
 }
 
 void SolveDisplacementKernel::debugOutputEquationsGPU() {
