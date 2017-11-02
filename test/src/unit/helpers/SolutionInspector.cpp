@@ -91,3 +91,8 @@ bool SolutionInspector::allVerticesHaveValidSignatureId(std::string& errMessage)
     return true;
 }
 
+MaterialConfigurationEquations* SolutionInspector::getEquationsForFragment(ProblemFragment& fragment) {
+    Vertex vertex = vertices.at(mapToIndex(fragment.getCenterVertex()));
+    return &matConfigEquations.at(vertex.materialConfigId);
+}
+

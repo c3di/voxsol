@@ -8,6 +8,7 @@ public:
     SolutionInspector(DiscreteProblem& problem);
 
     ConfigId getEquationIdForFragment(ProblemFragment& fragment);
+    MaterialConfigurationEquations* getEquationsForFragment(ProblemFragment& fragment);
 
     bool solutionDimensionsMatchProblem(std::string& errMessage);
     bool matConfigEquationIdsMatchPositionInVector(std::string& errMessage);
