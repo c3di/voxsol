@@ -11,9 +11,9 @@ SolveDisplacementKernel::SolveDisplacementKernel(Solution* sol) :
     serializedVertices(nullptr),
     sampler(sol, WORKING_AREA_SIZE)
 {
-	solutionDimensions.x = sol->getSize().x;
-	solutionDimensions.y = sol->getSize().y;
-	solutionDimensions.z = sol->getSize().z;
+    solutionDimensions.x = sol->getSize().x;
+    solutionDimensions.y = sol->getSize().y;
+    solutionDimensions.z = sol->getSize().z;
 }
 
 SolveDisplacementKernel::~SolveDisplacementKernel() {
@@ -48,17 +48,17 @@ void SolveDisplacementKernel::freeCudaResources() {
 }
 
 void SolveDisplacementKernel::prepareInputs() {
-    pushMatConfigEquations();
-    pushVertices();
+    pushMatConfigEquationsManaged();
+    pushVerticesManaged();
 }
 
-void SolveDisplacementKernel::pushMatConfigEquations() {
+void SolveDisplacementKernel::pushMatConfigEquationsManaged() {
     size_t size = solution->getMaterialConfigurationEquations()->size() * MaterialConfigurationEquations::SizeInBytes;
     cudaCheckSuccess(cudaMallocManaged(&serializedMatConfigEquations, size));
     serializeMaterialConfigurationEquations(serializedMatConfigEquations);
 }
 
-void SolveDisplacementKernel::pushVertices() {
+void SolveDisplacementKernel::pushVerticesManaged() {
     const std::vector<Vertex>* vertices = solution->getVertices();
     size_t size = vertices->size() * sizeof(Vertex);
     cudaCheckSuccess(cudaMallocManaged(&serializedVertices, size));

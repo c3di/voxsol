@@ -31,7 +31,7 @@ protected:
 
 private:
     Solution* solution;
-	SolutionDim solutionDimensions;
+    SolutionDim solutionDimensions;
     RandomBlockSampler sampler;
 
     Vertex* serializedVertices;
@@ -39,8 +39,8 @@ private:
 
     void prepareInputs();
 
-    void pushMatConfigEquations();
-    void pushVertices();
+    void pushMatConfigEquationsManaged();
+    void pushVerticesManaged();
 
     void pullVertices();
 

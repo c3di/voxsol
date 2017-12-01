@@ -35,5 +35,23 @@ public:
         delete properties;
     }
 
+    static void PrintDevicePeerAccess(int device1, int device2) {
+        printf("Peer access is supported for:\n");
+        printf("\tDevice %u --> Device %u: %s\n", device1, device2, DevicePeerAccessSupported(device1, device2) ? "Yes" : "No");
+        printf("\tDevice %u --> Device %u: %s\n", device2, device1, DevicePeerAccessSupported(device2, device1) ? "Yes" : "No");
+        printf("\n");
+    }
+
+    static bool DevicePeerAccessSupported(int device1, int device2) {
+        bool canAccess = false;
+        int* isPossible = new int;
+        *isPossible = 0;
+        cudaDeviceCanAccessPeer(isPossible, device1, device2);
+        if (*isPossible) {
+            canAccess = true;
+        }
+        delete isPossible;
+        return canAccess;
+    }
 };
 
