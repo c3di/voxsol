@@ -1,7 +1,7 @@
 #pragma once
 #include "problem/ProblemFragment.h"
-#include "problem/DirichletBoundary.h"
-#include "problem/NeumannBoundary.h"
+#include "problem/boundaryconditions/DirichletBoundary.h"
+#include "problem/boundaryconditions/NeumannBoundary.h"
 #include "material/Material.h"
 #include <vector>
 

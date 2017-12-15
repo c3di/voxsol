@@ -2,12 +2,12 @@
 #include "NeumannBoundary.h"
 
 NeumannBoundary::NeumannBoundary() :
-    stress(ettention::Vec3<REAL>(0,0,0))
+    stress(libmmv::Vec3<REAL>(0,0,0))
 {
 
 }
 
-NeumannBoundary::NeumannBoundary(ettention::Vec3<REAL>& s) :
+NeumannBoundary::NeumannBoundary(libmmv::Vec3<REAL>& s) :
     stress(s)
 {
 

@@ -6,7 +6,7 @@
 class NeumannBoundary {
 public:
     NeumannBoundary();
-    NeumannBoundary(ettention::Vec3<REAL>& stress);
+    NeumannBoundary(libmmv::Vec3<REAL>& stress);
     ~NeumannBoundary();
 
     void combine(NeumannBoundary& other);
@@ -15,7 +15,7 @@ public:
         return stress == other.stress;
     }
 
-    ettention::Vec3<REAL> stress;
+    libmmv::Vec3<REAL> stress;
 };
 
 namespace std {

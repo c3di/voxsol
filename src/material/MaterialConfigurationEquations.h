@@ -1,7 +1,7 @@
 #pragma once
 #include "math/Matrix3x3.h"
-#include "problem/DirichletBoundary.h"
-#include "problem/NeumannBoundary.h"
+#include "problem/boundaryconditions/DirichletBoundary.h"
+#include "problem/boundaryconditions/NeumannBoundary.h"
 #include <vector>
 
 class MaterialConfigurationEquations {

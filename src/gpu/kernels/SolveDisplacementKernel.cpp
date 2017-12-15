@@ -1,7 +1,7 @@
 #pragma once
 #include "stdafx.h"
 #include "SolveDisplacementKernel.h"
-#include "problem/NeumannBoundary.h"
+#include "problem/boundaryconditions/NeumannBoundary.h"
 #include <iostream>
 #include <fstream>
 
