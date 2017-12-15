@@ -14,7 +14,7 @@
 #include "problem/NeumannBoundary.h"
 #include "io/VTKSolutionVisualizer.h"
 
-#define ACTIVE_DEVICE 1
+#define ACTIVE_DEVICE 0
 
 void solveCPU(DiscreteProblem& problem) {
     Solution solution(problem);
@@ -65,20 +65,20 @@ void solveGPU(DiscreteProblem& problem) {
 }
 
 int main(int argc, char* argv[]) {
-    _putenv("CUDA_MANAGED_FORCE_DEVICE_ALLOC=1");
-    std::cout << "Stochastic Mechanic Solver -- BY OUR GPUS COMBINED!\n\n";
+    _putenv("CUDA_VISIBLE_DEVICES=1");
+    std::cout << "Stochastic Mechanic Solver -- BY OUR GPUS COMBINED! (except currently limited to 1 GPU)\n\n";
 
     CudaDebugHelper::PrintDeviceInfo(ACTIVE_DEVICE);
-    CudaDebugHelper::PrintDevicePeerAccess(0, 1);
+    //CudaDebugHelper::PrintDevicePeerAccess(0, 1);
 
-    if (CudaDebugHelper::DevicePeerAccessSupported(0, 1) && CudaDebugHelper::DevicePeerAccessSupported(1, 0)) {
+    /*if (CudaDebugHelper::DevicePeerAccessSupported(0, 1) && CudaDebugHelper::DevicePeerAccessSupported(1, 0)) {
         //Needed for managed memory to work properly, allow GPUs to access each other's memory
         cudaDeviceEnablePeerAccess(0, 0);
         cudaDeviceEnablePeerAccess(1, 0);
     }
     else {
         std::cout << "WARNING: Peer access is not supported by the available GPUs. Forcing managed memory to be allocated on-device. \n\n";
-    }
+    }*/
     
     cudaSetDevice(ACTIVE_DEVICE);
     cudaError_t err = cudaGetLastError();
