@@ -19,7 +19,7 @@ Material::Material(REAL eModul, REAL poissonRatio, unsigned char id) :
     
 }
 
-Material::Material(Material& other) : 
+Material::Material(const Material& other) : 
     lambda(other.lambda),
     mu(other.mu),
     id(other.id)

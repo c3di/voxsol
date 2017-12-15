@@ -7,7 +7,7 @@ public:
     
     Material();
     Material(REAL eModul, REAL poissonRatio, unsigned char id);
-    Material(Material& other);
+    Material(const Material& other);
     ~Material();
 
     const unsigned char id;
