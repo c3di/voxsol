@@ -41,10 +41,14 @@ bool SolveDisplacementKernel::canExecute() {
 }
 
 void SolveDisplacementKernel::freeCudaResources() {
-    cudaCheckSuccess(cudaFree(serializedMatConfigEquations));
-    serializedMatConfigEquations = nullptr;
-    cudaCheckSuccess(cudaFree(serializedVertices));
-    serializedVertices = nullptr;
+    if (serializedMatConfigEquations != nullptr) {
+        cudaCheckSuccess(cudaFree(serializedMatConfigEquations));
+        serializedMatConfigEquations = nullptr;
+    }
+    if (serializedVertices != nullptr) {
+        cudaCheckSuccess(cudaFree(serializedVertices));
+        serializedVertices = nullptr;
+    }
 }
 
 void SolveDisplacementKernel::prepareInputs() {
@@ -84,8 +88,7 @@ void SolveDisplacementKernel::serializeMaterialConfigurationEquations(void* dest
 }
 
 void SolveDisplacementKernel::solveCPU() {
-    prepareInputs();
-    for (int iterations = 0; iterations < 1700; iterations++) {
+    for (int iterations = 0; iterations < 1; iterations++) {
         cpuSolveIteration();
     }
 }
@@ -151,6 +154,9 @@ void SolveDisplacementKernel::cpuSolveIteration() {
             for (int x = 0; x < solutionDimensions.x; x++) {
                 flatIndex++;
                 Vertex* currentVertex = &vertices->at(flatIndex);
+                if (currentVertex->materialConfigId == 0) {
+                    continue;
+                }
                 const MaterialConfigurationEquations* matrices = &solution->getMaterialConfigurationEquations()->at(currentVertex->materialConfigId);
                 const NeumannBoundary* neumann = matrices->getNeumannBoundaryCondition();
                 const Matrix3x3* lhsInverse = matrices->getLHSInverse();
@@ -203,8 +209,10 @@ void SolveDisplacementKernel::debugOutputEquationsCPU() {
             else {
                 mat = matrices->getRHS(m);
             }
-            for (int v = 0; v < 9; v++) {
-                outFile << mat->values[v] << " ";
+            for (int c = 0; c < 3; c++) {
+                for (int r = 0; r < 9; r++) {
+                    outFile << mat->at(c,r) << " ";
+                }
             }
             outFile << std::endl;
         }
