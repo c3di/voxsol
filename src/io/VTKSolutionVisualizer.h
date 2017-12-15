@@ -12,11 +12,22 @@ public:
 
     void writeToFile(const std::string& filename);
 
+    void filterOutNullVoxels(bool doFilter);
+
+    unsigned int numberOfCells;
+    unsigned int numberOfVertices;
+
 private:
     Solution* solution;
     std::ofstream outFile;
-    const unsigned int numberOfCells;
-    const unsigned int numberOfVertices;
+    
+
+    // For filtered case:
+    bool filterNullVoxels = false;
+    std::unordered_map<unsigned int, unsigned int> vertexOrigToFilteredIndex;
+    std::unordered_map<unsigned int, unsigned int> vertexFilteredToOrigIndex;
+    std::unordered_map<unsigned int, unsigned int> cellOrigToFilteredIndex;
+    std::unordered_map<unsigned int, unsigned int> cellFilteredToOrigIndex;
 
     void writeHeader();
     void writePositions();

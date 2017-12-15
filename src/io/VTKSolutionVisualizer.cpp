@@ -15,15 +15,48 @@ VTKSolutionVisualizer::~VTKSolutionVisualizer() {
 
 }
 
+void VTKSolutionVisualizer::filterOutNullVoxels(bool doFilter) {
+    filterNullVoxels = doFilter;
+    if (doFilter) {
+        std::vector<Vertex>* vertices = solution->getVertices();
+        unsigned int numRemainingVertices = 0;
+        for (unsigned int i = 0; i < solution->getVertices()->size(); i++) {
+            if (vertices->at(i).materialConfigId != 0) {
+                vertexOrigToFilteredIndex[i] = numRemainingVertices;
+                vertexFilteredToOrigIndex[numRemainingVertices] = i;
+                numRemainingVertices++;
+            }
+        }
+
+        unsigned int numRemainingCells = 0;
+        DiscreteProblem* problem = solution->getProblem();
+        for (unsigned int i = 0; i < problem->getNumberOfVoxels(); i++) {
+            if (problem->getMaterial(i)->id != Material::EMPTY.id) {
+                cellOrigToFilteredIndex[i] = numRemainingCells;
+                cellFilteredToOrigIndex[numRemainingCells] = i;
+                numRemainingCells++;
+            }
+        }
+        numberOfVertices = numRemainingVertices;
+        numberOfCells = numRemainingCells;
+    }
+    else {
+        numberOfVertices = static_cast<unsigned int>(solution->getVertices()->size());
+    }
+}
+
 void VTKSolutionVisualizer::writeToFile(const string& filename) {
     outFile.open(filename, ios::out);
-
+    std::cout << "Starting VTK output\n";
     writeHeader();
     writePositions();
+    std::cout << "Wrote positions\n";
     writeCells();
     writeCellTypes();
     writeCellData();
+    std::cout << "Wrote cells\n";
     writePointData();
+    std::cout << "Wrote point data\n";
 
     outFile.close();
 }
@@ -37,9 +70,13 @@ void VTKSolutionVisualizer::writeHeader() {
 
 void VTKSolutionVisualizer::writePositions() {
     outFile << "POINTS " << numberOfVertices << " float" << endl;
-
+    std::vector<Vertex>* vertices = solution->getVertices();
     for (unsigned int i = 0; i < numberOfVertices; i++) {
-        ettention::Vec3<REAL> pos = solution->getProblem()->getVertexPosition(i);
+        unsigned int index = filterNullVoxels ? vertexFilteredToOrigIndex[i] : i;
+        if (filterNullVoxels && vertices->at(index).materialConfigId == 0) {
+            continue;
+        }
+        libmmv::Vec3<REAL> pos = solution->getProblem()->getVertexPosition(index);
         outFile << pos.x << " " << pos.y << " " << pos.z << " " << endl;
     }
     
@@ -53,7 +90,13 @@ void VTKSolutionVisualizer::writeCells() {
     for (unsigned int zi = 0; zi < problem->getSize().z; zi++) {
         for (unsigned int yi = 0; yi < problem->getSize().y; yi++) {
             for (unsigned int xi = 0; xi < problem->getSize().x; xi++) {
-                writeCell(VoxelCoordinate(xi, yi, zi));
+                VoxelCoordinate coord(xi, yi, zi);
+                unsigned int flatIndex = problem->mapToVoxelIndex(coord);
+                if (filterNullVoxels && cellOrigToFilteredIndex.count(flatIndex) <= 0) {
+                    // There is no mapping for this voxel index, so it must have been filtered out due to null material
+                    continue;
+                }
+                writeCell(coord);
             }
         }
     }
@@ -76,6 +119,12 @@ void VTKSolutionVisualizer::writeCell(VoxelCoordinate& coord) {
 void VTKSolutionVisualizer::writeVertexToCell(unsigned int xi, unsigned int yi, unsigned int zi, VoxelCoordinate& coord) {
     VertexCoordinate corner = coord + VoxelCoordinate(xi, yi, zi);
     int flatIndexOfCorner = solution->getProblem()->mapToVertexIndex(corner);
+    if (filterNullVoxels) {
+        if (vertexOrigToFilteredIndex.count(flatIndexOfCorner) <= 0) {
+            throw std::exception("Could not find mapping for vertex");
+        }
+        flatIndexOfCorner = vertexOrigToFilteredIndex[flatIndexOfCorner];
+    }
     outFile << flatIndexOfCorner << " ";
 }
 
@@ -98,7 +147,9 @@ void VTKSolutionVisualizer::writeMaterials() {
     
     DiscreteProblem* problem = solution->getProblem();
     for (unsigned int i = 0; i < numberOfCells; i++) {
-        outFile << static_cast<int>(problem->getMaterial(i)->id) << endl;
+        unsigned int index = filterNullVoxels ? cellFilteredToOrigIndex[i] : i;
+        int matId = static_cast<int>(problem->getMaterial(index)->id);
+        outFile << matId << endl;
     }
     outFile << endl;
 }
@@ -108,7 +159,7 @@ void VTKSolutionVisualizer::writePointData() {
 
     writeDisplacements();
     writeBoundaries();
-    writeDeltas();
+    //writeDeltas();
 }
 
 void VTKSolutionVisualizer::writeDisplacements() {
@@ -116,7 +167,8 @@ void VTKSolutionVisualizer::writeDisplacements() {
 
     std::vector<Vertex>* vertices = solution->getVertices();
     for (unsigned int i = 0; i < numberOfVertices; i++) {
-        Vertex v = vertices->at(i);
+        unsigned int index = filterNullVoxels ? vertexFilteredToOrigIndex[i] : i;
+        Vertex v = vertices->at(index);
         outFile << v.x << " " << v.y << " " << v.z << endl;
     }
     outFile << endl;
@@ -124,17 +176,20 @@ void VTKSolutionVisualizer::writeDisplacements() {
 
 void VTKSolutionVisualizer::writeBoundaries() {
     DiscreteProblem* problem = solution->getProblem();
+    std::vector<Vertex>* vertices = solution->getVertices();
     
     outFile << "VECTORS dirichlet_border float" << endl;
     for (unsigned int i = 0; i < numberOfVertices; i++) {
-        DirichletBoundary boundary = problem->getDirichletBoundaryAtVertex(i);
+        unsigned int index = filterNullVoxels ? vertexFilteredToOrigIndex[i] : i;
+        DirichletBoundary boundary = problem->getDirichletBoundaryAtVertex(index);
         outFile << (boundary.isXFixed() ? 1 : 0) << " " << (boundary.isYFixed() ? 1 : 0) << " " << (boundary.isZFixed() ? 1 : 0) << endl;
     }
     outFile << endl;
 
     outFile << "VECTORS neumann_border float" << endl;
     for (unsigned int i = 0; i < numberOfVertices; i++) {
-        NeumannBoundary boundary = problem->getNeumannBoundaryAtVertex(i);
+        unsigned int index = filterNullVoxels ? vertexFilteredToOrigIndex[i] : i;
+        NeumannBoundary boundary = problem->getNeumannBoundaryAtVertex(index);
         outFile << boundary.stress.x << " " << boundary.stress.y << " " << boundary.stress.z << endl;
     }
     outFile << endl;
@@ -146,6 +201,9 @@ void VTKSolutionVisualizer::writeDeltas() {
     std::vector<Vertex>* vertices = solution->getDifferences();
     for (unsigned int i = 0; i < numberOfVertices; i++) {
         Vertex v = vertices->at(i);
+        if (filterNullVoxels && v.materialConfigId == 0) {
+            continue;
+        }
         outFile << v.x << " " << v.y << " " << v.z << endl;
     }
     outFile << endl;
