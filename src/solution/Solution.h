@@ -15,9 +15,9 @@ public:
 
     void computeMaterialConfigurationEquations();
 
-    unsigned int mapToIndex(ettention::Vec3ui& coordinate) const;
-    ettention::Vec3ui mapToCoordinate(unsigned int index) const;
-    const ettention::Vec3ui getSize() const;
+    unsigned int mapToIndex(libmmv::Vec3ui& coordinate) const;
+    libmmv::Vec3ui mapToCoordinate(unsigned int index) const;
+    const libmmv::Vec3ui getSize() const;
 
     const std::vector<MaterialConfigurationEquations>* getMaterialConfigurationEquations() const;
     std::vector<Vertex>* getVertices();
@@ -27,8 +27,8 @@ public:
     DiscreteProblem* getProblem();
 
 protected:
-    const ettention::Vec3ui size;
-    const ettention::Vec3<REAL> voxelSize;
+    const libmmv::Vec3ui size;
+    const libmmv::Vec3<REAL> voxelSize;
     DiscreteProblem* problem;
     std::vector<Vertex> vertices;
     std::vector<Vertex> vertexDiff;
@@ -37,5 +37,5 @@ protected:
     void gatherUniqueMaterialConfigurations();
     void computeEquationsForUniqueMaterialConfigurations();
 
-    bool outOfBounds(ettention::Vec3ui& coordinate) const;
+    bool outOfBounds(libmmv::Vec3ui& coordinate) const;
 };

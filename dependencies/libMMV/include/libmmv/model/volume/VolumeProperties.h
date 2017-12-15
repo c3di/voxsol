@@ -1,13 +1,11 @@
 #pragma once
 
 #include <vector>
-#include <boost/optional.hpp>
+#include "libmmv/model/volume/BoundingBox.h"
+#include "libmmv/math/Vec3.h"
+#include "libmmv/model/volume/Voxel.h"
 
-#include "model/volume/BoundingBox.h"
-#include "math/Vec3.h"
-#include "model/volume/Voxel.h"
-
-namespace ettention
+namespace libmmv
 {
     class VolumeProperties
     {

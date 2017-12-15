@@ -13,13 +13,13 @@ class LinearBaseIntegrals : public BaseIntegrals {
 
 public:
 
-    LinearBaseIntegrals(ettention::Vec3f& voxelSize) :
+    LinearBaseIntegrals(libmmv::Vec3f& voxelSize) :
         BaseIntegrals(voxelSize)
     {
         init();
     }
 
-    LinearBaseIntegrals(ettention::Vec3d& voxelSize) :
+    LinearBaseIntegrals(libmmv::Vec3d& voxelSize) :
         BaseIntegrals(voxelSize)
     {
         init();

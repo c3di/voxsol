@@ -1,34 +1,34 @@
 #pragma once
 #include "libmmv/math/Vec3.h"
 #include "problem/ProblemFragment.h"
-#include "problem/DirichletBoundary.h"
-#include "problem/NeumannBoundary.h"
+#include "problem/boundaryconditions/DirichletBoundary.h"
+#include "problem/boundaryconditions/NeumannBoundary.h"
 #include "material/Material.h"
 #include <vector>
 #include <unordered_map>
 
-typedef ettention::Vec3ui VoxelCoordinate;
-typedef ettention::Vec3ui VertexCoordinate;
+typedef libmmv::Vec3ui VoxelCoordinate;
+typedef libmmv::Vec3ui VertexCoordinate;
 
 class MaterialDictionary;
 
 class DiscreteProblem {
 
 public:
-    DiscreteProblem(ettention::Vec3ui size, ettention::Vec3<REAL> voxelSize, MaterialDictionary* matDictionary);
+    DiscreteProblem(libmmv::Vec3ui size, libmmv::Vec3<REAL> voxelSize, MaterialDictionary* matDictionary);
     ~DiscreteProblem();
 
     void setMaterial(VoxelCoordinate& coordinate, unsigned char matId);
     void setMaterial(unsigned int index, unsigned char matId);
     void setDirichletBoundaryAtVertex(VertexCoordinate& coordinate, DirichletBoundary& condition);
     void setDirichletBoundaryAtVertex(unsigned int index, DirichletBoundary& condition);
-    void setNeumannBoundaryAtVertex(VertexCoordinate& coordinate, NeumannBoundary& condition);
-    void setNeumannBoundaryAtVertex(unsigned int index, NeumannBoundary& condition);
+    void setNeumannBoundaryAtVertex(VertexCoordinate& coordinate, NeumannBoundary& condition, bool combineIfAlreadyExists = false);
+    void setNeumannBoundaryAtVertex(unsigned int index, NeumannBoundary& condition, bool combineIfAlreadyExists = false);
 
     Material* getMaterial(VoxelCoordinate& coordinate) const;
     Material* getMaterial(unsigned int index) const;
-    ettention::Vec3d getVoxelSize() const;
-    ettention::Vec3ui getSize() const;
+    libmmv::Vec3d getVoxelSize() const;
+    libmmv::Vec3ui getSize() const;
     unsigned int getNumberOfVoxels() const;
     std::vector<unsigned char>* getMaterialIdVector();
     DirichletBoundary getDirichletBoundaryAtVertex(VertexCoordinate& coordinate);
@@ -42,13 +42,13 @@ public:
     VertexCoordinate mapToVertexCoordinate(unsigned int index) const;
     ProblemFragment extractLocalProblem(VertexCoordinate& centerCoord) const;
 
-    ettention::Vec3<REAL> getVertexPosition(unsigned int index) const;
-    ettention::Vec3<REAL> getVertexPosition(VertexCoordinate& coordinate) const;
+    libmmv::Vec3<REAL> getVertexPosition(unsigned int index) const;
+    libmmv::Vec3<REAL> getVertexPosition(VertexCoordinate& coordinate) const;
 
 protected:
-    const ettention::Vec3ui problemSize;
-    const ettention::Vec3ui solutionSize;
-    const ettention::Vec3<REAL> voxelSize;
+    const libmmv::Vec3ui problemSize;
+    const libmmv::Vec3ui solutionSize;
+    const libmmv::Vec3<REAL> voxelSize;
     const unsigned int numberOfCells;
     std::unordered_map<unsigned int, DirichletBoundary> dirichletBoundaryConditions;
     std::unordered_map<unsigned int, NeumannBoundary> neumannBoundaryConditions;

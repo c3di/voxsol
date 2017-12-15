@@ -1,9 +1,8 @@
 #pragma once
-#include "io/serializer/VolumeFileFormatWriter.h"
-#include "model/volume/Volume.h"
-#include "io/IOEnumerations.h"
+#include "libmmv/io/serializer/VolumeFileFormatWriter.h"
+#include <fstream>
 
-namespace ettention
+namespace libmmv
 {
     class MRCWriter : public VolumeFileFormatWriter
     {

@@ -1,12 +1,9 @@
 #pragma once
 
 #include <string>
-#include <iostream>
-#include <memory>
+#include "libmmv/model/volume/Volume.h"
 
-#include "model/volume/Volume.h"
-
-namespace ettention
+namespace libmmv
 {
     class ImageStackDataSource;
 

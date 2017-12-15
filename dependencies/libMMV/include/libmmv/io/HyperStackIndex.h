@@ -1,8 +1,9 @@
 #pragma once
 
 #include <vector>
+#include <sstream>
 
-namespace ettention
+namespace libmmv
 {
     class HyperStackIndex
     {

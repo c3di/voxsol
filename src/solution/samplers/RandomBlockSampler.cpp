@@ -24,7 +24,7 @@ RandomBlockSampler::~RandomBlockSampler() {
 }
 
 int RandomBlockSampler::generateNextBlockOrigins(int3* blockOrigins, int maxNumBlocks) {
-    const ettention::Vec3ui solutionDims = solution->getSize();
+    const libmmv::Vec3ui solutionDims = solution->getSize();
     std::uniform_int_distribution<int> rx(0, solutionDims.x - blockWorkingSize);
     std::uniform_int_distribution<int> ry(0, solutionDims.y - blockWorkingSize);
     std::uniform_int_distribution<int> rz(0, solutionDims.z - blockWorkingSize);

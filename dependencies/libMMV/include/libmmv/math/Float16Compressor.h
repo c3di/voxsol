@@ -1,9 +1,9 @@
 #pragma once
 
 #include <stdint.h>
-#include "model/volume/Voxel.h"
+#include "libmmv/model/volume/Voxel.h"
 
-namespace ettention
+namespace libmmv
 {
     class Float16Compressor
     {

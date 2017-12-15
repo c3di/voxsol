@@ -1,11 +1,12 @@
 #pragma once
+#include "libmmv/math/Vec3.h"
+#include "libmmv/model/volume/BoundingBox.h"
 #include <utility>
-#include "model/geometry/Ray.h"
-#include "model/geometry/Plane.h"
-#include "model/volume/BoundingBox.h"
 
-namespace ettention
+namespace libmmv
 {
+    class Ray;
+    class Plane;
 
     class GeometricAlgorithms
     {

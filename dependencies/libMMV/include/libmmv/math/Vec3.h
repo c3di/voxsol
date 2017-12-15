@@ -2,7 +2,7 @@
 
 #include "Vec2.h"
 
-namespace ettention
+namespace libmmv
 {
     template<typename _ValType>
     class Vec3
@@ -17,6 +17,8 @@ namespace ettention
 			};
 			_ValType dim[3];
 		};
+
+		inline int nDim() { return 3; };
 
 		Vec3() {};
 		Vec3(_ValType x, _ValType y, _ValType z) : x(x), y(y), z(z) {};

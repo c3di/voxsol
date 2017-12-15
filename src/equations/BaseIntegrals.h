@@ -7,7 +7,7 @@
 class BaseIntegrals {
 public:
 
-    BaseIntegrals(ettention::Vec3f& voxelSize) :
+    BaseIntegrals(libmmv::Vec3f& voxelSize) :
         dx(asREAL(voxelSize.x)),
         dy(asREAL(voxelSize.y)),
         dz(asREAL(voxelSize.z))
@@ -15,7 +15,7 @@ public:
 
     }
 
-    BaseIntegrals(ettention::Vec3d& voxelSize) :
+    BaseIntegrals(libmmv::Vec3d& voxelSize) :
         dx(asREAL(voxelSize.x)),
         dy(asREAL(voxelSize.y)),
         dz(asREAL(voxelSize.z))

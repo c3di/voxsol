@@ -1,11 +1,12 @@
 #pragma once
-#include "model/geometry/Ray.h"
-#include "math/Vec3.h"
+#include "libmmv/math/Vec3.h"
 
-namespace ettention
+namespace libmmv
 {
-    class Plane 
-    {
+    class Ray;
+
+    class Plane {
+
     private:
         Vec3f normal;
         float dist;

@@ -1,6 +1,8 @@
 #pragma once
+#include <cstdint>
+#include <string>
 
-namespace ettention
+namespace libmmv
 {
     typedef uint8_t byte_t;
     typedef uint16_t half_float_t;

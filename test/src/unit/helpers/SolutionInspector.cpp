@@ -15,7 +15,7 @@ ConfigId SolutionInspector::getEquationIdForFragment(ProblemFragment& fragment) 
 }
 
 bool SolutionInspector::solutionDimensionsMatchProblem(std::string& errMessage) {
-    ettention::Vec3ui expectedSize = problem->getSize() + ettention::Vec3ui(1,1,1);
+    libmmv::Vec3ui expectedSize = problem->getSize() + libmmv::Vec3ui(1,1,1);
 
     if (size.x != expectedSize.x || size.y != expectedSize.y || size.z != expectedSize.z) {
         std::stringstream ss;

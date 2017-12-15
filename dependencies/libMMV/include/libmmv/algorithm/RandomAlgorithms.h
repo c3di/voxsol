@@ -1,10 +1,10 @@
 #pragma once
 
 #include <vector>
-#include "math/Vec2.h"
-#include "math/Vec3.h"
+#include "libmmv/math/Vec2.h"
+#include "libmmv/math/Vec3.h"
 
-namespace ettention
+namespace libmmv
 {
     class Image;
 

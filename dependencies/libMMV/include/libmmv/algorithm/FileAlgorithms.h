@@ -1,11 +1,12 @@
 #pragma once
+#include <string>
 
-namespace ettention
+namespace libmmv
 {
 
     class FileAlgorithms
     {
     public:
-        static boost::filesystem::path normalizePath(const boost::filesystem::path &path);
+        static std::string normalizePath(const std::string &path);
     };
 }

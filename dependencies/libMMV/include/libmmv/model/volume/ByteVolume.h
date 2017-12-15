@@ -1,10 +1,10 @@
 #pragma once
-#include "math/Vec3.h"
-#include "model/volume/Voxel.h"
-#include "model/volume/Volume.h"
-#include "model/volume/VolumeProperties.h"
+#include "libmmv/math/Vec3.h"
+#include "libmmv/model/volume/Voxel.h"
+#include "libmmv/model/volume/Volume.h"
+#include "libmmv/model/volume/VolumeProperties.h"
 
-namespace ettention
+namespace libmmv
 {
     class AlgebraicParameterSet;
 
@@ -12,9 +12,9 @@ namespace ettention
     {
     public:
 
-        ByteVolume(const Vec3ui& resolution, boost::optional<float> initValue, boost::optional<float> maximumInputFloatValue = 1.0f);
-        ByteVolume(const Vec3ui& resolution, const BoundingBox3f& bbox, boost::optional<float> initValue, boost::optional<float> maximumInputFloatValue = 1.0f);
-        ByteVolume(const Vec3ui& resolution, const byte_t* initialData, boost::optional<float> maximumInputFloatValue = 1.0f);
+        ByteVolume(const Vec3ui& resolution, std::optional<float> initValue, std::optional<float> maximumInputFloatValue = 1.0f);
+        ByteVolume(const Vec3ui& resolution, const BoundingBox3f& bbox, std::optional<float> initValue, std::optional<float> maximumInputFloatValue = 1.0f);
+        ByteVolume(const Vec3ui& resolution, const byte_t* initialData, std::optional<float> maximumInputFloatValue = 1.0f);
         ~ByteVolume();
 
         std::unique_ptr<float> convertToFloat() override;

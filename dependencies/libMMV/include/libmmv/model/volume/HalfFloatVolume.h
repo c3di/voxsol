@@ -1,10 +1,10 @@
 #pragma once
-#include "math/Vec3.h"
-#include "model/volume/Volume.h"
-#include "model/volume/VolumeProperties.h"
-#include "model/volume/Voxel.h"
+#include "libmmv/math/Vec3.h"
+#include "libmmv/model/volume/Volume.h"
+#include "libmmv/model/volume/VolumeProperties.h"
+#include "libmmv/model/volume/Voxel.h"
 
-namespace ettention
+namespace libmmv
 {
     class AlgebraicParameterSet;
 
@@ -12,8 +12,8 @@ namespace ettention
     {
     public:
 
-        HalfFloatVolume(const Vec3ui& resolution, boost::optional<float> initValue);
-        HalfFloatVolume(const Vec3ui& resolution, const BoundingBox3f& bbox, boost::optional<float> initValue);
+        HalfFloatVolume(const Vec3ui& resolution, std::optional<float> initValue);
+        HalfFloatVolume(const Vec3ui& resolution, const BoundingBox3f& bbox, std::optional<float> initValue);
         HalfFloatVolume(const Vec3ui& resolution, const float* initialData);
         ~HalfFloatVolume();
 

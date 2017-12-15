@@ -3,7 +3,7 @@
 #include <algorithm>
 #include <sstream>
 
-namespace ettention
+namespace libmmv
 {
 	template<typename _ValType>
 	class Vec2
@@ -17,6 +17,8 @@ namespace ettention
 			};
 			_ValType dim[2];
 		};
+
+		inline int nDim() { return 2; };
 
 		Vec2() {};
 		Vec2(_ValType x, _ValType y) : x(x), y(y) {};

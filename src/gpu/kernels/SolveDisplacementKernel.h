@@ -46,6 +46,6 @@ private:
 
     void serializeMaterialConfigurationEquations(void* destination);
 
-    void cpuBuildRHSVector(ettention::Vec3<REAL>* rhsVec, const MaterialConfigurationEquations* matrices, int x, int y, int z);
+    void cpuBuildRHSVector(libmmv::Vec3<REAL>* rhsVec, const MaterialConfigurationEquations* matrices, int x, int y, int z);
     void cpuSolveIteration();
 };

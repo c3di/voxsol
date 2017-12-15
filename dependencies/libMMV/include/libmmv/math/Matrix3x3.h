@@ -1,12 +1,12 @@
 #pragma once
 
-#include <iostream>
+#include <sstream>
 #include <vector>
 
 #include "Vec2.h"
 #include "Vec3.h"
 
-namespace ettention
+namespace libmmv
 {
     template<typename _ValType>
     class Matrix3x3

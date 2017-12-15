@@ -1,10 +1,11 @@
 #pragma once
 
-#include "io/rangetransformation/RangeTransformation.h"
-#include "model/volume/Volume.h"
+#include "libmmv/io/rangetransformation/RangeTransformation.h"
 
-namespace ettention
+namespace libmmv
 {
+    class Volume;
+
     class LinearRangeTransformation : public RangeTransformation
     {
     public:

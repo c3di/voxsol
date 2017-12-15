@@ -1,11 +1,12 @@
 #pragma once
+#include <optional>
+#include <memory>
+#include "libmmv/math/Vec3.h"
+#include "libmmv/model/volume/VolumeProperties.h"
+#include "libmmv/io/IOEnumerations.h"
+#include "libmmv/model/volume/Voxel.h"
 
-#include "math/Vec3.h"
-#include "model/volume/VolumeProperties.h"
-#include "io/IOEnumerations.h"
-#include "model/volume/Voxel.h"
-
-namespace ettention
+namespace libmmv
 {
     class Image;
     class GPUMappedVolume;
@@ -17,9 +18,9 @@ namespace ettention
         friend class SubVolume;
 
     protected:
-        Volume(Voxel::DataType voxelType, const Vec3ui& resolution, boost::optional<float> initValue);
-        Volume(Voxel::DataType voxelType, const Vec3ui& resolution, const BoundingBox3f& bbox, boost::optional<float> initValue);
-        Volume(Voxel::DataType voxelType, const Vec3ui& resolution, const Vec3f& voxelSize, boost::optional<float> initValue);
+        Volume(Voxel::DataType voxelType, const Vec3ui& resolution, std::optional<float> initValue);
+        Volume(Voxel::DataType voxelType, const Vec3ui& resolution, const BoundingBox3f& bbox, std::optional<float> initValue);
+        Volume(Voxel::DataType voxelType, const Vec3ui& resolution, const Vec3f& voxelSize, std::optional<float> initValue);
 
         static const size_t INVALID_VOXEL_INDEX = (size_t)-1;
 

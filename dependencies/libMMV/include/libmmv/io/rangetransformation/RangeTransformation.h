@@ -1,8 +1,7 @@
 #pragma once
-#include "algorithm/volumestatistics/VolumeStatistics.h"
-#include "math/Vec2.h"
+#include "libmmv/algorithm/volumestatistics/VolumeStatistics.h"
 
-namespace ettention
+namespace libmmv
 {
     class RangeTransformation
     {

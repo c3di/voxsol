@@ -3,13 +3,13 @@
 #include "material/Material.h"
 #include "material/MaterialConfiguration.h"
 
-ProblemFragment::ProblemFragment(ettention::Vec3ui& centerVertexCoord, std::vector<Material*>& mats) :
+ProblemFragment::ProblemFragment(libmmv::Vec3ui& centerVertexCoord, std::vector<Material*>& mats) :
     centerVertexCoord(centerVertexCoord),
     materials(mats)
 {
 }
 
-ProblemFragment::ProblemFragment(ettention::Vec3ui& centerVertexCoord) :
+ProblemFragment::ProblemFragment(libmmv::Vec3ui& centerVertexCoord) :
     centerVertexCoord(centerVertexCoord),
     materials(8, &Material::EMPTY)
 {
@@ -59,8 +59,8 @@ const MaterialConfiguration ProblemFragment::getMaterialConfiguration() const {
     return MaterialConfiguration(this);
 }
 
-ettention::Vec3ui ProblemFragment::getCenterVertex() const {
-    return ettention::Vec3ui(centerVertexCoord);
+libmmv::Vec3ui ProblemFragment::getCenterVertex() const {
+    return libmmv::Vec3ui(centerVertexCoord);
 }
 
 bool ProblemFragment::containsMixedMaterials() const {

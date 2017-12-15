@@ -1,11 +1,12 @@
 #pragma once
-#include "io/HyperStackIndex.h"
-#include "io/datasource/ImageStackDataSource.h"
+#include <unordered_map>
+#include <list>
+#include "libmmv/io/datasource/ImageStackDataSource.h"
 
-namespace ettention
+namespace libmmv
 {
     class Image;
-    class Visualizer;
+    class HyperStackIndex;
 
     class CachingImageStackDataSource : public ImageStackDataSource
     {

@@ -8,15 +8,15 @@
 
 #define CLOSE_EQ_EPSILON std::numeric_limits<REAL>::epsilon
 
-class Matrix3x3 : public ettention::Matrix3x3<REAL>
+class Matrix3x3 : public libmmv::Matrix3x3<REAL>
 {
 public:
     Matrix3x3();
     Matrix3x3(REAL c0x, REAL c0y, REAL c0z, REAL c1x, REAL c1y, REAL c1z, REAL c2x, REAL c2y, REAL c2z);
-    Matrix3x3(ettention::Vec3<REAL> column0, ettention::Vec3<REAL> column1, ettention::Vec3<REAL> column2);
+    Matrix3x3(libmmv::Vec3<REAL> column0, libmmv::Vec3<REAL> column1, libmmv::Vec3<REAL> column2);
     Matrix3x3(const std::vector<REAL>& values);
     Matrix3x3(const Matrix3x3& other);
-    Matrix3x3(const ettention::Matrix3x3<REAL>& other);
+    Matrix3x3(const libmmv::Matrix3x3<REAL>& other);
 
     static const Matrix3x3 identity;
     const static size_t SizeInBytes;

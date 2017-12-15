@@ -52,7 +52,7 @@ add_library(${PROJECT_NAME}
 )
 
 target_link_libraries(${PROJECT_NAME}
-                      ${LIBMMV_LIBRARY_RELEASE}
+                      ${LIBMMV_BOTH_LIBRARIES}
 )
 
 IF (SOLVER_DOUBLE_PRECISION) 

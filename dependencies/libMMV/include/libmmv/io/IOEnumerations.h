@@ -1,7 +1,8 @@
 #pragma once
-#include "math/Vec3.h"
+#include "libmmv/math/Vec3.h"
+#include <sstream>
 
-namespace ettention
+namespace libmmv
 {
     enum VoxelValueType
     {

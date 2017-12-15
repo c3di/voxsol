@@ -1,12 +1,13 @@
 #pragma once
-#include "model/geometry/Ray.h"
-#include "model/geometry/Plane.h"
-#include "math/Vec2.h"
-#include "math/Vec3.h"
-#include "math/Vec4.h"
+#include "libmmv/math/Vec2.h"
+#include "libmmv/math/Vec3.h"
+#include "libmmv/math/Vec4.h"
+#include <vector>
 
-namespace ettention
+namespace libmmv
 {
+    class Ray;
+    class Plane;
     class Image;
     template<typename _T> class BoundingBox;
     typedef BoundingBox<Vec3f> BoundingBox3f;

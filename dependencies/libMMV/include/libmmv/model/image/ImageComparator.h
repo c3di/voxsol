@@ -1,11 +1,9 @@
 #pragma once
-
 #include <string>
-#include "evaluation/RootMeanSquareError.h"
-#include "model/image/Image.h"
 
-namespace ettention
+namespace libmmv
 {
+    class Image;
     class ImageComparator
     {
     public:

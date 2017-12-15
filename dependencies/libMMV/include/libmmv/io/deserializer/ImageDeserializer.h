@@ -1,8 +1,9 @@
 #pragma once
+#include <string>
 
-#include "FreeImagePlus.h"
+class fipImage;
 
-namespace ettention
+namespace libmmv
 {
     class Image;
 

@@ -5,7 +5,7 @@
 #include "solution/Solution.h"
 #include "helpers/Templates.h"
 #include "helpers/SolutionInspector.h"
-#include "problem/NeumannBoundary.h"
+#include "problem/boundaryconditions/NeumannBoundary.h"
 
 class SolutionTests : public ::testing::Test {
 
@@ -40,7 +40,7 @@ TEST_F(SolutionTests, BoundsHandling) {
     Solution solution(problem);
 
     try {
-        solution.mapToIndex(ettention::Vec3ui(3, 3, 3));
+        solution.mapToIndex(libmmv::Vec3ui(3, 3, 3));
         FAIL() << "Expected out of bounds coordinate to throw an exception";
     }
     catch (const std::invalid_argument&) {}
@@ -68,7 +68,7 @@ TEST_F(SolutionTests, PrecomputeMatrices) {
         }
     }
 
-    ProblemFragment frag = problem.extractLocalProblem(ettention::Vec3ui(1, 1, 1));
+    ProblemFragment frag = problem.extractLocalProblem(libmmv::Vec3ui(1, 1, 1));
     ConfigId fragId = sol.getEquationIdForFragment(frag);
     EXPECT_EQ(fragId, 13) << "Expected problem fragment for center vertex to have material configuration equation id 13";
 }
@@ -90,8 +90,8 @@ TEST_F(SolutionTests, ConsistencyAfterPrecompute) {
 TEST_F(SolutionTests, DirichletBoundaryAppliedToLHS) {
     DiscreteProblem problem = Templates::Problem::STEEL_2_2_2();
 
-    problem.setDirichletBoundaryAtVertex(ettention::Vec3ui(1, 0, 0), DirichletBoundary(DirichletBoundary::FIXED_ALL));
-    problem.setDirichletBoundaryAtVertex(ettention::Vec3ui(2, 0, 0), DirichletBoundary(DirichletBoundary::FIXED_X));
+    problem.setDirichletBoundaryAtVertex(libmmv::Vec3ui(1, 0, 0), DirichletBoundary(DirichletBoundary::FIXED_ALL));
+    problem.setDirichletBoundaryAtVertex(libmmv::Vec3ui(2, 0, 0), DirichletBoundary(DirichletBoundary::FIXED_X));
 
     SolutionInspector sol(problem);
     
@@ -99,7 +99,7 @@ TEST_F(SolutionTests, DirichletBoundaryAppliedToLHS) {
 
     const std::vector<MaterialConfigurationEquations>* equations = sol.getMaterialConfigurationEquations();
 
-    ProblemFragment allFixed = problem.extractLocalProblem(ettention::Vec3ui(1, 0, 0));
+    ProblemFragment allFixed = problem.extractLocalProblem(libmmv::Vec3ui(1, 0, 0));
     unsigned short eqId = sol.getEquationIdForFragment(allFixed);
     const MaterialConfigurationEquations allFixedEqns = equations->at(eqId);
     const Matrix3x3* allFixedLHS = allFixedEqns.getLHSInverse();
@@ -107,7 +107,7 @@ TEST_F(SolutionTests, DirichletBoundaryAppliedToLHS) {
 
     EXPECT_TRUE(closeEqual(*allFixedLHS, allFixedExpected)) << "Expected LHS matrix for ALL_FIXED to be all zeros";
 
-    ProblemFragment xFixed = problem.extractLocalProblem(ettention::Vec3ui(2, 0, 0));
+    ProblemFragment xFixed = problem.extractLocalProblem(libmmv::Vec3ui(2, 0, 0));
     eqId = sol.getEquationIdForFragment(xFixed);
     const MaterialConfigurationEquations xFixedEqns = equations->at(eqId);
     const Matrix3x3* xFixedLHS = xFixedEqns.getLHSInverse();
@@ -120,8 +120,8 @@ TEST_F(SolutionTests, DirichletBoundaryAppliedToLHS) {
 TEST_F(SolutionTests, NeumannBoundaryAppliedToEquations) {
     DiscreteProblem problem = Templates::Problem::STEEL_2_2_2();
 
-    problem.setNeumannBoundaryAtVertex(ettention::Vec3ui(1, 0, 0), NeumannBoundary(ettention::Vec3<REAL>(9999, 0, 0)));
-    problem.setNeumannBoundaryAtVertex(ettention::Vec3ui(2, 0, 0), NeumannBoundary(ettention::Vec3<REAL>(100, 100, 100)));
+    problem.setNeumannBoundaryAtVertex(libmmv::Vec3ui(1, 0, 0), NeumannBoundary(libmmv::Vec3<REAL>(9999, 0, 0)));
+    problem.setNeumannBoundaryAtVertex(libmmv::Vec3ui(2, 0, 0), NeumannBoundary(libmmv::Vec3<REAL>(100, 100, 100)));
 
     SolutionInspector sol(problem);
 
@@ -129,16 +129,16 @@ TEST_F(SolutionTests, NeumannBoundaryAppliedToEquations) {
 
     const std::vector<MaterialConfigurationEquations>* equations = sol.getMaterialConfigurationEquations();
 
-    ProblemFragment stressInX = problem.extractLocalProblem(ettention::Vec3ui(1, 0, 0));
+    ProblemFragment stressInX = problem.extractLocalProblem(libmmv::Vec3ui(1, 0, 0));
     unsigned short eqId = sol.getEquationIdForFragment(stressInX);
     const MaterialConfigurationEquations stressInXEqns = equations->at(eqId);
 
     EXPECT_TRUE(stressInXEqns.getNeumannBoundaryCondition()->stress.x == 9999) << "Expected material config equation to store the right neumann boundary stress";
 
-    ProblemFragment uniformStress = problem.extractLocalProblem(ettention::Vec3ui(2, 0, 0));
+    ProblemFragment uniformStress = problem.extractLocalProblem(libmmv::Vec3ui(2, 0, 0));
     eqId = sol.getEquationIdForFragment(uniformStress);
     const MaterialConfigurationEquations uniformStressEqns = equations->at(eqId);
-    ettention::Vec3<REAL> stress = uniformStressEqns.getNeumannBoundaryCondition()->stress;
+    libmmv::Vec3<REAL> stress = uniformStressEqns.getNeumannBoundaryCondition()->stress;
 
     EXPECT_TRUE(stress.x == 100 && stress.y == 100 && stress.z == 100) << "Expected material config to store the right neumann boundary stress";
 }

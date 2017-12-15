@@ -1,12 +1,15 @@
 #pragma once
 #include <stdio.h>
-#include "model/volume/Volume.h"
-#include "io/rangetransformation/RangeTransformation.h"
-#include "io/IOEnumerations.h"
+#include <memory>
+#include "libmmv/io/IOEnumerations.h"
 
-namespace ettention
+namespace libmmv
 {
     class OutputParameterSet;
+    class RangeTransformation;
+    class VolumeProperties;
+    class Volume;
+    class Image;
 
     class VolumeFileFormatWriter
     {
@@ -16,7 +19,7 @@ namespace ettention
         virtual bool canGenerateRotation(CoordinateOrder rotation) = 0;
         virtual std::string getFileExtension() = 0;
 
-        virtual void write(Volume* volume, boost::filesystem::path outputVolumeFileName, VoxelValueType mode, CoordinateOrder order, bool invert = false);
+        virtual void write(Volume* volume, std::string outputVolumeFileName, VoxelValueType mode, CoordinateOrder order, bool invert = false);
 
 
     protected:

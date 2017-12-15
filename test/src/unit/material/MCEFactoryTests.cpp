@@ -40,8 +40,8 @@ public:
 // NOTE: When trying to replicate these values in the prototype make sure the voxel sizes match!
 
 TEST_F(MCEFactoryTests, UniformSteel) {
-    ettention::Vec3ui coord(2, 2, 2);
-    ettention::Vec3<REAL> voxelSize(0.5, 0.5, 0.5);
+    libmmv::Vec3ui coord(2, 2, 2);
+    libmmv::Vec3<REAL> voxelSize(0.5, 0.5, 0.5);
     MaterialConfigurationEquationsFactory mceFactory(voxelSize);
 
     std::vector<Material*> mats(8, &Templates::Mat.STEEL);
@@ -74,8 +74,8 @@ TEST_F(MCEFactoryTests, UniformSteel) {
 }
 
 TEST_F(MCEFactoryTests, MixSteelNull) {
-    ettention::Vec3ui coord(2, 2, 2);
-    ettention::Vec3<REAL> voxelSize(1, 1, 1);
+    libmmv::Vec3ui coord(2, 2, 2);
+    libmmv::Vec3<REAL> voxelSize(1, 1, 1);
     MaterialConfigurationEquationsFactory mceFactory(voxelSize);
 
     std::vector<Material*> mats(8, &Templates::Mat.EMPTY);
@@ -103,8 +103,8 @@ TEST_F(MCEFactoryTests, MixSteelNull) {
 }
 
 TEST_F(MCEFactoryTests, MixSteelNullVertex_2_0_0) {
-    ettention::Vec3ui coord(2, 2, 2);
-    ettention::Vec3<REAL> voxelSize(1, 1, 1);
+    libmmv::Vec3ui coord(2, 2, 2);
+    libmmv::Vec3<REAL> voxelSize(1, 1, 1);
     MaterialConfigurationEquationsFactory mceFactory(voxelSize);
 
     std::vector<Material*> mats(8, &Templates::Mat.EMPTY);
@@ -133,8 +133,8 @@ TEST_F(MCEFactoryTests, MixSteelNullVertex_2_0_0) {
 }
 
 TEST_F(MCEFactoryTests, MixSteelNullVertex_2_1_1) {
-    ettention::Vec3ui coord(2, 2, 2);
-    ettention::Vec3<REAL> voxelSize(1, 1, 1);
+    libmmv::Vec3ui coord(2, 2, 2);
+    libmmv::Vec3<REAL> voxelSize(1, 1, 1);
     MaterialConfigurationEquationsFactory mceFactory(voxelSize);
 
     std::vector<Material*> mats(8, &Templates::Mat.EMPTY);
@@ -163,8 +163,8 @@ TEST_F(MCEFactoryTests, MixSteelNullVertex_2_1_1) {
 }
 
 TEST_F(MCEFactoryTests, SteelNonUniformVoxels) {
-    ettention::Vec3ui coord(2, 2, 2);
-    ettention::Vec3<REAL> voxelSize(1, 0.25, 0.5);
+    libmmv::Vec3ui coord(2, 2, 2);
+    libmmv::Vec3<REAL> voxelSize(1, 0.25, 0.5);
     MaterialConfigurationEquationsFactory mceFactory(voxelSize);
 
     std::vector<Material*> mats(8, &Templates::Mat.STEEL);
@@ -195,8 +195,8 @@ TEST_F(MCEFactoryTests, SteelNonUniformVoxels) {
 }
 
 TEST_F(MCEFactoryTests, SteelNullNonUniformVoxels) {
-    ettention::Vec3ui coord(2, 2, 2);
-    ettention::Vec3<REAL> voxelSize(1, 0.25, 0.5);
+    libmmv::Vec3ui coord(2, 2, 2);
+    libmmv::Vec3<REAL> voxelSize(1, 0.25, 0.5);
     MaterialConfigurationEquationsFactory mceFactory(voxelSize);
 
     std::vector<Material*> mats(8, &Templates::Mat.EMPTY);
@@ -234,7 +234,7 @@ TEST_F(MCEFactoryTests, SteelUniformVoxelsProblem) {
 
     sol.computeMaterialConfigurationEquations();
 
-    ProblemFragment fragment = problem.extractLocalProblem(ettention::Vec3ui(1, 1, 0));
+    ProblemFragment fragment = problem.extractLocalProblem(libmmv::Vec3ui(1, 1, 0));
     MaterialConfigurationEquations* fragEquations = sol.getEquationsForFragment(fragment);
 
     const Matrix3x3* lhs = fragEquations->getLHSInverse();

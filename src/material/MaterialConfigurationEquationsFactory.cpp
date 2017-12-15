@@ -5,7 +5,7 @@
 #include "math/Matrix3x3.h"
 
 
-MaterialConfigurationEquationsFactory::MaterialConfigurationEquationsFactory(ettention::Vec3<REAL> voxelSize) :
+MaterialConfigurationEquationsFactory::MaterialConfigurationEquationsFactory(libmmv::Vec3<REAL> voxelSize) :
     voxelSize(voxelSize),
     linearIntegrals(voxelSize),
     quadIntegrals(voxelSize)
@@ -61,24 +61,30 @@ void MaterialConfigurationEquationsFactory::computeLHS(const ProblemFragment& fr
 
         fullIntegralLHS[20] += mu * integrals->value(13,1,1,cell);
     }
-    ettention::Vec3<REAL> col1(
+    libmmv::Vec3<REAL> col1(
         fullIntegralLHS[0] + fullIntegralLHS[3] + fullIntegralLHS[5], 
         fullIntegralLHS[1] + fullIntegralLHS[4], 
         fullIntegralLHS[2] + fullIntegralLHS[6]
     );
-    ettention::Vec3<REAL> col2(
+    libmmv::Vec3<REAL> col2(
         fullIntegralLHS[8] + fullIntegralLHS[10],
         fullIntegralLHS[7] + fullIntegralLHS[11] + fullIntegralLHS[12],
         fullIntegralLHS[9] + fullIntegralLHS[13]
     );
-    ettention::Vec3<REAL> col3(
+    libmmv::Vec3<REAL> col3(
         fullIntegralLHS[15] + fullIntegralLHS[17],
         fullIntegralLHS[16] + fullIntegralLHS[19],
         fullIntegralLHS[14] + fullIntegralLHS[18] + fullIntegralLHS[20]
     );
     Matrix3x3 lhs(col1, col2, col3);
     checkMatrixConditionNumber(lhs);
-    lhs = Matrix3x3(lhs.inverse());
+    if (lhs.at(0, 0) == 0 && lhs.at(1, 1) == 0 && lhs.at(2, 2) == 0) {
+        // zero-matrix corresponding to problem fragment containing only null materials, don't try to invert this
+    }
+    else {
+        lhs = Matrix3x3(lhs.inverse());
+    }
+    
 
     applyDirichletBoundaryConditionsToLHS(lhs, fragment);
 

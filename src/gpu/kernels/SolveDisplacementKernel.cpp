@@ -90,7 +90,7 @@ void SolveDisplacementKernel::solveCPU() {
     }
 }
 
-void SolveDisplacementKernel::cpuBuildRHSVector(ettention::Vec3<REAL>* rhsVec, const MaterialConfigurationEquations* matrices, int x, int y, int z) {
+void SolveDisplacementKernel::cpuBuildRHSVector(libmmv::Vec3<REAL>* rhsVec, const MaterialConfigurationEquations* matrices, int x, int y, int z) {
     int localNeighborIndex;
     int globalNeighborIndex;
     std::vector<Vertex>* vertices = solution->getVertices();
@@ -156,7 +156,7 @@ void SolveDisplacementKernel::cpuSolveIteration() {
                 const Matrix3x3* lhsInverse = matrices->getLHSInverse();
 
                 // Multiply rhs matrices with displacements of the 26 neighboring vertices
-                ettention::Vec3<REAL> rhsVec(0, 0, 0);
+                libmmv::Vec3<REAL> rhsVec(0, 0, 0);
                 cpuBuildRHSVector(&rhsVec, matrices, x, y, z);
 
                 // Move to right hand side of equation and add neumann stress
@@ -208,7 +208,7 @@ void SolveDisplacementKernel::debugOutputEquationsCPU() {
             }
             outFile << std::endl;
         }
-        ettention::Vec3<REAL> neumann = matrices->getNeumannBoundaryCondition()->stress;
+        libmmv::Vec3<REAL> neumann = matrices->getNeumannBoundaryCondition()->stress;
         outFile << "Neumann: " << neumann.x << " " << neumann.y << " " << neumann.z << std::endl << std::endl;
     }
 

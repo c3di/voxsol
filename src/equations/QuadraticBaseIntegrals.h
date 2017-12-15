@@ -12,13 +12,13 @@
 class QuadraticBaseIntegrals : public BaseIntegrals {
 public:
 
-    QuadraticBaseIntegrals(ettention::Vec3f& voxelSize) :
+    QuadraticBaseIntegrals(libmmv::Vec3f& voxelSize) :
         BaseIntegrals(voxelSize)
     {
         init();
     }
 
-    QuadraticBaseIntegrals(ettention::Vec3d& voxelSize) :
+    QuadraticBaseIntegrals(libmmv::Vec3d& voxelSize) :
         BaseIntegrals(voxelSize)
     {
         init();

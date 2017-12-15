@@ -2,7 +2,7 @@
 
 #include <vector>
 
-namespace ettention
+namespace libmmv
 {
     class RootMeanSquareError;
 

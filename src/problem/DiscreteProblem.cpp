@@ -2,9 +2,9 @@
 #include "DiscreteProblem.h"
 #include "material/MaterialDictionary.h"
 
-DiscreteProblem::DiscreteProblem(ettention::Vec3ui size, ettention::Vec3<REAL> voxelSize, MaterialDictionary* matDict) :
+DiscreteProblem::DiscreteProblem(libmmv::Vec3ui size, libmmv::Vec3<REAL> voxelSize, MaterialDictionary* matDict) :
     problemSize(size),
-    solutionSize(size + ettention::Vec3ui(1,1,1)),
+    solutionSize(size + libmmv::Vec3ui(1,1,1)),
     voxelSize(voxelSize),
     numberOfCells(size.x*size.y*size.z),
     materialIds(numberOfCells, Material::EMPTY.id),
@@ -35,13 +35,18 @@ void DiscreteProblem::setDirichletBoundaryAtVertex(unsigned int index, Dirichlet
     dirichletBoundaryConditions[index] = condition;
 }
 
-void DiscreteProblem::setNeumannBoundaryAtVertex(VertexCoordinate& coordinate, NeumannBoundary& condition) {
+void DiscreteProblem::setNeumannBoundaryAtVertex(VertexCoordinate& coordinate, NeumannBoundary& condition, bool combineIfAlreadyExists) {
     unsigned int index = mapToVertexIndex(coordinate);
-    setNeumannBoundaryAtVertex(index, condition);
+    setNeumannBoundaryAtVertex(index, condition, combineIfAlreadyExists);
 }
 
-void DiscreteProblem::setNeumannBoundaryAtVertex(unsigned int index, NeumannBoundary& condition) {
-    neumannBoundaryConditions[index] = condition;
+void DiscreteProblem::setNeumannBoundaryAtVertex(unsigned int index, NeumannBoundary& condition, bool combineIfAlreadyExists) {
+    if (combineIfAlreadyExists && neumannBoundaryConditions.count(index) > 0) {
+        neumannBoundaryConditions[index].combine(condition);
+    }
+    else {
+        neumannBoundaryConditions[index] = condition;
+    }
 }
 
 unsigned int DiscreteProblem::mapToVoxelIndex(VoxelCoordinate& coordinate) const {
@@ -59,11 +64,11 @@ unsigned int DiscreteProblem::mapToVertexIndex(VertexCoordinate& coordinate) con
 }
 
 VoxelCoordinate DiscreteProblem::mapToVoxelCoordinate(unsigned int index) const {
-    return ettention::Vec3ui(index % problemSize.x, (index / problemSize.x) % problemSize.y, index / (problemSize.x * problemSize.y));
+    return libmmv::Vec3ui(index % problemSize.x, (index / problemSize.x) % problemSize.y, index / (problemSize.x * problemSize.y));
 }
 
 VertexCoordinate DiscreteProblem::mapToVertexCoordinate(unsigned int index) const {
-    return ettention::Vec3ui(index % solutionSize.x, (index / solutionSize.x) % solutionSize.y, index / (solutionSize.x * solutionSize.y));
+    return libmmv::Vec3ui(index % solutionSize.x, (index / solutionSize.x) % solutionSize.y, index / (solutionSize.x * solutionSize.y));
 }
 
 Material* DiscreteProblem::getMaterial(VoxelCoordinate& coordinate) const {
@@ -80,12 +85,12 @@ Material* DiscreteProblem::getMaterial(unsigned int index) const {
     return materialDictionary->getMaterialById(matId);
 }
 
-ettention::Vec3d DiscreteProblem::getVoxelSize() const {
-    return ettention::Vec3d(voxelSize);
+libmmv::Vec3d DiscreteProblem::getVoxelSize() const {
+    return libmmv::Vec3d(voxelSize);
 }
 
-ettention::Vec3ui DiscreteProblem::getSize() const {
-    return ettention::Vec3ui(problemSize);
+libmmv::Vec3ui DiscreteProblem::getSize() const {
+    return libmmv::Vec3ui(problemSize);
 }
 
 unsigned int DiscreteProblem::getNumberOfVoxels() const {
@@ -164,14 +169,14 @@ void DiscreteProblem::considerNeumannBoundaryAtLocalProblem(ProblemFragment& fra
     }
 }
 
-ettention::Vec3<REAL> DiscreteProblem::getVertexPosition(unsigned int index) const {
+libmmv::Vec3<REAL> DiscreteProblem::getVertexPosition(unsigned int index) const {
     VertexCoordinate coordinate = mapToVertexCoordinate(index);
     return getVertexPosition(coordinate);
 }
 
-ettention::Vec3<REAL> DiscreteProblem::getVertexPosition(VertexCoordinate& coordinates) const {
+libmmv::Vec3<REAL> DiscreteProblem::getVertexPosition(VertexCoordinate& coordinates) const {
     REAL x = static_cast<REAL>(coordinates.x) * voxelSize.x;
     REAL y = static_cast<REAL>(coordinates.y) * voxelSize.y;
     REAL z = static_cast<REAL>(coordinates.z) * voxelSize.z;
-    return ettention::Vec3<REAL>(x, y, z);
+    return libmmv::Vec3<REAL>(x, y, z);
 }

@@ -1,9 +1,9 @@
 #pragma once
 
-#include "math/Vec2.h"
-#include "math/Vec3.h"
+#include "libmmv/math/Vec2.h"
+#include "libmmv/math/Vec3.h"
 
-namespace ettention
+namespace libmmv
 {
 	unsigned int Flatten3D(Vec3ui index, Vec3ui size);
     Vec3ui       Unflatten3D(unsigned int index, Vec3ui size);

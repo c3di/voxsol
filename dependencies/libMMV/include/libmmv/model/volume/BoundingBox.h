@@ -1,8 +1,9 @@
 #pragma once
-#include "math/Matrix4x4.h"
-#include "math/Vec3.h"
+#include "libmmv/math/Matrix4x4.h"
+#include "libmmv/math/Vec3.h"
+#include <sstream>
 
-namespace ettention
+namespace libmmv
 {
     template<typename _T>
     class BoundingBox
@@ -19,8 +20,10 @@ namespace ettention
         _T getDimension() const;
         _T getCenter() const;
 		bool isInside(_T coordinate) const;
+		_T getNextPointInside(_T coordinate) const;
 
-		void cropToBorder(const BoundingBox<_T>& border );
+		void cropToBorder(const BoundingBox<_T>& border);
+		void shrink(int frame);
 
 		bool operator==(const BoundingBox<_T>& other);
 		bool operator!=(const BoundingBox<_T>& other);

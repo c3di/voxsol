@@ -1,8 +1,8 @@
 #pragma once
 #include <vector>
-#include "math/Vec2.h"
+#include "libmmv/math/Vec2.h"
 
-namespace ettention
+namespace libmmv
 {
     class LeastSquaresLinearFit
     {

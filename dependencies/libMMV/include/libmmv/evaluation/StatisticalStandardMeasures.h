@@ -1,9 +1,8 @@
 #pragma once
-
-#include "model/volume/Voxel.h"
+#include "libmmv/model/volume/Voxel.h"
 #include <vector>
 
-namespace ettention
+namespace libmmv
 {
     class StatisticalStandardMeasures
     {

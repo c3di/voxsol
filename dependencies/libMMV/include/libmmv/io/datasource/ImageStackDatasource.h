@@ -1,9 +1,9 @@
 #pragma once
 
-#include "io/HyperStackIndex.h"
-#include "model/image/Image.h"
+#include "libmmv/io/HyperStackIndex.h"
+#include "libmmv/model/image/Image.h"
 
-namespace ettention
+namespace libmmv
 {
     class ImageStackDataSource
     {

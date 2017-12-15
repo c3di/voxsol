@@ -1,20 +1,18 @@
 #pragma once
+#include <fstream>
+#include "libmmv/math/vec2.h"
+#include "libmmv/io/datasource/MRCHeader.h"
+#include "libmmv/io/datasource/CachingImageStackDataSource.h"
 
-#include <boost/filesystem.hpp>
-
-#include "math/vec2.h"
-#include "io/datasource/MRCHeader.h"
-#include "io/datasource/CachingImageStackDataSource.h"
-
-namespace ettention
+namespace libmmv
 {
     class MRCDataSource : public CachingImageStackDataSource
     {
 
     public:
         MRCDataSource();
-        MRCDataSource(const boost::filesystem::path& stackFilePath, bool logaritmizeData);
-        MRCDataSource(const boost::filesystem::path& stackFilePath, const boost::filesystem::path& tiltFilePath, bool logaritmizeData);
+        MRCDataSource(const std::string& stackFilePath, bool logaritmizeData);
+        MRCDataSource(const std::string& stackFilePath, const std::string& tiltFilePath, bool logaritmizeData);
         ~MRCDataSource();
 
         Vec2ui getResolution() const override;
@@ -30,7 +28,7 @@ namespace ettention
         float dataMin;
         float dataMax;
         bool logaritmizeData;
-        boost::filesystem::path stackFilePath;
+        std::string stackFilePath;
         MRCHeader mrcHeader;
         Vec2ui resolution;
         unsigned int numberOfProjections;

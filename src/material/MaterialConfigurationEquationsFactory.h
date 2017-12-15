@@ -14,13 +14,13 @@ class Matrix3x3;
 class MaterialConfigurationEquationsFactory {
 public:
 
-    MaterialConfigurationEquationsFactory(ettention::Vec3<REAL> voxelSize);
+    MaterialConfigurationEquationsFactory(libmmv::Vec3<REAL> voxelSize);
     ~MaterialConfigurationEquationsFactory();
 
     void initializeEquationsForFragment(MaterialConfigurationEquations* equations, const ProblemFragment& fragment) const;
 
 private:
-    const ettention::Vec3<REAL> voxelSize;
+    const libmmv::Vec3<REAL> voxelSize;
     const LinearBaseIntegrals linearIntegrals;
     const QuadraticBaseIntegrals quadIntegrals;
 

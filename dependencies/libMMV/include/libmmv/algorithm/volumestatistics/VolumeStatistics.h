@@ -1,9 +1,9 @@
 #pragma once
 
-#include "model/volume/FloatVolume.h"
-
-namespace ettention
+namespace libmmv
 {
+    class Volume;
+
     class VolumeStatistics
     {
     public:

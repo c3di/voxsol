@@ -1,7 +1,7 @@
 #pragma once
 #include <vector>
 
-namespace ettention
+namespace libmmv
 {
     class VectorAlgorithms
     {

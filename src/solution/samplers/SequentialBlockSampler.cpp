@@ -25,7 +25,7 @@ SequentialBlockSampler::~SequentialBlockSampler() {
 }
 
 int SequentialBlockSampler::generateNextBlockOrigins(int3* blockOrigins, int maxNumBlocks) {
-    const ettention::Vec3ui solutionDims = solution->getSize();
+    const libmmv::Vec3ui solutionDims = solution->getSize();
     int i;
     int halfBlockSize = (blockStride - 1) / 2;
     for (i = 0; i < maxNumBlocks; i++) {

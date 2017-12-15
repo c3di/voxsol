@@ -1,9 +1,8 @@
 #pragma once
 
-#include "model/volume/Volume.h"
-
-namespace ettention
+namespace libmmv
 {
+    class Volume;
 
     /* The class assumes that a volume is composed of slabs in z-direction. The class can then be used to compute the
        difference between the consecutive slabs. 

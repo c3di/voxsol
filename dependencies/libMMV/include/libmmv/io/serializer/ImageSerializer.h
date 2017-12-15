@@ -9,8 +9,10 @@
 *****************************************************************************************/
 
 #pragma once
+#include <string>
+#include <vector>
 
-namespace ettention
+namespace libmmv
 {
     class Image; 
 

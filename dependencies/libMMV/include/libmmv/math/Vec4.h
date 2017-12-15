@@ -1,10 +1,9 @@
 #pragma once
 
-// #include "framework/error/Exception.h"
 #include "Vec2.h"
 #include "Vec3.h"
 
-namespace ettention
+namespace libmmv
 {
 	template<typename _ValType>
 	class Vec4
@@ -20,6 +19,8 @@ namespace ettention
 			};
 			_ValType dim[4];
 		};
+
+		inline int nDim() { return 4; };
 
 		Vec4() {};
 		Vec4(_ValType x, _ValType y, _ValType z, _ValType w) : x(x), y(y), z(z), w(w) {};

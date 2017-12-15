@@ -1,8 +1,8 @@
 #pragma once
+#include "libmmv/math/Vec3.h"
 #include <iostream>
-#include "math/Vec3.h"
 
-namespace ettention
+namespace libmmv
 {
     class Ray
     {

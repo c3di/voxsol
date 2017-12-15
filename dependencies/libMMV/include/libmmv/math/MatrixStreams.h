@@ -1,9 +1,8 @@
 #pragma once
-#include <iostream>
-#include "math/Matrix3x3.h"
-#include "math/Matrix4x4.h"
+#include "libmmv/math/Matrix3x3.h"
+#include "libmmv/math/Matrix4x4.h"
 
-namespace ettention
+namespace libmmv
 {
     template <typename _ValType>
     std::istream &operator>>(std::istream& is, Matrix3x3<_ValType>& value);
