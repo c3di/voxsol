@@ -74,8 +74,7 @@ __device__ void buildRHSVectorForVertex(REAL* rhsVec, Vertex localVertices[BLOCK
 }
 
 __device__ const REAL* getPointerToMatricesForVertex(Vertex* vertex, const REAL* matConfigEquations) {
-    short equationId = vertex->materialConfigId;
-    short equationIndex = equationId * (EQUATION_ENTRY_SIZE);
+    unsigned int equationIndex = static_cast<unsigned int>(vertex->materialConfigId) * (EQUATION_ENTRY_SIZE);
     return &matConfigEquations[equationIndex];
 }
 
@@ -89,7 +88,8 @@ __device__ void updateVerticesStochastically(Vertex localVertices[BLOCK_SIZE][BL
         short offsetZ = 1 + lroundf(curand_uniform(&localRNGState) * (WORKING_AREA_SIZE - 1));
 
         Vertex* localVertexToUpdate = &localVertices[offsetX][offsetY][offsetZ];
-        if (localVertexToUpdate->materialConfigId == static_cast<ConfigId>(-1)) {
+        if (localVertexToUpdate->materialConfigId == static_cast<ConfigId>(0)) {
+			// config id 0 should always be the case where the vertex is surrounded by empty cells, therefore not updateable
             continue;
         }
         const REAL* matrices = getPointerToMatricesForVertex(localVertexToUpdate, matConfigEquations);
@@ -124,7 +124,7 @@ __global__
 void cuda_SolveDisplacement(Vertex* verticesOnGPU, const REAL* matConfigEquations, const SolutionDim solutionDimensions, curandState* globalRNGStates, const int3* blockOrigins) {
     // Dummy vertex is used for any vertex that lies outside the solution. MatID is designed to cause an exception if one of these vertices is actually worked on
     Vertex dummyVertex;
-    dummyVertex.materialConfigId = static_cast<ConfigId>(-1);
+    dummyVertex.materialConfigId = static_cast<ConfigId>(0);
     int3 blockOriginCoord = blockOrigins[blockIdx.x];
     curandState localRNGState = globalRNGStates[getGlobalIdx_1D_3D()];
 
