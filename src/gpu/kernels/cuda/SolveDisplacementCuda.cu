@@ -16,6 +16,7 @@
 #define EQUATION_ENTRY_SIZE 9 * 27 + 3 // 27 3x3 matrices and one 1x3 vector for Neumann stress
 #define NEUMANN_OFFSET 9 * 27          // Offset to the start of the Neumann stress vector inside an equation block
 #define UPDATES_PER_THREAD 50          // Number of vertices that should be updated stochastically per thread per kernel execution
+#define DYN_ADJUSTMENT_MAX 0.001f
 
 __device__
 int getGlobalIdx_1D_3D() {
@@ -112,7 +113,16 @@ __device__ void updateVerticesStochastically(Vertex localVertices[BLOCK_SIZE][BL
         REAL dz = MATRIX_ENTRY(matrices, LHS_MATRIX_INDEX, 0, 2) * rhsVec[0] +
             MATRIX_ENTRY(matrices, LHS_MATRIX_INDEX, 1, 2) * rhsVec[1] +
             MATRIX_ENTRY(matrices, LHS_MATRIX_INDEX, 2, 2) * rhsVec[2];
-        
+
+        REAL diff = (abs(localVertexToUpdate->x - dx) + abs(localVertexToUpdate->y - dy) + abs(localVertexToUpdate->z - dz)) * 0.3333333f;
+        if (diff > DYN_ADJUSTMENT_MAX) {
+	        // Perform dynamical adjustment, discarding any displacement deltas that are larger than the epsilon defined in DYN_ADJUSTMENT_MAX
+	        // this is to prevent occasional large errors caused by race conditions. Smaller errors are corrected over time by the stochastic updates
+	        // of surrounding vertices
+	        printf("Bad adjustment: %f diff for %f,%f,%f \n", diff, rhsVec[0], rhsVec[1], rhsVec[2]);
+	        continue;
+        }
+
         localVertexToUpdate->x = dx;
         localVertexToUpdate->y = dy;
         localVertexToUpdate->z = dz;
@@ -121,7 +131,7 @@ __device__ void updateVerticesStochastically(Vertex localVertices[BLOCK_SIZE][BL
 }
 
 __global__
-void cuda_SolveDisplacement(Vertex* verticesOnGPU, const REAL* matConfigEquations, const SolutionDim solutionDimensions, curandState* globalRNGStates, const int3* blockOrigins) {
+void cuda_SolveDisplacement(Vertex* verticesOnGPU, REAL* matConfigEquations, const SolutionDim solutionDimensions, curandState* globalRNGStates, const int3* blockOrigins) {
     // Dummy vertex is used for any vertex that lies outside the solution. MatID is designed to cause an exception if one of these vertices is actually worked on
     Vertex dummyVertex;
     dummyVertex.materialConfigId = static_cast<ConfigId>(0);
