@@ -158,14 +158,20 @@ void cuda_SolveDisplacement(Vertex* verticesOnGPU, REAL* matConfigEquations, con
     //__syncthreads must be called outside of any conditional code, but it must be called before going on to ensure shared memory has been initialized by all threads
     __syncthreads();
 
-    float toBeOrNotToBe = curand_uniform(&localRNGState); //kill 50% of threads so we're not randomly updating the same # of vertices as we have threads -> unstable
-    if (isInsideSolutionSpace && toBeOrNotToBe > 0.5f) {
+    float toBeOrNotToBe = curand_uniform(&localRNGState); 
+    if (toBeOrNotToBe > 0.8f) {
+        //only use 20% of threads to perform stochastic updates. Eg. if we have a 4x4x4 working area we have 6x6x6 vertices total, with the 
+        //outer border being read-only. We start 6x6x6 threads to handle data transfer to/from global memory, but only about 3x3x3 of them should
+        //be used to perform stochastic updates, otherwise we risk many instances of multiple threads updating the same vertex which becomes very unstable
         updateVerticesStochastically(localVertices, matConfigEquations, localRNGState);
+	}
+
+    __syncthreads();
+
+    if (isInsideSolutionSpace) {
         verticesOnGPU[threadVertexIndex] = localVertices[threadIdx.x][threadIdx.y][threadIdx.z];
-    } else {
-         // This thread was responsible for setting one of the border vertices that are not being updated, they're only there to provide input for the neighboring active
-         // vertices. After transferring this data to shared memory this thread is finished.
     }
+	
 }
 
 __global__
