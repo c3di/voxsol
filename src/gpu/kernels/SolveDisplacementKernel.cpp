@@ -24,7 +24,9 @@ SolveDisplacementKernel::~SolveDisplacementKernel() {
 
 
 void SolveDisplacementKernel::launch() {
-    prepareInputs();
+    if (!canExecute()) {
+        prepareInputs();
+    }
 
     if (canExecute()) {
         cudaLaunchSolveDisplacementKernel(serializedVertices, serializedMatConfigEquations, sampler, solutionDimensions);
@@ -34,7 +36,7 @@ void SolveDisplacementKernel::launch() {
 
 bool SolveDisplacementKernel::canExecute() {
     if (serializedMatConfigEquations == nullptr || serializedVertices == nullptr) {
-        throw std::runtime_error("Could not execute kernel SolveDisplacement because one or more inputs are missing.");
+        return false;
     }
 
     return true;

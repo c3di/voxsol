@@ -129,6 +129,11 @@ NeumannBoundary DiscreteProblem::getNeumannBoundaryAtVertex(unsigned int index) 
     }
 }
 
+std::unordered_map<unsigned int, NeumannBoundary> DiscreteProblem::getNeumannBoundaryMap()
+{
+    return neumannBoundaryConditions;
+}
+
 bool DiscreteProblem::outOfVoxelBounds(VoxelCoordinate& coordinate) const {
     return coordinate.x < 0 || coordinate.x >= problemSize.x || coordinate.y < 0 || coordinate.y >= problemSize.y || coordinate.z < 0 || coordinate.z >= problemSize.z;
 }

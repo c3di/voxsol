@@ -56,6 +56,18 @@ public:
 
             return problem;
         }
+
+        static DiscreteProblem STEEL(libmmv::Vec3ui& size) {
+            libmmv::Vec3<REAL> voxelSize(1, 1, 1);
+            int numVoxels = size.x * size.y * size.z;
+            DiscreteProblem problem(size, voxelSize, &Templates::Mat.DICTIONARY);
+
+            for (int i = 0; i < numVoxels; i++) {
+                problem.setMaterial(i, Templates::Mat.STEEL.id);
+            }
+
+            return problem;
+        }
     };
 
 };

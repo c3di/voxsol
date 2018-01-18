@@ -35,6 +35,7 @@ public:
     DirichletBoundary getDirichletBoundaryAtVertex(unsigned int index);
     NeumannBoundary getNeumannBoundaryAtVertex(VertexCoordinate& coordinate);
     NeumannBoundary getNeumannBoundaryAtVertex(unsigned int index);
+    std::unordered_map<unsigned int, NeumannBoundary> getNeumannBoundaryMap();
 
     unsigned int mapToVoxelIndex(VoxelCoordinate& coordinate) const;
     VoxelCoordinate mapToVoxelCoordinate(unsigned int index) const;
