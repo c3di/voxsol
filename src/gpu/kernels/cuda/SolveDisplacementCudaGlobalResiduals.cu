@@ -143,9 +143,13 @@ __device__ void addResidualFromFullresVertex(
     Vertex* verticesOnGPU
 ) {
     int fullresIndex = solutionDimensions.y*solutionDimensions.x*fullresZ + solutionDimensions.x*fullresY + fullresX;
+    if (!isInsideSolution(fullresX, fullresY, fullresZ, solutionDimensions)) {
+        // this vertex could lie outside the solution space because we expand the working block by 1 when gathering residuals, in this case residual is 0
+        return;
+    }
     Vertex globalFullresVertex = verticesOnGPU[fullresIndex];
     if (globalFullresVertex.materialConfigId == static_cast<ConfigId>(0)) {
-        // config id 0 should always be the case where the vertex is surrounded by empty cells, therefore not updateable
+        // config id 0 should always be the case where the vertex is surrounded by empty cells, therefore not updateable so residual is 0
         return;
     }
     REAL oldX = globalFullresVertex.x;
@@ -261,7 +265,7 @@ void cuda_SolveDisplacementGlobalResiduals(
     const uint3* blockOrigins
 ) {
     uint3 blockOriginCoord = blockOrigins[blockIdx.x];
-    if (blockOriginCoord.x > solutionDimensions.x || blockOriginCoord.y > solutionDimensions.y || blockOriginCoord.z > solutionDimensions.z) {
+    if (blockOriginCoord.x >= solutionDimensions.x || blockOriginCoord.y >= solutionDimensions.y || blockOriginCoord.z >= solutionDimensions.z) {
         // Some blocks may have been set to an invalid value during the importance sampling phase if they overlap with some other block, these
         // should not be processed
         return;
@@ -277,14 +281,14 @@ void cuda_SolveDisplacementGlobalResiduals(
 
 __global__
 void cuda_init_curand_stateGlobal(curandState* rngState) {
-    int id = getGlobalIdx_3D_3DGlobal();
+    int id = getGlobalIdx_1D_3DGlobal();
     // seed, sequence number, offset, curandState
     curand_init(clock64(), id, 0, &rngState[id]);
 }
 
 __host__
 curandState* initializeRNGStatesGlobal(int numConcurrentBlocks, dim3 threadsPerBlock) {
-    int numThreads = numConcurrentBlocks * BLOCK_SIZE*BLOCK_SIZE*BLOCK_SIZE;
+    int numThreads = numConcurrentBlocks * threadsPerBlock.x * threadsPerBlock.y * threadsPerBlock.z;
     curandState* rngStateOnGPU;
     cudaCheckSuccess(cudaMalloc(&rngStateOnGPU, sizeof(curandState) * numThreads));
     cuda_init_curand_stateGlobal << < numConcurrentBlocks, threadsPerBlock >> > (rngStateOnGPU);
