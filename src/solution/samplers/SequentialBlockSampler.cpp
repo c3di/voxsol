@@ -24,7 +24,7 @@ SequentialBlockSampler::~SequentialBlockSampler() {
 
 }
 
-int SequentialBlockSampler::generateNextBlockOrigins(int3* blockOrigins, int maxNumBlocks) {
+int SequentialBlockSampler::generateNextBlockOrigins(uint3* blockOrigins, int maxNumBlocks) {
     const libmmv::Vec3ui solutionDims = solution->getSize();
     int i;
     int halfBlockSize = (blockStride - 1) / 2;
@@ -72,7 +72,7 @@ void SequentialBlockSampler::shiftOffsetStochastically() {
     currentOffset.z = rngOffset(rng);
 }
 
-void SequentialBlockSampler::writeDebugOutput(int samplingIteration, int3* blockOrigins, int numBlocks) {
+void SequentialBlockSampler::writeDebugOutput(int samplingIteration, uint3* blockOrigins, int numBlocks) {
     std::stringstream fp;
     fp << "c:\\tmp\\step_samp_" << samplingIteration << ".vtk";
     VTKSamplingVisualizer vis(solution);

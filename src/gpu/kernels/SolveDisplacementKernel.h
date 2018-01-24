@@ -24,6 +24,8 @@ public:
     void launch() override;
     void solveCPU();
 
+    //This returns a pointer to managed memory, use only for debug output to avoid unnecessary cpu/gpu memory paging!
+    uint3* debugGetImportanceSamplesManaged();
     void debugOutputEquationsCPU();
     void debugOutputEquationsGPU();
 

@@ -9,7 +9,7 @@ public:
     SequentialBlockSampler(Solution* solution, int blockWorkingAreaSize);
     ~SequentialBlockSampler();
 
-    int generateNextBlockOrigins(int3* blockOrigins, int numOriginsToGenerate) override;
+    int generateNextBlockOrigins(uint3* blockOrigins, int numOriginsToGenerate) override;
 
 private:
     Solution* solution;
@@ -20,5 +20,5 @@ private:
     std::mt19937 rng;
 
     void shiftOffsetStochastically();
-    void writeDebugOutput(int samplingIteration, int3* blockOrigins, int numBlocks);
+    void writeDebugOutput(int samplingIteration, uint3* blockOrigins, int numBlocks);
 };

@@ -266,3 +266,7 @@ void SolveDisplacementKernel::debugOutputEquationsGPU() {
     outFile.close();
 
 }
+
+uint3* SolveDisplacementKernel::debugGetImportanceSamplesManaged() {
+    return importanceSampler.getBlockOriginsDevicePointer();
+}

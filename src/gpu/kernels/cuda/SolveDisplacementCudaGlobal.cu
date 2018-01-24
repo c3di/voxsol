@@ -137,7 +137,7 @@ __device__ void updateVerticesStochasticallyGlobal(
     Vertex* verticesOnGPU, 
     const REAL* matConfigEquations, 
     curandState localRNGState, 
-    const int3& blockOriginCoord, 
+    const uint3& blockOriginCoord, 
     const uint3 solutionDimensions
 ) {
 
@@ -174,9 +174,9 @@ void cuda_SolveDisplacementGlobal(
     REAL* matConfigEquations, 
     const uint3 solutionDimensions,
     curandState* globalRNGStates, 
-    const int3* blockOrigins
+    const uint3* blockOrigins
 ) {
-    int3 blockOriginCoord = blockOrigins[blockIdx.x];
+    uint3 blockOriginCoord = blockOrigins[blockIdx.x];
     curandState localRNGState = globalRNGStates[getGlobalIdx_1D_3DGlobal()];
 	updateVerticesStochasticallyGlobal(verticesOnGPU, matConfigEquations, localRNGState, blockOriginCoord, solutionDimensions);
 }
@@ -216,8 +216,8 @@ extern "C" void cudaLaunchSolveDisplacementKernelGlobal(
     // setup curand
     curandState* rngStateOnGPU = initializeRNGStatesGlobal(maxConcurrentBlocks, threadsPerBlock);
 
-    int3* blockOrigins;
-    cudaCheckSuccess(cudaMallocManaged(&blockOrigins, sizeof(int3) * maxConcurrentBlocks));
+    uint3* blockOrigins;
+    cudaCheckSuccess(cudaMallocManaged(&blockOrigins, sizeof(uint3) * maxConcurrentBlocks));
     
     for (int i = 0; i < 100; i++) {
         int numBlocks = sampler.generateNextBlockOrigins(blockOrigins, maxConcurrentBlocks);

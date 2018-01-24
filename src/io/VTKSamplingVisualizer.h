@@ -10,13 +10,13 @@ public:
     VTKSamplingVisualizer(Solution* solution);
     ~VTKSamplingVisualizer();
 
-    void writeToFile(const std::string& filename, const int3* blockOrigins, int numBlocks, int blockSize);
+    void writeToFile(const std::string& filename, const uint3* blockOrigins, int numBlocks, int blockSize);
 
 private:
     Solution* solution;
     std::ofstream outFile;
 
     void writeHeader();
-    void writePositions(const int3* blockOrigins, int numBlocks, int blockSize);
+    void writePositions(const uint3* blockOrigins, int numBlocks, int blockSize);
     //void writeActiveRegions(const int3* blockOrigins, int numBlocks, int blockSize);
 };

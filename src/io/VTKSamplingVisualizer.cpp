@@ -14,7 +14,7 @@ VTKSamplingVisualizer::~VTKSamplingVisualizer() {
 
 }
 
-void VTKSamplingVisualizer::writeToFile(const string& filename, const int3* blockOrigins, int numBlocks, int blockSize) {
+void VTKSamplingVisualizer::writeToFile(const string& filename, const uint3* blockOrigins, int numBlocks, int blockSize) {
     outFile.open(filename, ios::out);
 
     writeHeader();
@@ -31,7 +31,7 @@ void VTKSamplingVisualizer::writeHeader() {
     outFile << "DATASET UNSTRUCTURED_GRID" << endl << endl;
 }
 
-void VTKSamplingVisualizer::writePositions(const int3* blockOrigins, int numBlocks, int blockSize) {
+void VTKSamplingVisualizer::writePositions(const uint3* blockOrigins, int numBlocks, int blockSize) {
     int numVerticesPerBlock = blockSize*blockSize*blockSize;
     int numVertices = numVerticesPerBlock * numBlocks;
     libmmv::Vec3<REAL> voxelSize = solution->getProblem()->getVoxelSize();
@@ -40,9 +40,16 @@ void VTKSamplingVisualizer::writePositions(const int3* blockOrigins, int numBloc
 #pragma warning( push )
 #pragma warning( disable : 4018)
     for (unsigned int block = 0; block < numBlocks; block++) {
-        int blockOriginX = blockOrigins[block].x + 1; //+1 because block origins include the 1-vertex fixed border
-        int blockOriginY = blockOrigins[block].y + 1;
-        int blockOriginZ = blockOrigins[block].z + 1;
+        int blockOriginX = blockOrigins[block].x; 
+        int blockOriginY = blockOrigins[block].y;
+        int blockOriginZ = blockOrigins[block].z;
+
+        if (blockOriginX < 0) {
+            // This block was set invalid during the validation phase (due to overlap conflict with another block) so position it somewhere off to the side
+            blockOriginX *= 10;
+            blockOriginY *= 10;
+            blockOriginZ *= 10;
+        }
 
         for (int vz = 0; vz < blockSize; vz++) {
             for (int vy = 0; vy < blockSize; vy++) {

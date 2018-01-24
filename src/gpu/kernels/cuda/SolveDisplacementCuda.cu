@@ -132,11 +132,11 @@ __device__ void updateVerticesStochastically(Vertex localVertices[BLOCK_SIZE][BL
 }
 
 __global__
-void cuda_SolveDisplacement(Vertex* verticesOnGPU, REAL* matConfigEquations, const uint3 solutionDimensions, curandState* globalRNGStates, const int3* blockOrigins) {
+void cuda_SolveDisplacement(Vertex* verticesOnGPU, REAL* matConfigEquations, const uint3 solutionDimensions, curandState* globalRNGStates, const uint3* blockOrigins) {
     // Dummy vertex is used for any vertex that lies outside the solution. MatID is designed to cause an exception if one of these vertices is actually worked on
     Vertex dummyVertex;
     dummyVertex.materialConfigId = static_cast<ConfigId>(0);
-    int3 blockOriginCoord = blockOrigins[blockIdx.x];
+    uint3 blockOriginCoord = blockOrigins[blockIdx.x];
     curandState localRNGState = globalRNGStates[getGlobalIdx_1D_3D()];
 
     __shared__ Vertex localVertices[BLOCK_SIZE][BLOCK_SIZE][BLOCK_SIZE];
@@ -205,8 +205,8 @@ extern "C" void cudaLaunchSolveDisplacementKernel(Vertex* vertices, REAL* matCon
     // setup curand
     curandState* rngStateOnGPU = initializeRNGStates(maxConcurrentBlocks, threadsPerBlock);
 
-    int3* blockOrigins;
-    cudaCheckSuccess(cudaMallocManaged(&blockOrigins, sizeof(int3) * maxConcurrentBlocks));
+    uint3* blockOrigins;
+    cudaCheckSuccess(cudaMallocManaged(&blockOrigins, sizeof(uint3) * maxConcurrentBlocks));
     
     for (int i = 0; i < 100; i++) {
         int numBlocks = sampler.generateNextBlockOrigins(blockOrigins, maxConcurrentBlocks);
