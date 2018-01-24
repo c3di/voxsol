@@ -8,8 +8,8 @@
 #endif
 
 struct alignas(VERTEX_ALIGN) Vertex {
-    REAL x;
-    REAL y;
-    REAL z;
-    ConfigId materialConfigId;
+    REAL x = 0;
+    REAL y = 0;
+    REAL z = 0;
+    ConfigId materialConfigId = 0;
 };

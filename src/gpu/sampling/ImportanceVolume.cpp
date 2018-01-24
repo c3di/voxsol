@@ -95,6 +95,16 @@ REAL* ImportanceVolume::getPointerToLevel(unsigned int level)
     return p;
 }
 
+REAL* ImportanceVolume::getPyramidDevicePointer()
+{
+    return importancePyramidManaged;
+}
+
+LevelStats* ImportanceVolume::getLevelStatsDevicePointer()
+{
+    return levelStatsManaged;
+}
+
 LevelStats* ImportanceVolume::getPointerToStatsForLevel(unsigned int level)
 {
     LevelStats* l = levelStatsManaged + level;

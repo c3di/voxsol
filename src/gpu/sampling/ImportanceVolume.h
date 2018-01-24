@@ -21,6 +21,8 @@ public:
     void updatePyramid(unsigned int level, VertexCoordinate& from, VertexCoordinate& to);
     void updateEntirePyramid();
 
+    REAL* getPyramidDevicePointer();
+    LevelStats* getLevelStatsDevicePointer();
     REAL* getPointerToLevel(unsigned int level);
     LevelStats* getPointerToStatsForLevel(unsigned int level);
     unsigned int getNumberOfLevels() const;

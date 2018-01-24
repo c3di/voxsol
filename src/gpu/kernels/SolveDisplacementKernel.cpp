@@ -5,11 +5,14 @@
 #include <iostream>
 #include <fstream>
 
-SolveDisplacementKernel::SolveDisplacementKernel(Solution* sol) :
+#define NUM_IMPORTANCE_SAMPLER_CANDIDATES 1024
+
+SolveDisplacementKernel::SolveDisplacementKernel(Solution* sol, ImportanceVolume* impVol) :
     solution(sol),
+    importanceVolume(impVol),
     serializedMatConfigEquations(nullptr),
     serializedVertices(nullptr),
-    sampler(sol, WORKING_AREA_SIZE)
+    importanceSampler(impVol, NUM_IMPORTANCE_SAMPLER_CANDIDATES)
 {
     solutionDimensions.x = sol->getSize().x;
     solutionDimensions.y = sol->getSize().y;
@@ -29,7 +32,20 @@ void SolveDisplacementKernel::launch() {
     }
 
     if (canExecute()) {
-        cudaLaunchSolveDisplacementKernel(serializedVertices, serializedMatConfigEquations, sampler, solutionDimensions);
+
+        cudaLaunchPyramidUpdateKernel(importanceVolume->getPyramidDevicePointer(), importanceVolume->getNumberOfLevels(), importanceVolume->getLevelStatsDevicePointer());
+
+        importanceSampler.launch();
+
+        cudaLaunchSolveDisplacementKernelGlobalResiduals(
+            serializedVertices, 
+            serializedMatConfigEquations, 
+            importanceVolume->getPyramidDevicePointer(), 
+            importanceSampler.getBlockOriginsDevicePointer(), 
+            NUM_IMPORTANCE_SAMPLER_CANDIDATES,
+            solutionDimensions
+        );
+
         pullVertices();
     }
 }
@@ -74,8 +90,8 @@ void SolveDisplacementKernel::pushVerticesManaged() {
 void SolveDisplacementKernel::pullVertices() {
     std::vector<Vertex>* vertices = solution->getVertices();
     size_t size = vertices->size() * sizeof(Vertex);
-    solution->updateDisplacements(serializedVertices);
-    //memcpy(vertices->data(), serializedVertices, size);
+    //solution->updateDisplacements(serializedVertices);
+    memcpy(vertices->data(), serializedVertices, size);
 }
 
 void SolveDisplacementKernel::serializeMaterialConfigurationEquations(void* destination) {
@@ -120,10 +136,12 @@ void SolveDisplacementKernel::cpuBuildRHSVector(libmmv::Vec3<REAL>* rhsVec, cons
 
                 //vertices outside the solution space contribute nothing, so we can skip them
                 const Vertex* neighbor = &zero;
+#pragma warning(push)
+#pragma warning(disable:4018)
                 if (ox >= 0 && ox < solutionDimensions.x && oy >= 0 && oy < solutionDimensions.y && oz >= 0 && oz < solutionDimensions.z) {
                     neighbor = &vertices->at(globalNeighborIndex);
                 }
-
+#pragma warning(pop)
                 REAL nx = neighbor->x;
                 REAL ny = neighbor->y;
                 REAL nz = neighbor->z;
@@ -151,9 +169,9 @@ void SolveDisplacementKernel::cpuBuildRHSVector(libmmv::Vec3<REAL>* rhsVec, cons
 void SolveDisplacementKernel::cpuSolveIteration() {
     std::vector<Vertex>* vertices = solution->getVertices();
     int flatIndex = -1;
-    for (int z = 0; z < solutionDimensions.z; z++) {
-        for (int y = 0; y < solutionDimensions.y; y++) {
-            for (int x = 0; x < solutionDimensions.x; x++) {
+    for (unsigned int z = 0; z < solutionDimensions.z; z++) {
+        for (unsigned int y = 0; y < solutionDimensions.y; y++) {
+            for (unsigned int x = 0; x < solutionDimensions.x; x++) {
                 flatIndex++;
                 Vertex* currentVertex = &vertices->at(flatIndex);
                 if (currentVertex->materialConfigId == 0) {

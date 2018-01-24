@@ -7,15 +7,18 @@
 #include "CudaKernel.h"
 #include "libmmv/math/Vec3.h"
 #include "solution/Solution.h"
-#include "solution/samplers/RandomBlockSampler.h"
+#include "gpu/sampling/ImportanceVolume.h"
+#include "gpu/kernels/ImportanceSamplingKernel.h"
 
-extern "C" void cudaLaunchSolveDisplacementKernel(Vertex* verticesOnGPU, REAL* matConfigEquationsOnGPU, BlockSampler& sampler, const SolutionDim solutionDims);
+//extern "C" void cudaLaunchSolveDisplacementKernelGlobal(Vertex* verticesOnGPU, REAL* matConfigEquationsOnGPU, Vertex* blockOrigins, const SolutionDim solutionDims);
+extern "C" void cudaLaunchSolveDisplacementKernelGlobalResiduals(Vertex* verticesOnGPU, REAL* matConfigEquationsOnGPU, REAL* importanceVolume, uint3* blockOrigins, const int numBlocks, const uint3 solutionDims);
+extern "C" void cudaLaunchPyramidUpdateKernel(REAL* importancePyramid, const int numLevels, const LevelStats* levelStats);
 
 class SolveDisplacementKernel : public CudaKernel {
 
 public:
 
-    SolveDisplacementKernel(Solution* sol);
+    SolveDisplacementKernel(Solution* sol, ImportanceVolume* impVol);
     ~SolveDisplacementKernel();
 
     void launch() override;
@@ -29,10 +32,10 @@ protected:
     bool canExecute() override;
     void freeCudaResources();
 
-private:
     Solution* solution;
-    SolutionDim solutionDimensions;
-    RandomBlockSampler sampler;
+    uint3 solutionDimensions;
+    ImportanceSamplingKernel importanceSampler;
+    ImportanceVolume* importanceVolume;
 
     Vertex* serializedVertices;
     REAL* serializedMatConfigEquations;

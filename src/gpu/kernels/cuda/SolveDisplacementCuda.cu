@@ -15,7 +15,8 @@
 #define LHS_MATRIX_INDEX 13            // Position of the LHS matrix in the material config equations
 #define EQUATION_ENTRY_SIZE 9 * 27 + 3 // 27 3x3 matrices and one 1x3 vector for Neumann stress
 #define NEUMANN_OFFSET 9 * 27          // Offset to the start of the Neumann stress vector inside an equation block
-#define UPDATES_PER_THREAD 50          // Number of vertices that should be updated stochastically per thread per kernel execution
+#define UPDATES_PER_THREAD 100  // Number of vertices that should be updated stochastically per thread per kernel execution
+
 #define DYN_ADJUSTMENT_MAX 0.001f
 
 __device__
@@ -131,7 +132,7 @@ __device__ void updateVerticesStochastically(Vertex localVertices[BLOCK_SIZE][BL
 }
 
 __global__
-void cuda_SolveDisplacement(Vertex* verticesOnGPU, REAL* matConfigEquations, const SolutionDim solutionDimensions, curandState* globalRNGStates, const int3* blockOrigins) {
+void cuda_SolveDisplacement(Vertex* verticesOnGPU, REAL* matConfigEquations, const uint3 solutionDimensions, curandState* globalRNGStates, const int3* blockOrigins) {
     // Dummy vertex is used for any vertex that lies outside the solution. MatID is designed to cause an exception if one of these vertices is actually worked on
     Vertex dummyVertex;
     dummyVertex.materialConfigId = static_cast<ConfigId>(0);
@@ -193,7 +194,7 @@ curandState* initializeRNGStates(int numConcurrentBlocks, dim3 threadsPerBlock) 
 }
 
 __host__
-extern "C" void cudaLaunchSolveDisplacementKernel(Vertex* vertices, REAL* matConfigEquations, BlockSampler& sampler, const SolutionDim solutionDims) {
+extern "C" void cudaLaunchSolveDisplacementKernel(Vertex* vertices, REAL* matConfigEquations, BlockSampler& sampler, const uint3 solutionDims) {
     cudaDeviceProp deviceProperties;
     cudaGetDeviceProperties(&deviceProperties, 0);
 
@@ -207,7 +208,7 @@ extern "C" void cudaLaunchSolveDisplacementKernel(Vertex* vertices, REAL* matCon
     int3* blockOrigins;
     cudaCheckSuccess(cudaMallocManaged(&blockOrigins, sizeof(int3) * maxConcurrentBlocks));
     
-    for (int i = 0; i < 1; i++) {
+    for (int i = 0; i < 100; i++) {
         int numBlocks = sampler.generateNextBlockOrigins(blockOrigins, maxConcurrentBlocks);
         cuda_SolveDisplacement <<< numBlocks, threadsPerBlock >>>(vertices, matConfigEquations, solutionDims, rngStateOnGPU, blockOrigins);
         cudaDeviceSynchronize();
