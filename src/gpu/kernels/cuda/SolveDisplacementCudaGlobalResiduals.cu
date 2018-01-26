@@ -17,7 +17,7 @@
 #define NEUMANN_OFFSET 9 * 27          // Offset to the start of the Neumann stress vector inside an equation block
 #define UPDATES_PER_THREAD 100  // Number of vertices that should be updated stochastically per thread per kernel execution
 
-#define DYN_ADJUSTMENT_MAX 0.01f
+//#define DYN_ADJUSTMENT_MAX 0.01f
 
 __device__
 int getGlobalIdx_1D_3DGlobal() {
@@ -91,6 +91,7 @@ __device__ void buildRHSVectorForVertexGlobal(
                 rhsVec[2] += MATRIX_ENTRY(matrices, localNeighborIndex, 2, 0) * neighbor.x;
                 rhsVec[2] += MATRIX_ENTRY(matrices, localNeighborIndex, 2, 1) * neighbor.y;
                 rhsVec[2] += MATRIX_ENTRY(matrices, localNeighborIndex, 2, 2) * neighbor.z;
+                
             }
         }
     }
@@ -119,6 +120,7 @@ __device__ void updateVertexGlobalResidual(Vertex& vertexToUpdate, REAL* rhsVec,
         MATRIX_ENTRY(matrices, LHS_MATRIX_INDEX, 1, 2) * rhsVec[1] +
         MATRIX_ENTRY(matrices, LHS_MATRIX_INDEX, 2, 2) * rhsVec[2];
 
+#ifdef DYN_ADJUSTMENT_MAX
     REAL diff = (abs(vertexToUpdate.x - dx) + abs(vertexToUpdate.y - dy) + abs(vertexToUpdate.z - dz)) * 0.3333333f;
     if (diff > DYN_ADJUSTMENT_MAX) {
         // Perform dynamical adjustment, discarding any displacement deltas that are larger than the epsilon defined in DYN_ADJUSTMENT_MAX
@@ -127,6 +129,7 @@ __device__ void updateVertexGlobalResidual(Vertex& vertexToUpdate, REAL* rhsVec,
         printf("Bad adjustment: %f diff for %f,%f,%f \n", diff, rhsVec[0], rhsVec[1], rhsVec[2]);
         return;
     }
+#endif
 
     vertexToUpdate.x = dx;
     vertexToUpdate.y = dy;
@@ -155,11 +158,12 @@ __device__ void addResidualFromFullresVertex(
     REAL oldX = globalFullresVertex.x;
     REAL oldY = globalFullresVertex.y;
     REAL oldZ = globalFullresVertex.z;
-    const REAL* matrices = getPointerToMatricesForVertexGlobal(globalFullresVertex, matConfigEquations);
     REAL rhsVec[3] = { 0,0,0 };
+    const REAL* matrices = getPointerToMatricesForVertexGlobal(globalFullresVertex, matConfigEquations);
     buildRHSVectorForVertexGlobal(rhsVec, verticesOnGPU, matrices, fullresX, fullresY, fullresZ, solutionDimensions);
     updateVertexGlobalResidual(globalFullresVertex, rhsVec, matrices);
 
+    // Get the magnitude of the displacement difference (residual)
     oldX = globalFullresVertex.x - oldX;
     oldY = globalFullresVertex.y - oldY;
     oldZ = globalFullresVertex.z - oldZ;
@@ -221,7 +225,6 @@ __device__ void updateResidualsLevelZeroGlobal(
     importanceVolume[residualIndex] = residual;
 }
 
-// This function is called from inside a conditional, do not place any __syncthreads() in here!
 __device__ void updateVerticesStochasticallyGlobalResiduals(
     Vertex* verticesOnGPU,
     const REAL* matConfigEquations,
@@ -231,7 +234,6 @@ __device__ void updateVerticesStochasticallyGlobalResiduals(
 ) {
 
     for (int i = 0; i < UPDATES_PER_THREAD; i++) {
-        // There's a 1 vertex border around the problem area that shouldn't be updated, so choose something in the middle region
         int offsetX = blockOriginCoord.x + lroundf(curand_uniform(&localRNGState) * BLOCK_SIZE);
         int offsetY = blockOriginCoord.y + lroundf(curand_uniform(&localRNGState) * BLOCK_SIZE);
         int offsetZ = blockOriginCoord.z + lroundf(curand_uniform(&localRNGState) * BLOCK_SIZE);
@@ -264,7 +266,7 @@ void cuda_SolveDisplacementGlobalResiduals(
     curandState* globalRNGStates,
     const uint3* blockOrigins
 ) {
-    uint3 blockOriginCoord = blockOrigins[blockIdx.x];
+    const uint3 blockOriginCoord = blockOrigins[blockIdx.x];
     if (blockOriginCoord.x >= solutionDimensions.x || blockOriginCoord.y >= solutionDimensions.y || blockOriginCoord.z >= solutionDimensions.z) {
         // Some blocks may have been set to an invalid value during the importance sampling phase if they overlap with some other block, these
         // should not be processed
