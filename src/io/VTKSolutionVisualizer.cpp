@@ -3,10 +3,11 @@
 
 using namespace std;
 
-VTKSolutionVisualizer::VTKSolutionVisualizer(Solution* sol) :
+VTKSolutionVisualizer::VTKSolutionVisualizer(Solution* sol, ImportanceVolume* impVol) :
     solution(sol),
     numberOfCells(sol->getProblem()->getNumberOfVoxels()),
-    numberOfVertices(static_cast<unsigned int>(sol->getVertices()->size()))
+    numberOfVertices(static_cast<unsigned int>(sol->getVertices()->size())),
+    impVol(impVol)
 {
 
 }
@@ -159,7 +160,9 @@ void VTKSolutionVisualizer::writePointData() {
 
     writeDisplacements();
     writeBoundaries();
-    //writeDeltas();
+    if (impVol != nullptr) {
+        writeResiduals();
+    }
 }
 
 void VTKSolutionVisualizer::writeDisplacements() {
@@ -195,16 +198,19 @@ void VTKSolutionVisualizer::writeBoundaries() {
     outFile << endl;
 }
 
-void VTKSolutionVisualizer::writeDeltas() {
-    outFile << "VECTORS delta float" << endl;
+void VTKSolutionVisualizer::writeResiduals() {
+    outFile << "VECTORS residual float" << endl;
 
-    std::vector<Vertex>* vertices = solution->getDifferences();
+    std::vector<Vertex>* vertices = solution->getVertices();
     for (unsigned int i = 0; i < numberOfVertices; i++) {
-        Vertex v = vertices->at(i);
+        unsigned int index = filterNullVoxels ? vertexFilteredToOrigIndex[i] : i;
+        Vertex v = vertices->at(index);
         if (filterNullVoxels && v.materialConfigId == 0) {
             continue;
         }
-        outFile << v.x << " " << v.y << " " << v.z << endl;
+        VertexCoordinate fullresCoord = solution->mapToCoordinate(index);
+        REAL residual = impVol->getResidualOnLevel(0, (fullresCoord ) / 2);
+        outFile << residual << " " << residual << " " << residual << endl;
     }
     outFile << endl;
 }

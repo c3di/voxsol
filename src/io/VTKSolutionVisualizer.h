@@ -3,11 +3,11 @@
 #include <iostream>
 #include <fstream>
 #include <solution\Solution.h>
-
+#include <gpu/sampling/ImportanceVolume.h>
 
 class VTKSolutionVisualizer {
 public:
-    VTKSolutionVisualizer(Solution* solution);
+    VTKSolutionVisualizer(Solution* solution, ImportanceVolume* impVol = nullptr);
     ~VTKSolutionVisualizer();
 
     void writeToFile(const std::string& filename);
@@ -19,6 +19,7 @@ public:
 
 private:
     Solution* solution;
+    ImportanceVolume* impVol;
     std::ofstream outFile;
     
 
@@ -43,6 +44,6 @@ private:
 
     // Point data
     void writeDisplacements();
-    void writeDeltas();
+    void writeResiduals();
     void writeBoundaries();
 };
