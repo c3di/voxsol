@@ -6,7 +6,7 @@
 #define NOMINMAX
 #endif
 
-typedef unsigned short ConfigId;
+typedef unsigned int ConfigId;
 
 #ifdef USE_DOUBLE_PRECISION
 
