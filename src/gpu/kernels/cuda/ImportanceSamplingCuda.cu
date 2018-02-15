@@ -16,7 +16,7 @@ __device__ REAL cuda_getPyramidValue(const REAL* importancePyramid, const LevelS
 }
 
 __device__
-void cuda_traversePyramid(const REAL* importancePyramid, const LevelStats* levelStats, uint3* position, float remainderResidual, int level) {
+void cuda_traversePyramid(const REAL* importancePyramid, const LevelStats* levelStats, int3* position, float remainderResidual, int level) {
     REAL splitValue = asREAL(0.0);
     for (int z = 0; z < 2; z++)
         for (int y = 0; y < 2; y++)
@@ -43,15 +43,23 @@ void cuda_traversePyramid(const REAL* importancePyramid, const LevelStats* level
 }
 
 __global__ 
-void cuda_selectImportanceSamplingCandidates(uint3* candidates, const REAL* importancePyramid, const LevelStats* levelStats, curandState* rngState, const int topLevel) {
+void cuda_selectImportanceSamplingCandidates(uint3* candidates, const REAL* importancePyramid, const LevelStats* levelStats, curandState* rngState, const int topLevel, const unsigned int updateRegionSize) {
     int id = blockIdx.x * blockDim.x + threadIdx.x;
     curandState localRNGState = rngState[id];
     REAL totalResidual = importancePyramid[levelStats[topLevel].startIndex];
     REAL diceRoll = curand_uniform(&localRNGState) * totalResidual;
-    uint3 position = make_uint3(0, 0, 0);
+    int3 position = make_int3(0, 0, 0);
 
     cuda_traversePyramid(importancePyramid, levelStats, &position, diceRoll, topLevel);
-    candidates[id] = position;
+
+    // if the block origin would cause most of the block to be outside the solution space, push it inward so that its outer edge is on the outer edge of the solution space
+    position.x -= max(position.x + (int)updateRegionSize - (int)levelStats[0].sizeX*2, 0); //*2 because level 0 is already half the size of the solution space
+    position.y -= max(position.y + (int)updateRegionSize - (int)levelStats[0].sizeY*2, 0);
+    position.z -= max(position.z + (int)updateRegionSize - (int)levelStats[0].sizeZ*2, 0);
+
+    // convert to unsigned int, clip negative coordinates to 0
+    uint3 pos = make_uint3(max(position.x, 0), max(position.y, 0), max(position.z, 0));
+    candidates[id] = pos;
 }
 
 __global__
@@ -118,7 +126,7 @@ extern "C" void cudaLaunchImportanceSamplingKernel(uint3* candidates, const int 
 
     // setup curand
     curandState* rngStateOnGPU = initializePyramidRNGStates(numBlocks, threadsPerBlock);
-    cuda_selectImportanceSamplingCandidates <<< numBlocks, threadsPerBlock >>>(candidates, importancePyramid, levelStats, rngStateOnGPU, topLevel);
+    cuda_selectImportanceSamplingCandidates <<< numBlocks, threadsPerBlock >>>(candidates, importancePyramid, levelStats, rngStateOnGPU, topLevel, BLOCK_SIZE);
     cudaDeviceSynchronize();
     cudaCheckExecution();
 
