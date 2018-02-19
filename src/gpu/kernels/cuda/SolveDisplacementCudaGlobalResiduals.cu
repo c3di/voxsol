@@ -8,6 +8,7 @@
 #include "gpu/CudaCommonFunctions.h"
 #include "solution/Vertex.h"
 #include "solution/samplers/BlockSampler.h"
+#include "gpu/sampling/ImportanceVolume.h"
 
 
 #define MATRIX_ENTRY(rhsMatricesStartPointer, matrixIndex, row, col) rhsMatricesStartPointer[matrixIndex*9 + col*3 + row]
@@ -178,7 +179,8 @@ __device__ void updateResidualsLevelZeroGlobal(
     REAL* importanceVolume,
     const REAL* matConfigEquations,
     const uint3& blockOriginCoord,
-    const uint3 solutionDimensions
+    const uint3 solutionDimensions,
+    const LevelStats levelZeroStats
 ) {
     // We want to find residuals for vertices bordering our BLOCK_SIZE area too, so -1, then project to level 0 with / 2
     unsigned int levelZeroX = (blockOriginCoord.x > 0 ? blockOriginCoord.x - 1 : 0) / 2;
@@ -191,17 +193,17 @@ __device__ void updateResidualsLevelZeroGlobal(
 
     unsigned int updateRange = (BLOCK_SIZE + 2) / 2;
 
-    if (vertexToUpdateX > levelZeroX + updateRange ||
-        vertexToUpdateY > levelZeroY + updateRange ||
-        vertexToUpdateZ > levelZeroZ + updateRange)
+    if (vertexToUpdateX >= levelZeroStats.sizeX ||
+        vertexToUpdateY >= levelZeroStats.sizeY ||
+        vertexToUpdateZ >= levelZeroStats.sizeZ)
     {
         // Since level 0 has half the vertices some threads may be unnecessary
         return;
     }
 
     // Precompute the index of the residual we want to update on Level 0
-    unsigned int residualIndex = vertexToUpdateZ * solutionDimensions.x / 2 * solutionDimensions.y / 2;
-    residualIndex += vertexToUpdateY * solutionDimensions.x / 2;
+    unsigned int residualIndex = vertexToUpdateZ * levelZeroStats.sizeX * levelZeroStats.sizeY;
+    residualIndex += vertexToUpdateY * levelZeroStats.sizeX;
     residualIndex += vertexToUpdateX;
 
     REAL residual = asREAL(0.0);
@@ -264,7 +266,8 @@ void cuda_SolveDisplacementGlobalResiduals(
     REAL* importanceVolume,
     const uint3 solutionDimensions,
     curandState* globalRNGStates,
-    const uint3* blockOrigins
+    const uint3* blockOrigins,
+    const LevelStats levelZeroStats
 ) {
     const uint3 blockOriginCoord = blockOrigins[blockIdx.x];
     if (blockOriginCoord.x >= solutionDimensions.x || blockOriginCoord.y >= solutionDimensions.y || blockOriginCoord.z >= solutionDimensions.z) {
@@ -278,7 +281,7 @@ void cuda_SolveDisplacementGlobalResiduals(
 
     __syncthreads();
 
-    updateResidualsLevelZeroGlobal(verticesOnGPU, importanceVolume, matConfigEquations, blockOriginCoord, solutionDimensions);
+    updateResidualsLevelZeroGlobal(verticesOnGPU, importanceVolume, matConfigEquations, blockOriginCoord, solutionDimensions, levelZeroStats);
 }
 
 __global__
@@ -312,7 +315,8 @@ extern "C" void cudaLaunchSolveDisplacementKernelGlobalResiduals(
     curandState* rngStateOnGPU,
     uint3* blockOrigins,
     const int numBlockOrigins,
-    const uint3 solutionDims
+    const uint3 solutionDims,
+    const LevelStats* levelStats
 ) {
     cudaDeviceProp deviceProperties;
     cudaGetDeviceProperties(&deviceProperties, 0);
@@ -325,7 +329,7 @@ extern "C" void cudaLaunchSolveDisplacementKernelGlobalResiduals(
     for (int i = 0; i < numIterations; i++) {
         uint3* currentBlockOrigins = &blockOrigins[i * maxConcurrentBlocks];
         int numBlocks = std::min(numBlockOrigins - i*maxConcurrentBlocks, maxConcurrentBlocks);
-        cuda_SolveDisplacementGlobalResiduals << < numBlocks, threadsPerBlock >> >(vertices, matConfigEquations, importanceVolume, solutionDims, rngStateOnGPU, currentBlockOrigins);
+        cuda_SolveDisplacementGlobalResiduals << < numBlocks, threadsPerBlock >> >(vertices, matConfigEquations, importanceVolume, solutionDims, rngStateOnGPU, currentBlockOrigins, levelStats[0]);
         cudaDeviceSynchronize();
         cudaCheckExecution();
     }

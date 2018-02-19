@@ -46,7 +46,8 @@ void SolveDisplacementKernel::launch() {
             rngStateOnGPU,
             importanceSampler.getBlockOriginsDevicePointer(), 
             NUM_IMPORTANCE_SAMPLER_CANDIDATES,
-            solutionDimensions
+            solutionDimensions,
+            importanceVolume->getLevelStatsDevicePointer()
         );
     }
 }

@@ -12,7 +12,7 @@
 #include "gpu/kernels/ImportanceSamplingKernel.h"
 
 //extern "C" void cudaLaunchSolveDisplacementKernelGlobal(Vertex* verticesOnGPU, REAL* matConfigEquationsOnGPU, Vertex* blockOrigins, const SolutionDim solutionDims);
-extern "C" void cudaLaunchSolveDisplacementKernelGlobalResiduals(Vertex* verticesOnGPU, REAL* matConfigEquationsOnGPU, REAL* importanceVolume, curandState* rngStateOnGPU, uint3* blockOrigins, const int numBlocks, const uint3 solutionDims);
+extern "C" void cudaLaunchSolveDisplacementKernelGlobalResiduals(Vertex* verticesOnGPU, REAL* matConfigEquationsOnGPU, REAL* importanceVolume, curandState* rngStateOnGPU, uint3* blockOrigins, const int numBlocks, const uint3 solutionDims, const LevelStats* levelStats);
 extern "C" void cudaLaunchPyramidUpdateKernel(REAL* importancePyramid, const int numLevels, const LevelStats* levelStats);
 extern "C" void cudaInitializeRNGStatesGlobal(curandState** rngState);
 
