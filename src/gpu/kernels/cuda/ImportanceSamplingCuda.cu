@@ -10,6 +10,8 @@
 #include "gpu/sampling/ImportanceVolume.h"
 #include "solution/Vertex.h"
 
+#define THREADS_PER_BLOCK 512
+
 __device__ REAL cuda_getPyramidValue(const REAL* importancePyramid, const LevelStats levelStats, int x, int y, int z) {
     int globalIndex = levelStats.startIndex + z * levelStats.sizeX * levelStats.sizeY + y * levelStats.sizeX + x;
     return importancePyramid[globalIndex];
@@ -39,7 +41,7 @@ void cuda_traversePyramid(const REAL* importancePyramid, const LevelStats* level
                     return cuda_traversePyramid(importancePyramid, levelStats, position, remainderResidual, level);
                 }
             }
-    printf("Pyramid traversal failed to find a compatible vertex \n");
+    //printf("Pyramid traversal failed to find a compatible vertex \n");
 }
 
 __global__ 
@@ -104,40 +106,40 @@ void cuda_init_curand_statePyramid(curandState* rngState) {
 }
 
 __host__
-curandState* initializePyramidRNGStates(int numConcurrentBlocks, int threadsPerBlock) {
-    int numThreads = numConcurrentBlocks * threadsPerBlock;
-    curandState* rngStateOnGPU;
-    cudaCheckSuccess(cudaMalloc(&rngStateOnGPU, sizeof(curandState) * numThreads));
-    cuda_init_curand_statePyramid <<< numConcurrentBlocks, threadsPerBlock >>> (rngStateOnGPU);
+extern "C" void cudaInitializePyramidRNGStates(curandState** rngStateOnGPU, const int numCandidatesToFind) {
+    int numBlocks = numCandidatesToFind / THREADS_PER_BLOCK + (numCandidatesToFind % THREADS_PER_BLOCK == 0 ? 0 : 1);
+    int numThreads = numBlocks * THREADS_PER_BLOCK;
+    cudaCheckSuccess(cudaMalloc(rngStateOnGPU, sizeof(curandState) * numThreads));
+    cuda_init_curand_statePyramid <<< numBlocks, THREADS_PER_BLOCK >>> (*rngStateOnGPU);
     cudaDeviceSynchronize();
     cudaCheckExecution();
-    return rngStateOnGPU;
 }
 
 // Note: activeLevel is always >=1 because level 0 is updated by the solve displacement kernel
 __host__
-extern "C" void cudaLaunchImportanceSamplingKernel(uint3* candidates, const int numCandidatesToFind, const REAL* importancePyramid, const LevelStats* levelStats, const int topLevel) {
+extern "C" void cudaLaunchImportanceSamplingKernel(
+    uint3* candidates, 
+    const int numCandidatesToFind, 
+    const REAL* importancePyramid, 
+    const LevelStats* levelStats, 
+    curandState* rngStateOnGPU,
+    const int topLevel
+) {
     cudaDeviceProp deviceProperties;
     cudaGetDeviceProperties(&deviceProperties, 0);
     int updatePhaseBatchSize = deviceProperties.multiProcessorCount * 4;
-    
-    int threadsPerBlock = 512;
-    int numBlocks = numCandidatesToFind / threadsPerBlock + (numCandidatesToFind % threadsPerBlock == 0 ? 0 : 1);
+    int numBlocks = numCandidatesToFind / THREADS_PER_BLOCK + (numCandidatesToFind % THREADS_PER_BLOCK == 0 ? 0 : 1);
 
     // setup curand
-    curandState* rngStateOnGPU = initializePyramidRNGStates(numBlocks, threadsPerBlock);
-    cuda_selectImportanceSamplingCandidates <<< numBlocks, threadsPerBlock >>>(candidates, importancePyramid, levelStats, rngStateOnGPU, topLevel, BLOCK_SIZE);
+    cuda_selectImportanceSamplingCandidates <<< numBlocks, THREADS_PER_BLOCK >>>(candidates, importancePyramid, levelStats, rngStateOnGPU, topLevel, BLOCK_SIZE);
     cudaDeviceSynchronize();
     cudaCheckExecution();
 
     // Now check 'updatePhaseBatchSize' blocks at a time and invalidate any that are overlapping
     // During the update phase the blocks will be processed in batches of this size, and any overlapping blocks in the same batch can cause divergence
-    threadsPerBlock = updatePhaseBatchSize;
-    numBlocks = numCandidatesToFind / threadsPerBlock + (numCandidatesToFind % threadsPerBlock == 0 ? 0 : 1);
-    cuda_invalidateOverlappingBlocks <<< numBlocks, threadsPerBlock, updatePhaseBatchSize * sizeof(uint3) >>> (candidates, BLOCK_SIZE);
+    numBlocks = numCandidatesToFind / updatePhaseBatchSize + (numCandidatesToFind % updatePhaseBatchSize == 0 ? 0 : 1);
+    cuda_invalidateOverlappingBlocks <<< numBlocks, updatePhaseBatchSize, updatePhaseBatchSize * sizeof(uint3) >>> (candidates, BLOCK_SIZE);
     cudaDeviceSynchronize();
-
-    cudaCheckSuccess(cudaFree(rngStateOnGPU));
 }
 
 

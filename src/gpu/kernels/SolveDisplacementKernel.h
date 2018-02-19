@@ -3,6 +3,7 @@
 #include <vector>
 #include <assert.h>
 #include <memory>
+#include <curand_kernel.h>
 
 #include "CudaKernel.h"
 #include "libmmv/math/Vec3.h"
@@ -11,8 +12,9 @@
 #include "gpu/kernels/ImportanceSamplingKernel.h"
 
 //extern "C" void cudaLaunchSolveDisplacementKernelGlobal(Vertex* verticesOnGPU, REAL* matConfigEquationsOnGPU, Vertex* blockOrigins, const SolutionDim solutionDims);
-extern "C" void cudaLaunchSolveDisplacementKernelGlobalResiduals(Vertex* verticesOnGPU, REAL* matConfigEquationsOnGPU, REAL* importanceVolume, uint3* blockOrigins, const int numBlocks, const uint3 solutionDims);
+extern "C" void cudaLaunchSolveDisplacementKernelGlobalResiduals(Vertex* verticesOnGPU, REAL* matConfigEquationsOnGPU, REAL* importanceVolume, curandState* rngStateOnGPU, uint3* blockOrigins, const int numBlocks, const uint3 solutionDims);
 extern "C" void cudaLaunchPyramidUpdateKernel(REAL* importancePyramid, const int numLevels, const LevelStats* levelStats);
+extern "C" void cudaInitializeRNGStatesGlobal(curandState** rngState);
 
 class SolveDisplacementKernel : public CudaKernel {
 
@@ -23,6 +25,8 @@ public:
 
     void launch() override;
     void solveCPU();
+
+    void pullVertices();
 
     //This returns a pointer to managed memory, use only for debug output to avoid unnecessary cpu/gpu memory paging!
     uint3* debugGetImportanceSamplesManaged();
@@ -41,13 +45,13 @@ protected:
 
     Vertex* serializedVertices;
     REAL* serializedMatConfigEquations;
+    curandState* rngStateOnGPU;
 
     void prepareInputs();
 
     void pushMatConfigEquationsManaged();
     void pushVerticesManaged();
-
-    void pullVertices();
+    void initCurandState();
 
     void serializeMaterialConfigurationEquations(void* destination);
 

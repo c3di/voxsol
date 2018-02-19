@@ -4,10 +4,11 @@
 #include <iostream>
 #include <fstream>
 
-ImportanceSamplingKernel::ImportanceSamplingKernel(ImportanceVolume * impVol, unsigned int numCandidates) : 
+ImportanceSamplingKernel::ImportanceSamplingKernel(ImportanceVolume * impVol, unsigned int numCandidates) :
     importanceVolume(impVol),
     numberOfCandidatesToFind(numCandidates),
-    blockOrigins(nullptr)
+    blockOrigins(nullptr),
+    rngStateOnGPU(nullptr)
 {
 }
 
@@ -20,6 +21,7 @@ void ImportanceSamplingKernel::launch()
 {
     if (!canExecute()) {
         allocateCandidatesArray();
+        initCurandState();
     }
     if (canExecute()) {
         cudaLaunchImportanceSamplingKernel(
@@ -27,6 +29,7 @@ void ImportanceSamplingKernel::launch()
             numberOfCandidatesToFind, 
             importanceVolume->getPyramidDevicePointer(), 
             importanceVolume->getLevelStatsDevicePointer(), 
+            rngStateOnGPU,
             importanceVolume->getNumberOfLevels() - 1
         );
         cudaDeviceSynchronize();
@@ -35,7 +38,7 @@ void ImportanceSamplingKernel::launch()
 
 bool ImportanceSamplingKernel::canExecute()
 {
-    return blockOrigins != nullptr;
+    return blockOrigins != nullptr && rngStateOnGPU != nullptr;
 }
 
 uint3* ImportanceSamplingKernel::getBlockOriginsDevicePointer() {
@@ -48,6 +51,14 @@ void ImportanceSamplingKernel::freeCudaResources()
         cudaCheckSuccess(cudaFree(blockOrigins));
         blockOrigins = nullptr;
     }
+    if (rngStateOnGPU != nullptr) {
+        cudaCheckSuccess(cudaFree(rngStateOnGPU));
+        rngStateOnGPU = nullptr;
+    }
+}
+
+void ImportanceSamplingKernel::initCurandState() {
+    cudaInitializePyramidRNGStates(&rngStateOnGPU, numberOfCandidatesToFind);
 }
 
 void ImportanceSamplingKernel::allocateCandidatesArray() {

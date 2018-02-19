@@ -8,7 +8,7 @@
 #include "gpu/CudaCommonFunctions.h"
 #include "gpu/sampling/ImportanceVolume.h"
 
-__device__ 
+__device__
 void addResidualFromLowerLevelVertex(
     unsigned int x,
     unsigned int y,
@@ -40,9 +40,6 @@ void cuda_updatePyramidLevel(REAL* importancePyramid, const int activeLevel, con
     int residualXProjected = residualX * 2;
     int residualYProjected = residualY * 2;
     int residualZProjected = residualZ * 2;  
-
-    REAL* residualToUpdate = importancePyramid + activeLevelStats.startIndex;
-    residualToUpdate += residualZ * activeLevelStats.sizeX * activeLevelStats.sizeY + residualY * activeLevelStats.sizeX + residualX;
     REAL residual = asREAL(0.0);
 
     addResidualFromLowerLevelVertex(residualXProjected, residualYProjected, residualZProjected, &residual, importancePyramid, lowerLevelStats);
@@ -55,6 +52,8 @@ void cuda_updatePyramidLevel(REAL* importancePyramid, const int activeLevel, con
     addResidualFromLowerLevelVertex(residualXProjected, residualYProjected + 1, residualZProjected + 1, &residual, importancePyramid, lowerLevelStats);
     addResidualFromLowerLevelVertex(residualXProjected + 1, residualYProjected + 1, residualZProjected + 1, &residual, importancePyramid, lowerLevelStats);
 
+    REAL* residualToUpdate = importancePyramid + activeLevelStats.startIndex;
+    residualToUpdate += residualZ * activeLevelStats.sizeX * activeLevelStats.sizeY + residualY * activeLevelStats.sizeX + residualX;
     *residualToUpdate = residual;
 }
 

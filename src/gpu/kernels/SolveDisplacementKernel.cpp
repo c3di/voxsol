@@ -12,6 +12,7 @@ SolveDisplacementKernel::SolveDisplacementKernel(Solution* sol, ImportanceVolume
     importanceVolume(impVol),
     serializedMatConfigEquations(nullptr),
     serializedVertices(nullptr),
+    rngStateOnGPU(nullptr),
     importanceSampler(impVol, NUM_IMPORTANCE_SAMPLER_CANDIDATES)
 {
     solutionDimensions.x = sol->getSize().x;
@@ -23,6 +24,7 @@ SolveDisplacementKernel::~SolveDisplacementKernel() {
     freeCudaResources();
     assert(serializedMatConfigEquations == nullptr);
     assert(serializedVertices == nullptr);
+    assert(rngStateOnGPU == nullptr);
 }
 
 
@@ -41,17 +43,16 @@ void SolveDisplacementKernel::launch() {
             serializedVertices, 
             serializedMatConfigEquations, 
             importanceVolume->getPyramidDevicePointer(), 
+            rngStateOnGPU,
             importanceSampler.getBlockOriginsDevicePointer(), 
             NUM_IMPORTANCE_SAMPLER_CANDIDATES,
             solutionDimensions
         );
-
-        pullVertices();
     }
 }
 
 bool SolveDisplacementKernel::canExecute() {
-    if (serializedMatConfigEquations == nullptr || serializedVertices == nullptr) {
+    if (serializedMatConfigEquations == nullptr || serializedVertices == nullptr || rngStateOnGPU == nullptr) {
         return false;
     }
 
@@ -67,11 +68,20 @@ void SolveDisplacementKernel::freeCudaResources() {
         cudaCheckSuccess(cudaFree(serializedVertices));
         serializedVertices = nullptr;
     }
+    if (rngStateOnGPU != nullptr) {
+        cudaCheckSuccess(cudaFree(rngStateOnGPU));
+        rngStateOnGPU = nullptr;
+    }
 }
 
 void SolveDisplacementKernel::prepareInputs() {
     pushMatConfigEquationsManaged();
     pushVerticesManaged();
+    initCurandState();
+}
+
+void SolveDisplacementKernel::initCurandState() {
+    cudaInitializeRNGStatesGlobal(&rngStateOnGPU);
 }
 
 void SolveDisplacementKernel::pushMatConfigEquationsManaged() {
@@ -90,7 +100,6 @@ void SolveDisplacementKernel::pushVerticesManaged() {
 void SolveDisplacementKernel::pullVertices() {
     std::vector<Vertex>* vertices = solution->getVertices();
     size_t size = vertices->size() * sizeof(Vertex);
-    //solution->updateDisplacements(serializedVertices);
     memcpy(vertices->data(), serializedVertices, size);
 }
 

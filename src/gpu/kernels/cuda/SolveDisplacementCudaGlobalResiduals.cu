@@ -195,7 +195,7 @@ __device__ void updateResidualsLevelZeroGlobal(
         vertexToUpdateY > levelZeroY + updateRange ||
         vertexToUpdateZ > levelZeroZ + updateRange)
     {
-        // Since level 0 has half the vertices some threads are unnecessary
+        // Since level 0 has half the vertices some threads may be unnecessary
         return;
     }
 
@@ -289,14 +289,19 @@ void cuda_init_curand_stateGlobal(curandState* rngState) {
 }
 
 __host__
-curandState* initializeRNGStatesGlobal(int numConcurrentBlocks, dim3 threadsPerBlock) {
-    int numThreads = numConcurrentBlocks * threadsPerBlock.x * threadsPerBlock.y * threadsPerBlock.z;
-    curandState* rngStateOnGPU;
-    cudaCheckSuccess(cudaMalloc(&rngStateOnGPU, sizeof(curandState) * numThreads));
-    cuda_init_curand_stateGlobal << < numConcurrentBlocks, threadsPerBlock >> > (rngStateOnGPU);
+extern "C" void cudaInitializeRNGStatesGlobal(curandState** rngStateOnGPU) {
+    cudaDeviceProp deviceProperties;
+    cudaGetDeviceProperties(&deviceProperties, 0);
+
+    // setup execution parameters
+    dim3 threadsPerBlock(BLOCK_SIZE - 1, BLOCK_SIZE - 1, BLOCK_SIZE - 1);
+    int maxConcurrentBlocks = deviceProperties.multiProcessorCount * 4; //TODO: Calculate this based on GPU max for # blocks
+    int numThreads = maxConcurrentBlocks * threadsPerBlock.x * threadsPerBlock.y * threadsPerBlock.z;
+
+    cudaCheckSuccess(cudaMalloc(rngStateOnGPU, sizeof(curandState) * numThreads));
+    cuda_init_curand_stateGlobal << < maxConcurrentBlocks, threadsPerBlock >> > (*rngStateOnGPU);
     cudaDeviceSynchronize();
     cudaCheckExecution();
-    return rngStateOnGPU;
 }
 
 __host__
@@ -304,6 +309,7 @@ extern "C" void cudaLaunchSolveDisplacementKernelGlobalResiduals(
     Vertex* vertices,
     REAL* matConfigEquations,
     REAL* importanceVolume,
+    curandState* rngStateOnGPU,
     uint3* blockOrigins,
     const int numBlockOrigins,
     const uint3 solutionDims
@@ -312,13 +318,10 @@ extern "C" void cudaLaunchSolveDisplacementKernelGlobalResiduals(
     cudaGetDeviceProperties(&deviceProperties, 0);
 
     // setup execution parameters
-    dim3 threadsPerBlock(BLOCK_SIZE - 2, BLOCK_SIZE - 2, BLOCK_SIZE - 2);
+    dim3 threadsPerBlock(BLOCK_SIZE - 1, BLOCK_SIZE - 1, BLOCK_SIZE - 1);
     int maxConcurrentBlocks = deviceProperties.multiProcessorCount * 4; //TODO: Calculate this based on GPU max for # blocks
     int numIterations = std::max(numBlockOrigins / maxConcurrentBlocks, 1);
-
-    // setup curand
-    curandState* rngStateOnGPU = initializeRNGStatesGlobal(maxConcurrentBlocks, threadsPerBlock);
-
+    
     for (int i = 0; i < numIterations; i++) {
         uint3* currentBlockOrigins = &blockOrigins[i * maxConcurrentBlocks];
         int numBlocks = std::min(numBlockOrigins - i*maxConcurrentBlocks, maxConcurrentBlocks);
@@ -326,8 +329,6 @@ extern "C" void cudaLaunchSolveDisplacementKernelGlobalResiduals(
         cudaDeviceSynchronize();
         cudaCheckExecution();
     }
-
-    cudaCheckSuccess(cudaFree(rngStateOnGPU));
 }
 
 
