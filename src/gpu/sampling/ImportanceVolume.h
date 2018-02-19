@@ -16,10 +16,11 @@ public:
     ~ImportanceVolume();
 
     REAL* getLocationOfVertexProjectedToLevel(unsigned int level, VertexCoordinate& fullresCoord);
-    REAL getResidualOnLevel(unsigned int level, VertexCoordinate& levelCoord);
-    REAL getResidualOnLevel(unsigned int level ,unsigned int x, unsigned int y, unsigned int z);
+    REAL getResidualOnLevel(unsigned int level, VertexCoordinate& levelCoord) const;
+    REAL getResidualOnLevel(unsigned int level ,unsigned int x, unsigned int y, unsigned int z) const;
     void updatePyramid(unsigned int level, VertexCoordinate& from, VertexCoordinate& to);
     void updateEntirePyramid();
+    REAL getTotalResidual() const;
 
     REAL* getPyramidDevicePointer();
     LevelStats* getLevelStatsDevicePointer();
@@ -33,7 +34,7 @@ protected:
     LevelStats* levelStatsManaged = nullptr; 
 
     libmmv::Vec3ui levelZeroSize;
-    unsigned int topLevel;
+    unsigned int numberOfLevels;
 
     void freeCudaResources();
 

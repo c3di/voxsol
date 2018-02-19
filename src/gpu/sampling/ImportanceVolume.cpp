@@ -36,12 +36,12 @@ REAL* ImportanceVolume::getLocationOfVertexProjectedToLevel(unsigned int level, 
     return projectedLocation;
 }
 
-REAL ImportanceVolume::getResidualOnLevel(unsigned int level, VertexCoordinate & levelCoord)
+REAL ImportanceVolume::getResidualOnLevel(unsigned int level, VertexCoordinate & levelCoord) const
 {
     return getResidualOnLevel(level, levelCoord.x, levelCoord.y, levelCoord.z);
 }
 
-REAL ImportanceVolume::getResidualOnLevel(unsigned int level, unsigned int x, unsigned int y, unsigned int z)
+REAL ImportanceVolume::getResidualOnLevel(unsigned int level, unsigned int x, unsigned int y, unsigned int z) const
 {
     LevelStats statsForLevel = levelStatsManaged[level];
 
@@ -57,8 +57,12 @@ REAL ImportanceVolume::getResidualOnLevel(unsigned int level, unsigned int x, un
     return *levelPointer;
 }
 
+REAL ImportanceVolume::getTotalResidual() const {
+    return getResidualOnLevel(numberOfLevels-1, 0, 0, 0);
+}
+
 void ImportanceVolume::updatePyramid(unsigned int level, VertexCoordinate & from, VertexCoordinate & to) {
-    if (level >= topLevel) {
+    if (level >= numberOfLevels) {
         return;
     }
     if (level != 0) {
@@ -112,7 +116,7 @@ LevelStats* ImportanceVolume::getPointerToStatsForLevel(unsigned int level)
 }
 
 unsigned int ImportanceVolume::getNumberOfLevels() const {
-    return topLevel;
+    return numberOfLevels;
 }
 
 void ImportanceVolume::initializePyramidFromProblem(DiscreteProblem & problem) {
@@ -126,7 +130,7 @@ void ImportanceVolume::computeDepthOfPyramid(DiscreteProblem & problem)
     levelZeroSize = (problem.getSize() + libmmv::Vec3ui(2, 2, 2)) / 2;
     unsigned int maxDim = std::max(std::max(levelZeroSize.x, levelZeroSize.y), levelZeroSize.z);
     double log = std::log((double)maxDim) / std::log(2.0);
-    topLevel = (int)std::ceil(log) + 1;
+    numberOfLevels = (int)std::ceil(log) + 1;
 }
 
 void ImportanceVolume::allocateManagedMemory(DiscreteProblem& problem) {
@@ -134,11 +138,11 @@ void ImportanceVolume::allocateManagedMemory(DiscreteProblem& problem) {
     unsigned int y = problem.getSize().y + 1;
     unsigned int z = problem.getSize().z + 1;
 
-    cudaCheckSuccess(cudaMallocManaged(&levelStatsManaged, topLevel * sizeof(LevelStats)));
+    cudaCheckSuccess(cudaMallocManaged(&levelStatsManaged, numberOfLevels * sizeof(LevelStats)));
 
     size_t totalSizeInBytes = 0;
     unsigned int levelIndex = 0;
-    for (unsigned int i = 0; i < topLevel; i++) {
+    for (unsigned int i = 0; i < numberOfLevels; i++) {
         if (i > 0) {
             // Next level starts at the end of the previous level, except level 0 which starts at 0
             levelIndex += x*y*z;
