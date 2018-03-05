@@ -7,7 +7,7 @@
 #include <device_functions.h>
 #include <device_launch_parameters.h>
 #include "gpu/CudaCommonFunctions.h"
-#include "gpu/sampling/ImportanceVolume.h"
+#include "gpu/sampling/ResidualVolume.h"
 #include "solution/Vertex.h"
 
 #define THREADS_PER_BLOCK 512
@@ -65,15 +65,19 @@ void cuda_selectImportanceSamplingCandidates(uint3* candidates, const REAL* impo
 }
 
 __global__
-void cuda_invalidateOverlappingBlocks(uint3* candidates, const unsigned int updateRegionSize) {
+void cuda_invalidateOverlappingBlocks(uint3* candidates, const int numberOfCandidates, const unsigned int updateRegionSize) {
     extern __shared__ uint3 batch[];
     int globalId = blockIdx.x * blockDim.x + threadIdx.x;
+    if (globalId >= numberOfCandidates) {
+        return;
+    }
     int localId = threadIdx.x;
     uint3 myCandidate = candidates[globalId];
     batch[localId] = myCandidate;
 
     __syncthreads();
 
+    // Walk through the candidates toward the left
     while (localId > 0) {
         localId -= 1;
         uint3 leftNeighbor = batch[localId];
@@ -102,7 +106,7 @@ __global__
 void cuda_init_curand_statePyramid(curandState* rngState) {
     int id = blockIdx.x * blockDim.x + threadIdx.x;
     // seed, sequence number, offset, curandState
-    curand_init(clock64(), id, 0, &rngState[id]);
+    curand_init(43, id, 0, &rngState[id]);
 }
 
 __host__
@@ -138,7 +142,7 @@ extern "C" void cudaLaunchImportanceSamplingKernel(
     // Now check 'updatePhaseBatchSize' blocks at a time and invalidate any that are overlapping
     // During the update phase the blocks will be processed in batches of this size, and any overlapping blocks in the same batch can cause divergence
     numBlocks = numCandidatesToFind / updatePhaseBatchSize + (numCandidatesToFind % updatePhaseBatchSize == 0 ? 0 : 1);
-    cuda_invalidateOverlappingBlocks <<< numBlocks, updatePhaseBatchSize, updatePhaseBatchSize * sizeof(uint3) >>> (candidates, BLOCK_SIZE);
+    cuda_invalidateOverlappingBlocks <<< numBlocks, updatePhaseBatchSize, updatePhaseBatchSize * sizeof(uint3) >>> (candidates, numCandidatesToFind, BLOCK_SIZE+2);
     cudaDeviceSynchronize();
 }
 

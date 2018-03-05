@@ -6,7 +6,7 @@
 #include <device_functions.h>
 #include <device_launch_parameters.h>
 #include "gpu/CudaCommonFunctions.h"
-#include "gpu/sampling/ImportanceVolume.h"
+#include "gpu/sampling/ResidualVolume.h"
 
 __device__
 void addResidualFromLowerLevelVertex(

@@ -3,7 +3,7 @@
 
 using namespace std;
 
-VTKSolutionVisualizer::VTKSolutionVisualizer(Solution* sol, ImportanceVolume* impVol) :
+VTKSolutionVisualizer::VTKSolutionVisualizer(Solution* sol, ResidualVolume* impVol) :
     solution(sol),
     numberOfCells(sol->getProblem()->getNumberOfVoxels()),
     numberOfVertices(static_cast<unsigned int>(sol->getVertices()->size())),
@@ -70,7 +70,7 @@ void VTKSolutionVisualizer::writeHeader() {
 }
 
 void VTKSolutionVisualizer::writePositions() {
-    outFile << "POINTS " << numberOfVertices << " float" << endl;
+    outFile << "POINTS " << numberOfVertices << " double" << endl;
     std::vector<Vertex>* vertices = solution->getVertices();
     for (unsigned int i = 0; i < numberOfVertices; i++) {
         unsigned int index = filterNullVoxels ? vertexFilteredToOrigIndex[i] : i;
@@ -166,7 +166,7 @@ void VTKSolutionVisualizer::writePointData() {
 }
 
 void VTKSolutionVisualizer::writeDisplacements() {
-    outFile << "VECTORS displacement float" << endl;
+    outFile << "VECTORS displacement double" << endl;
 
     std::vector<Vertex>* vertices = solution->getVertices();
     for (unsigned int i = 0; i < numberOfVertices; i++) {
@@ -199,7 +199,7 @@ void VTKSolutionVisualizer::writeBoundaries() {
 }
 
 void VTKSolutionVisualizer::writeResiduals() {
-    outFile << "VECTORS residual float" << endl;
+    outFile << "VECTORS residual double" << endl;
 
     std::vector<Vertex>* vertices = solution->getVertices();
     for (unsigned int i = 0; i < numberOfVertices; i++) {

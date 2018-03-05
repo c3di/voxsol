@@ -4,7 +4,7 @@
 
 using namespace std;
 
-VTKImportanceVisualizer::VTKImportanceVisualizer(DiscreteProblem* problem, ImportanceVolume* vol) :
+VTKImportanceVisualizer::VTKImportanceVisualizer(DiscreteProblem* problem, ResidualVolume* vol) :
     importanceVolume(vol),
     problem(problem)
 {

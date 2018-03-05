@@ -1,20 +1,20 @@
 #include "stdafx.h"
-#include "ImportanceVolume.h"
+#include "ResidualVolume.h"
 #include "problem/DiscreteProblem.h"
 #include "gpu/CudaCommonFunctions.h"
 
-ImportanceVolume::ImportanceVolume(DiscreteProblem & problem)
+ResidualVolume::ResidualVolume(DiscreteProblem & problem)
 {
     initializePyramidFromProblem(problem);
 }
 
-ImportanceVolume::~ImportanceVolume()
+ResidualVolume::~ResidualVolume()
 {
     freeCudaResources();
 }
 
 
-void ImportanceVolume::freeCudaResources() {
+void ResidualVolume::freeCudaResources() {
     if (importancePyramidManaged != nullptr) {
         cudaCheckSuccess(cudaFree(importancePyramidManaged));
         importancePyramidManaged = nullptr;
@@ -25,7 +25,7 @@ void ImportanceVolume::freeCudaResources() {
     }
 }
 
-REAL* ImportanceVolume::getLocationOfVertexProjectedToLevel(unsigned int level, VertexCoordinate& fullresCoord) {
+REAL* ResidualVolume::getLocationOfVertexProjectedToLevel(unsigned int level, VertexCoordinate& fullresCoord) {
     unsigned int x = fullresCoord.x >> (level+1); //divide by 2 level+1 times, +1 because level zero is already fullres/2
     unsigned int y = fullresCoord.y >> (level+1);
     unsigned int z = fullresCoord.z >> (level+1);
@@ -36,12 +36,12 @@ REAL* ImportanceVolume::getLocationOfVertexProjectedToLevel(unsigned int level, 
     return projectedLocation;
 }
 
-REAL ImportanceVolume::getResidualOnLevel(unsigned int level, VertexCoordinate & levelCoord) const
+REAL ResidualVolume::getResidualOnLevel(unsigned int level, VertexCoordinate & levelCoord) const
 {
     return getResidualOnLevel(level, levelCoord.x, levelCoord.y, levelCoord.z);
 }
 
-REAL ImportanceVolume::getResidualOnLevel(unsigned int level, unsigned int x, unsigned int y, unsigned int z) const
+REAL ResidualVolume::getResidualOnLevel(unsigned int level, unsigned int x, unsigned int y, unsigned int z) const
 {
     LevelStats statsForLevel = levelStatsManaged[level];
 
@@ -57,11 +57,11 @@ REAL ImportanceVolume::getResidualOnLevel(unsigned int level, unsigned int x, un
     return *levelPointer;
 }
 
-REAL ImportanceVolume::getTotalResidual() const {
+REAL ResidualVolume::getTotalResidual() const {
     return getResidualOnLevel(numberOfLevels-1, 0, 0, 0);
 }
 
-void ImportanceVolume::updatePyramid(unsigned int level, VertexCoordinate & from, VertexCoordinate & to) {
+void ResidualVolume::updatePyramid(unsigned int level, VertexCoordinate & from, VertexCoordinate & to) {
     if (level >= numberOfLevels) {
         return;
     }
@@ -89,43 +89,43 @@ void ImportanceVolume::updatePyramid(unsigned int level, VertexCoordinate & from
     updatePyramid(level + 1, from / 2, to / 2);
 }
 
-void ImportanceVolume::updateEntirePyramid() {
+void ResidualVolume::updateEntirePyramid() {
     return updatePyramid(0, VertexCoordinate(0, 0, 0), levelZeroSize);
 }
 
-REAL* ImportanceVolume::getPointerToLevel(unsigned int level)
+REAL* ResidualVolume::getPointerToLevel(unsigned int level)
 {
     REAL* p = importancePyramidManaged + levelStatsManaged[level].startIndex;
     return p;
 }
 
-REAL* ImportanceVolume::getPyramidDevicePointer()
+REAL* ResidualVolume::getPyramidDevicePointer()
 {
     return importancePyramidManaged;
 }
 
-LevelStats* ImportanceVolume::getLevelStatsDevicePointer()
+LevelStats* ResidualVolume::getLevelStatsDevicePointer()
 {
     return levelStatsManaged;
 }
 
-LevelStats* ImportanceVolume::getPointerToStatsForLevel(unsigned int level)
+LevelStats* ResidualVolume::getPointerToStatsForLevel(unsigned int level)
 {
     LevelStats* l = levelStatsManaged + level;
     return l;
 }
 
-unsigned int ImportanceVolume::getNumberOfLevels() const {
+unsigned int ResidualVolume::getNumberOfLevels() const {
     return numberOfLevels;
 }
 
-void ImportanceVolume::initializePyramidFromProblem(DiscreteProblem & problem) {
+void ResidualVolume::initializePyramidFromProblem(DiscreteProblem & problem) {
     computeDepthOfPyramid(problem);
     allocateManagedMemory(problem);
     initializeLeveLZeroResidualsFromProblem(problem);
 }
 
-void ImportanceVolume::computeDepthOfPyramid(DiscreteProblem & problem)
+void ResidualVolume::computeDepthOfPyramid(DiscreteProblem & problem)
 {
     levelZeroSize = (problem.getSize() + libmmv::Vec3ui(2, 2, 2)) / 2;
     unsigned int maxDim = std::max(std::max(levelZeroSize.x, levelZeroSize.y), levelZeroSize.z);
@@ -133,7 +133,7 @@ void ImportanceVolume::computeDepthOfPyramid(DiscreteProblem & problem)
     numberOfLevels = (int)std::ceil(log) + 1;
 }
 
-void ImportanceVolume::allocateManagedMemory(DiscreteProblem& problem) {
+void ResidualVolume::allocateManagedMemory(DiscreteProblem& problem) {
     unsigned int x = problem.getSize().x + 1; // number of vertices is 1 greater than number of voxels
     unsigned int y = problem.getSize().y + 1;
     unsigned int z = problem.getSize().z + 1;
@@ -161,7 +161,7 @@ void ImportanceVolume::allocateManagedMemory(DiscreteProblem& problem) {
 
 // Initially all residuals are 0 and the only "active" region of the simulation are the Neumann Boundary areas,
 // so we set those areas to 1 to ensure the first simulation pass updates them first
-void ImportanceVolume::initializeLeveLZeroResidualsFromProblem(DiscreteProblem & problem) {
+void ResidualVolume::initializeLeveLZeroResidualsFromProblem(DiscreteProblem & problem) {
     std::unordered_map<unsigned int, NeumannBoundary> neumannBoundaries = problem.getNeumannBoundaryMap();
 
     for (auto it = neumannBoundaries.begin(); it != neumannBoundaries.end(); it++) {

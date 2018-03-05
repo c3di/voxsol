@@ -10,10 +10,10 @@ struct LevelStats {
     unsigned int sizeZ = 0;
 };
 
-class ImportanceVolume {
+class ResidualVolume {
 public:
-    ImportanceVolume(DiscreteProblem& problem);
-    ~ImportanceVolume();
+    ResidualVolume(DiscreteProblem& problem);
+    ~ResidualVolume();
 
     REAL* getLocationOfVertexProjectedToLevel(unsigned int level, VertexCoordinate& fullresCoord);
     REAL getResidualOnLevel(unsigned int level, VertexCoordinate& levelCoord) const;

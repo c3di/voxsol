@@ -2,19 +2,19 @@
 #include <string>
 #include <iostream>
 #include <fstream>
-#include "gpu/sampling/ImportanceVolume.h"
+#include "gpu/sampling/ResidualVolume.h"
 #include "cuda_runtime.h"
 
 class VTKImportanceVisualizer {
 public:
-    VTKImportanceVisualizer(DiscreteProblem* problem, ImportanceVolume* importanceVolume);
+    VTKImportanceVisualizer(DiscreteProblem* problem, ResidualVolume* importanceVolume);
     ~VTKImportanceVisualizer();
 
     void writeToFile(const std::string& filename, unsigned int level);
     void writeAllLevels(const std::string& filePrefix);
 
 private:
-    ImportanceVolume* importanceVolume;
+    ResidualVolume* importanceVolume;
     DiscreteProblem* problem;
     std::ofstream outFile;
 

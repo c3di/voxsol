@@ -33,7 +33,7 @@ void VTKSamplingVisualizer::writeHeader() {
 
 void VTKSamplingVisualizer::writePositions(const uint3* blockOrigins, int numBlocks, int blockSize) {
     int numVerticesPerBlock = blockSize*blockSize*blockSize;
-    int numVertices = numVerticesPerBlock * numBlocks;
+    int numVertices = numVerticesPerBlock * numBlocks + numBlocks;
     libmmv::Vec3<REAL> voxelSize = solution->getProblem()->getVoxelSize();
     
     outFile << "POINTS " << numVertices << " float" << endl;
@@ -59,6 +59,11 @@ void VTKSamplingVisualizer::writePositions(const uint3* blockOrigins, int numBlo
                     REAL z = (blockOriginZ + vz) * voxelSize.z;
 
                     outFile << x << " " << y << " " << z << " " << endl;
+
+                    if (vx == 0 && vy == 0 && vz == 0) {
+                        x = x - voxelSize.x / 4;
+                        outFile << x << " " << y << " " << z << " " << endl;
+                    }
                 }
             }
         }

@@ -5,15 +5,16 @@
 #include <iostream>
 #include <fstream>
 
-#define NUM_IMPORTANCE_SAMPLER_CANDIDATES 1024
+#define NUM_SAMPLING_CANDIDATES 256
 
-SolveDisplacementKernel::SolveDisplacementKernel(Solution* sol, ImportanceVolume* impVol) :
+SolveDisplacementKernel::SolveDisplacementKernel(Solution* sol, BlockSampler* sampler, ResidualVolume* resVol) :
     solution(sol),
-    importanceVolume(impVol),
+    sampler(sampler),
     serializedMatConfigEquations(nullptr),
     serializedVertices(nullptr),
     rngStateOnGPU(nullptr),
-    importanceSampler(impVol, NUM_IMPORTANCE_SAMPLER_CANDIDATES)
+    blockOrigins(nullptr),
+    residualVolume(resVol)
 {
     solutionDimensions.x = sol->getSize().x;
     solutionDimensions.y = sol->getSize().y;
@@ -25,6 +26,7 @@ SolveDisplacementKernel::~SolveDisplacementKernel() {
     assert(serializedMatConfigEquations == nullptr);
     assert(serializedVertices == nullptr);
     assert(rngStateOnGPU == nullptr);
+    assert(blockOrigins == nullptr);
 }
 
 
@@ -35,25 +37,23 @@ void SolveDisplacementKernel::launch() {
 
     if (canExecute()) {
 
-        cudaLaunchPyramidUpdateKernel(importanceVolume->getPyramidDevicePointer(), importanceVolume->getNumberOfLevels(), importanceVolume->getLevelStatsDevicePointer());
-
-        importanceSampler.launch();
+        sampler->generateNextBlockOrigins(blockOrigins, NUM_SAMPLING_CANDIDATES);
 
         cudaLaunchSolveDisplacementKernelGlobalResiduals(
             serializedVertices, 
             serializedMatConfigEquations, 
-            importanceVolume->getPyramidDevicePointer(), 
+            residualVolume->getPyramidDevicePointer(),
             rngStateOnGPU,
-            importanceSampler.getBlockOriginsDevicePointer(), 
-            NUM_IMPORTANCE_SAMPLER_CANDIDATES,
+            blockOrigins,
+            NUM_SAMPLING_CANDIDATES,
             solutionDimensions,
-            importanceVolume->getLevelStatsDevicePointer()
+            residualVolume->getLevelStatsDevicePointer()
         );
     }
 }
 
 bool SolveDisplacementKernel::canExecute() {
-    if (serializedMatConfigEquations == nullptr || serializedVertices == nullptr || rngStateOnGPU == nullptr) {
+    if (serializedMatConfigEquations == nullptr || serializedVertices == nullptr || rngStateOnGPU == nullptr || blockOrigins == nullptr) {
         return false;
     }
 
@@ -73,12 +73,22 @@ void SolveDisplacementKernel::freeCudaResources() {
         cudaCheckSuccess(cudaFree(rngStateOnGPU));
         rngStateOnGPU = nullptr;
     }
+    if (blockOrigins != nullptr) {
+        cudaCheckSuccess(cudaFree(blockOrigins));
+        blockOrigins = nullptr;
+    }
 }
 
 void SolveDisplacementKernel::prepareInputs() {
     pushMatConfigEquationsManaged();
     pushVerticesManaged();
     initCurandState();
+    allocateBlockOrigins();
+}
+
+void SolveDisplacementKernel::allocateBlockOrigins() {
+    size_t size = NUM_SAMPLING_CANDIDATES * sizeof(uint3);
+    cudaCheckSuccess(cudaMallocManaged(&blockOrigins, size));
 }
 
 void SolveDisplacementKernel::initCurandState() {
@@ -278,5 +288,5 @@ void SolveDisplacementKernel::debugOutputEquationsGPU() {
 }
 
 uint3* SolveDisplacementKernel::debugGetImportanceSamplesManaged() {
-    return importanceSampler.getBlockOriginsDevicePointer();
+    return blockOrigins;
 }
