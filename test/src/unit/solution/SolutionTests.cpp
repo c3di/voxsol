@@ -37,7 +37,7 @@ public:
 
 TEST_F(SolutionTests, BoundsHandling) {
     DiscreteProblem problem = Templates::Problem::STEEL_2_2_2();
-    Solution solution(problem);
+    Solution solution(&problem);
 
     try {
         solution.mapToIndex(libmmv::Vec3ui(3, 3, 3));
@@ -51,7 +51,7 @@ TEST_F(SolutionTests, BoundsHandling) {
 
 TEST_F(SolutionTests, PrecomputeMatrices) {
     DiscreteProblem problem = Templates::Problem::STEEL_2_2_2();
-    SolutionInspector sol(problem);
+    SolutionInspector sol(&problem);
 
     const std::vector<Vertex>* vertices = sol.getVertices();
     ASSERT_EQ(vertices->size(), 27);
@@ -75,7 +75,7 @@ TEST_F(SolutionTests, PrecomputeMatrices) {
 
 TEST_F(SolutionTests, ConsistencyAfterPrecompute) {
     DiscreteProblem problem = Templates::Problem::STEEL_2_2_2();
-    SolutionInspector sol(problem);
+    SolutionInspector sol(&problem);
     std::string errMessage;
 
     ASSERT_TRUE(sol.solutionDimensionsMatchProblem(errMessage)) << errMessage;
@@ -93,7 +93,7 @@ TEST_F(SolutionTests, DirichletBoundaryAppliedToLHS) {
     problem.setDirichletBoundaryAtVertex(libmmv::Vec3ui(1, 0, 0), DirichletBoundary(DirichletBoundary::FIXED_ALL));
     problem.setDirichletBoundaryAtVertex(libmmv::Vec3ui(2, 0, 0), DirichletBoundary(DirichletBoundary::FIXED_X));
 
-    SolutionInspector sol(problem);
+    SolutionInspector sol(&problem);
     
     sol.computeMaterialConfigurationEquations();
 
@@ -123,7 +123,7 @@ TEST_F(SolutionTests, NeumannBoundaryAppliedToEquations) {
     problem.setNeumannBoundaryAtVertex(libmmv::Vec3ui(1, 0, 0), NeumannBoundary(libmmv::Vec3<REAL>(9999, 0, 0)));
     problem.setNeumannBoundaryAtVertex(libmmv::Vec3ui(2, 0, 0), NeumannBoundary(libmmv::Vec3<REAL>(100, 100, 100)));
 
-    SolutionInspector sol(problem);
+    SolutionInspector sol(&problem);
 
     sol.computeMaterialConfigurationEquations();
 

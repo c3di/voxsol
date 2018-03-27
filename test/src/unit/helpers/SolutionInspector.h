@@ -5,7 +5,7 @@ class ProblemFragment;
 
 class SolutionInspector : public Solution {
 public:
-    SolutionInspector(DiscreteProblem& problem);
+    SolutionInspector(DiscreteProblem* problem);
 
     ConfigId getEquationIdForFragment(ProblemFragment& fragment);
     MaterialConfigurationEquations* getEquationsForFragment(ProblemFragment& fragment);
@@ -14,5 +14,7 @@ public:
     bool matConfigEquationIdsMatchPositionInVector(std::string& errMessage);
     bool allMatConfigEquationsInitialized(std::string& errMessage);
     bool allVerticesHaveValidSignatureId(std::string& errMessage);
+
+    void setDisplacementForVertex(VertexCoordinate& coord, libmmv::Vec3<REAL> displacement);
 };
 

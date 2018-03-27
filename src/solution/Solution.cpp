@@ -5,12 +5,11 @@
 #include "material/MaterialConfigurationEquationsFactory.h"
 #include "material/MaterialConfiguration.h"
 
-Solution::Solution(DiscreteProblem& problem) :
-    size(problem.getSize() + libmmv::Vec3ui(1,1,1)),
-    voxelSize(problem.getVoxelSize()),
-    problem(&problem),
-    vertices(size.x * size.y * size.z),
-    vertexDiff(size.x * size.y * size.z)
+Solution::Solution(DiscreteProblem* problem) :
+    size(problem->getSize() + libmmv::Vec3ui(1,1,1)),
+    voxelSize(problem->getVoxelSize()),
+    problem(problem),
+    vertices(size.x * size.y * size.z)
 {
 
 }
@@ -21,10 +20,6 @@ Solution::~Solution() {
 
 std::vector<Vertex>* Solution::getVertices() {
     return &vertices;
-}
-
-std::vector<Vertex>* Solution::getDifferences() {
-    return &vertexDiff;
 }
 
 const libmmv::Vec3ui Solution::getSize() const {
@@ -96,23 +91,5 @@ void Solution::computeEquationsForUniqueMaterialConfigurations() {
             ProblemFragment fragment = problem->extractLocalProblem(centerCoord);
             mceFactory.initializeEquationsForFragment(equations, fragment);
         }
-    }
-}
-
-void Solution::updateDisplacements(Vertex* serializedVertices) {
-    Vertex* updatedVertex(serializedVertices);
-    for (int i = 0; i < vertices.size(); i++) {
-        Vertex* vertex = &vertices.at(i);
-        Vertex* diff = &vertexDiff.at(i);
-
-        diff->x = vertex->x - updatedVertex->x;
-        diff->y = vertex->y - updatedVertex->y;
-        diff->z = vertex->z - updatedVertex->z;
-
-        vertex->x = updatedVertex->x;
-        vertex->y = updatedVertex->y;
-        vertex->z = updatedVertex->z;
-        
-        updatedVertex++;
     }
 }

@@ -3,7 +3,7 @@
 #include "problem/DiscreteProblem.h"
 #include <sstream>
 
-SolutionInspector::SolutionInspector(DiscreteProblem& problem) :
+SolutionInspector::SolutionInspector(DiscreteProblem* problem) :
     Solution(problem)
 {
 
@@ -96,3 +96,10 @@ MaterialConfigurationEquations* SolutionInspector::getEquationsForFragment(Probl
     return &matConfigEquations.at(vertex.materialConfigId);
 }
 
+void SolutionInspector::setDisplacementForVertex(VertexCoordinate& coord, libmmv::Vec3<REAL> displacement) {
+    int index = mapToIndex(coord);
+    Vertex* vertex = &vertices.at(index);
+    vertex->x = displacement.x;
+    vertex->y = displacement.y;
+    vertex->z = displacement.z;
+}
