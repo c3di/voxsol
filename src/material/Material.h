@@ -1,5 +1,6 @@
 #pragma once
 #include "stdafx.h"
+#include <vector>
 
 class Material {
 
@@ -11,6 +12,8 @@ public:
     ~Material();
 
     const unsigned char id;
+    const REAL youngsModulus;
+    const REAL poissonRatio;
     const REAL lambda;
     const REAL mu;
 
