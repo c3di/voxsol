@@ -29,7 +29,8 @@ TEST_F(BoundaryProjectionTests, SimpleDirichletProjection) {
     std::string filePath = IOHelper::getAbsolutePathToFile("test/data/8x8x8_with_4x4x6_cube.mrc");
     MRCVoxelImporter importer(filePath);
     MaterialDictionary matDict = importer.extractMaterialDictionary();
-    DiscreteProblem problem = importer.extractDiscreteProblem(&matDict);
+    DiscreteProblem problem(importer.getDimensionsInVoxels(), importer.getVoxelSizeInMeters(), &matDict);
+    importer.populateDiscreteProblem(&problem);
 
     DirichletBoundary dirichlet(DirichletBoundary::FIXED_ALL);
     BoundaryProjector projector(&problem);
@@ -44,7 +45,8 @@ TEST_F(BoundaryProjectionTests, DirichletOntoDiamondShape) {
     std::string filePath = IOHelper::getAbsolutePathToFile("test/data/8x8x8_with_diamond.mrc");
     MRCVoxelImporter importer(filePath);
     MaterialDictionary matDict = importer.extractMaterialDictionary();
-    DiscreteProblem problem = importer.extractDiscreteProblem(&matDict);
+    DiscreteProblem problem(importer.getDimensionsInVoxels(), importer.getVoxelSizeInMeters(), &matDict);
+    importer.populateDiscreteProblem(&problem);
 
     DirichletBoundary dirichlet(DirichletBoundary::FIXED_ALL);
     BoundaryProjector projector(&problem);
@@ -67,7 +69,8 @@ TEST_F(BoundaryProjectionTests, SimpleNeumannProjection) {
     std::string filePath = IOHelper::getAbsolutePathToFile("test/data/8x8x8_with_4x4x6_cube.mrc");
     MRCVoxelImporter importer(filePath);
     MaterialDictionary matDict = importer.extractMaterialDictionary();
-    DiscreteProblem problem = importer.extractDiscreteProblem(&matDict);
+    DiscreteProblem problem(importer.getDimensionsInVoxels(), importer.getVoxelSizeInMeters(), &matDict);
+    importer.populateDiscreteProblem(&problem);
 
     libmmv::Vec3<REAL> stress(0, 0, 1000);
     NeumannBoundary neumann(stress);

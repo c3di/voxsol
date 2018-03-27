@@ -3,7 +3,7 @@
 #include "problem/DiscreteProblem.h"
 #include <sstream>
 
-ResidualVolumeInspector::ResidualVolumeInspector(DiscreteProblem & problem) :
+ResidualVolumeInspector::ResidualVolumeInspector(DiscreteProblem* problem) :
     ResidualVolume(problem)
 {
 }

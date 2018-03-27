@@ -28,7 +28,7 @@ void BoundaryProjector::projectDirichletBoundaryAlongNegZ(DirichletBoundary* con
     for (unsigned int x = 0; x < problemSize.x; x++) {
         for (unsigned int y = 0; y < problemSize.y; y++) {
             libmmv::Vec3ui origin(x, y, problemSize.z - 1);
-            projectRayToFindSurface(origin, &projectionStep, &surfaceVoxels);
+            projectRayToFindSurface(origin, &projectionStep, &surfaceVoxels, 255);
         }
     }
 
@@ -55,7 +55,40 @@ void BoundaryProjector::projectDirichletBoundaryAlongNegZ(DirichletBoundary* con
 	std::cout << "Projected Dirichlet boundary onto " << surfaceVoxels.size() << " voxels\n";
 }
 
-void BoundaryProjector::projectNeumannStressAlongNegZ(REAL totalNeumannForce)
+void BoundaryProjector::projectDirichletBoundaryAlongPosZ(DirichletBoundary* condition, unsigned char matIdFilter)
+{
+    libmmv::Vec3i projectionStep(0, 0, 1);
+    std::vector<libmmv::Vec3ui> surfaceVoxels;
+    for (unsigned int x = 0; x < problemSize.x; x++) {
+        for (unsigned int y = 0; y < problemSize.y; y++) {
+            libmmv::Vec3ui origin(x, y, 0);
+            projectRayToFindSurface(origin, &projectionStep, &surfaceVoxels, matIdFilter);
+        }
+    }
+
+    auto minElement = std::min_element(surfaceVoxels.begin(), surfaceVoxels.end(), [](const libmmv::Vec3ui& a, const libmmv::Vec3ui& b) -> bool {
+        return a.z < b.z;
+    });
+    unsigned int topZ = minElement->z;
+    unsigned int numBoundaryVoxels = 0;
+    for (auto it = surfaceVoxels.begin(); it != surfaceVoxels.end(); it++) {
+        // We only want to fix the voxels near the outer edge of the space
+        if (abs((int)topZ - (int)it->z) < (int)maxDepthFromTopmostHit) {
+            libmmv::Vec3ui vertexCoord(*it);
+            problem->setDirichletBoundaryAtVertex(vertexCoord, *condition);
+            vertexCoord.x++;
+            problem->setDirichletBoundaryAtVertex(vertexCoord, *condition);
+            vertexCoord.y++;
+            problem->setDirichletBoundaryAtVertex(vertexCoord, *condition);
+            vertexCoord.x--;
+            problem->setDirichletBoundaryAtVertex(vertexCoord, *condition);
+            numBoundaryVoxels++;
+        }
+    }
+    std::cout << "Projected Dirichlet boundary onto " << surfaceVoxels.size() << " voxels\n";
+}
+
+void BoundaryProjector::projectNeumannStressAlongNegZ(REAL totalNeumannForce, unsigned char matIdFilter)
 {
     // Project rays from z==top down along the Z axis, find the first non-null-material voxel for each x,y position to build the exposed surface
     libmmv::Vec3i projectionStep(0, 0, -1);
@@ -63,9 +96,11 @@ void BoundaryProjector::projectNeumannStressAlongNegZ(REAL totalNeumannForce)
     for (unsigned int x = 0; x < problemSize.x; x++) {
         for (unsigned int y = 0; y < problemSize.y; y++) {
             libmmv::Vec3ui origin(x, y, problemSize.z-1);
-            projectRayToFindSurface(origin, &projectionStep, &surfaceVoxels);
+            projectRayToFindSurface(origin, &projectionStep, &surfaceVoxels, matIdFilter);
         }
     }
+
+    std::cout << "Found " << surfaceVoxels.size() << " voxels for Neumann boundary max depth " << (int)maxDepthFromTop << std::endl;
 
     auto maxElement = std::max_element(surfaceVoxels.begin(), surfaceVoxels.end(), [](const libmmv::Vec3ui& a, const libmmv::Vec3ui& b) -> bool {
         return a.z > b.z;
@@ -108,7 +143,7 @@ void BoundaryProjector::projectDirichletBoundaryAlongPosX(DirichletBoundary * co
     for (unsigned int z = 0; z < problemSize.z; z++) {
         for (unsigned int y = 0; y < problemSize.y; y++) {
             libmmv::Vec3ui origin(0, y, z);
-            projectRayToFindSurface(origin, &projectionStep, &surfaceVoxels);
+            projectRayToFindSurface(origin, &projectionStep, &surfaceVoxels, 255);
         }
     }
 
@@ -135,7 +170,7 @@ void BoundaryProjector::projectDirichletBoundaryAlongPosX(DirichletBoundary * co
     std::cout << "Projected Dirichlet boundary onto " << surfaceVoxels.size() << " voxels\n";
 }
 
-void BoundaryProjector::projectNeumannStressAlongPosZ(REAL totalNeumannForce)
+void BoundaryProjector::projectNeumannStressAlongPosZ(REAL totalNeumannForce, unsigned char matIdFilter)
 {
     // Project rays from z==0 up along the Z axis, find the first non-null-material voxel for each x,y position to build the exposed surface
     libmmv::Vec3i projectionStep(0, 0, 1);
@@ -143,7 +178,7 @@ void BoundaryProjector::projectNeumannStressAlongPosZ(REAL totalNeumannForce)
     for (unsigned int x = 0; x < problemSize.x; x++) {
         for (unsigned int y = 0; y < problemSize.y; y++) {
             libmmv::Vec3ui origin(x, y, 0);
-            projectRayToFindSurface(origin, &projectionStep, &surfaceVoxels);
+            projectRayToFindSurface(origin, &projectionStep, &surfaceVoxels, matIdFilter);
         }
     }
 
@@ -182,14 +217,16 @@ void BoundaryProjector::projectNeumannStressAlongPosZ(REAL totalNeumannForce)
 }
 
 // Projects a ray along updateStep direction checking each voxel along the way to find the first non-null-material voxel
-void BoundaryProjector::projectRayToFindSurface(libmmv::Vec3ui & origin, const libmmv::Vec3i* updateStep, std::vector<libmmv::Vec3ui>* surfaceCandidates)
+void BoundaryProjector::projectRayToFindSurface(libmmv::Vec3ui & origin, const libmmv::Vec3i* updateStep, std::vector<libmmv::Vec3ui>* surfaceCandidates, unsigned char matIdFilter)
 {
     libmmv::Vec3ui rayPos(origin);
     unsigned int layersTraversed = 0;
     while (layersTraversed < maxDepthFromTop && rayPos.x < problemSize.x && rayPos.x >= 0 && rayPos.y < problemSize.y && rayPos.y >= 0 && rayPos.z < problemSize.z && rayPos.z >= 0) {
         Material* voxelMat = problem->getMaterial(rayPos);
         if (voxelMat->id != Material::EMPTY.id) {
-            surfaceCandidates->push_back(rayPos);
+            if (matIdFilter == 255 || voxelMat->id == matIdFilter) {
+                surfaceCandidates->push_back(rayPos);
+            }
             return;
         }
         rayPos = rayPos + *updateStep;

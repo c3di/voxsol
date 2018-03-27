@@ -1,6 +1,6 @@
 #include "gtest/gtest.h"
 #include <cuda_runtime.h>
-#include "helpers/ImportanceVolumeInspector.h"
+#include "helpers/ResidualVolumeInspector.h"
 #include "helpers/Templates.h"
 
 //gpu/kernels/cuda/UpdateImportancePyramid.cu
@@ -28,7 +28,8 @@ TEST_F(ImportanceVolumeTests, VolumeInitTest) {
     DiscreteProblem testProblem = Templates::Problem::STEEL_3_3_3();
     NeumannBoundary someForce(libmmv::Vec3<REAL>(0, 0, 1000));
     testProblem.setNeumannBoundaryAtVertex(libmmv::Vec3ui(0, 0, 0), someForce);
-    ImportanceVolumeInspector testVolume(testProblem);
+    ResidualVolumeInspector testVolume(&testProblem);
+    testVolume.initializePyramidFromProblem();
 
     ASSERT_EQ(2, testVolume.getNumberOfLevels()) << "Expected a pyramid with 2 levels for solution size 4x4x4";
     ASSERT_EQ(0, testVolume.getResidualOnLevel(0, VertexCoordinate(0, 0, 1))) << "Expected vertex without Neumann boundary to initially have residual 0";
@@ -52,7 +53,8 @@ TEST_F(ImportanceVolumeTests, SimpleResidualProjection) {
 
     testProblem.setNeumannBoundaryAtVertex(libmmv::Vec3ui(0, 0, 0), someForce);
 
-    ImportanceVolumeInspector testVolume(testProblem);
+    ResidualVolumeInspector testVolume(&testProblem);
+    testVolume.initializePyramidFromProblem();
     testVolume.updateAllLevelsAboveZero();
 
     ASSERT_EQ(3, testVolume.getNumberOfLevels()) << "Expected a pyramid with 3 levels for solution size 5x5x5";
@@ -79,7 +81,8 @@ TEST_F(ImportanceVolumeTests, ResidualProjectionFromProblemToLevelZero) {
     testProblem.setNeumannBoundaryAtVertex(libmmv::Vec3ui(0, 4, 3), someForce);
     testProblem.setNeumannBoundaryAtVertex(libmmv::Vec3ui(1, 4, 4), someForce);
 
-    ImportanceVolumeInspector testVolume(testProblem);
+    ResidualVolumeInspector testVolume(&testProblem);
+    testVolume.initializePyramidFromProblem();
 
     //See above for expected values
     ASSERT_EQ(3, testVolume.getNumberOfLevels()) << "Expected a pyramid with 3 levels for solution size 5x5x5";
@@ -103,7 +106,8 @@ TEST_F(ImportanceVolumeTests, ResidualProjection3Levels) {
     testProblem.setNeumannBoundaryAtVertex(libmmv::Vec3ui(4, 0, 0), someForce);
     testProblem.setNeumannBoundaryAtVertex(libmmv::Vec3ui(5, 0, 0), someForce);
 
-    ImportanceVolumeInspector testVolume(testProblem);
+    ResidualVolumeInspector testVolume(&testProblem);
+    testVolume.initializePyramidFromProblem();
     testVolume.updateAllLevelsAboveZero();
 
     ASSERT_EQ(4, testVolume.getNumberOfLevels()) << "Expected a pyramid with 4 levels for solution size 9x9x9";
@@ -133,7 +137,8 @@ TEST_F(ImportanceVolumeTests, LargeProblemTotalResidualTestCPU) {
         }
     }
 
-    ImportanceVolumeInspector testVolume(testProblem);
+    ResidualVolumeInspector testVolume(&testProblem);
+    testVolume.initializePyramidFromProblem();
     testVolume.updateAllLevelsAboveZero();
 
     ASSERT_EQ(7, testVolume.getNumberOfLevels()) << "Expected a pyramid with 7 levels for solution size 101x11x11";
@@ -151,7 +156,8 @@ TEST_F(ImportanceVolumeTests, LargeProblemTotalResidualTestGPU) {
         }
     }
 
-    ImportanceVolume testVolume(testProblem);
+    ResidualVolume testVolume(&testProblem);
+    testVolume.initializePyramidFromProblem();
     ASSERT_EQ(7, testVolume.getNumberOfLevels()) << "Expected a pyramid with 7 levels for solution size 101x11x11";
 
     cudaLaunchPyramidUpdateKernel(testVolume.getPyramidDevicePointer(), 7, testVolume.getLevelStatsDevicePointer());

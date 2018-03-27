@@ -25,23 +25,23 @@ public:
     //void projectDirichletBoundaryAlongNegY(DirichletBoundary* condition);
     //void projectNeumannBoundaryAlongNegY(NeumannBoundary* condition);
     void projectDirichletBoundaryAlongNegZ(DirichletBoundary* condition);
-    void projectNeumannStressAlongNegZ(REAL totalNeumannStress);
+    void projectNeumannStressAlongNegZ(REAL totalNeumannStress, unsigned char matIdFilter = 255);
 
     void projectDirichletBoundaryAlongPosX(DirichletBoundary* condition);
     //void projectNeumannBoundaryAlongPosX(NeumannBoundary* condition);
     //void projectDirichletBoundaryAlongPosY(DirichletBoundary* condition);
     //void projectNeumannBoundaryAlongPosY(NeumannBoundary* condition);
-    //void projectDirichletBoundaryAlongPosZ(DirichletBoundary* condition);
-    void projectNeumannStressAlongPosZ(REAL totalNeumannStress);
+    void projectDirichletBoundaryAlongPosZ(DirichletBoundary* condition, unsigned char matIdFilter = 255);
+    void projectNeumannStressAlongPosZ(REAL totalNeumannStress, unsigned char matIdFilter = 255);
 
 protected:
     DiscreteProblem* problem;
     libmmv::Vec3ui problemSize;
     unsigned int maxDepthFromTop = 20;
-    unsigned int maxDepthFromTopmostHit = 6;
+    unsigned int maxDepthFromTopmostHit = 20;
 
 
-    void projectRayToFindSurface(libmmv::Vec3ui& origin, const libmmv::Vec3i* updateStep, std::vector<libmmv::Vec3ui>* surfaceCandidates);
+    void projectRayToFindSurface(libmmv::Vec3ui& origin, const libmmv::Vec3i* updateStep, std::vector<libmmv::Vec3ui>* surfaceCandidates, unsigned char matIdFilter);
 
     REAL getNeumannStressPerVoxel(REAL neumannStressPerSquareMeter, int numberOfVoxelsHit);
 };

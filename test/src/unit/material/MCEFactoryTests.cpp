@@ -230,7 +230,7 @@ TEST_F(MCEFactoryTests, SteelNullNonUniformVoxels) {
 
 TEST_F(MCEFactoryTests, SteelUniformVoxelsProblem) {
     DiscreteProblem problem = Templates::Problem::STEEL_2_2_2();
-    SolutionInspector sol(problem);
+    SolutionInspector sol(&problem);
 
     sol.computeMaterialConfigurationEquations();
 

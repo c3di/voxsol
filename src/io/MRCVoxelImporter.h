@@ -15,19 +15,31 @@ public:
     libmmv::Vec3<REAL> getVoxelSizeInMeters() const;
     libmmv::Vec3ui getDimensionsInVoxels() const;
 
-    DiscreteProblem extractDiscreteProblem(MaterialDictionary* materialDictionary);
+    void populateDiscreteProblem(DiscreteProblem* problem);
     MaterialDictionary extractMaterialDictionary();
-
-private:
-    unsigned char boneMatId = 0;
-    unsigned char implantMatId = 0;
+    void setVoxelSizeInMeters(libmmv::Vec3<REAL>& voxelSize);
 
     int nullMaterialColorValue = 0;
     int boneMaterialColorValue = 0;
     int implantMaterialColorValue = 0;
 
+    int linerMaterialColorValue = 0;
+    int fatMaterialColorValue = 0;
+    int muscleMaterialColorValue = 0;
+    int skinMaterialColorValue = 0;
+    int socketMaterialColorValue = 0;
 
-    void addVoxelSliceToProblem(unsigned int zLayer, DiscreteProblem* problem, libmmv::Image* image, libmmv::Vec3ui* stats);
+    unsigned char boneMatId = 0;
+    unsigned char implantMatId = 0;
+
+    unsigned char linerMatId = 0;
+    unsigned char fatMatId = 0;
+    unsigned char socketMatId = 0;
+    unsigned char muscleMatId = 0;
+
+private:
+
+    void addVoxelSliceToProblem(unsigned int zLayer, DiscreteProblem* problem, libmmv::Image* image, int* stats);
     void readMaterialClassesFromHeader();
 };
 

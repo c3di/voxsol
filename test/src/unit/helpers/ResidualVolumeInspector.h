@@ -5,7 +5,7 @@ class ProblemFragment;
 
 class ResidualVolumeInspector : public ResidualVolume {
 public:
-    ResidualVolumeInspector(DiscreteProblem& problem);
+    ResidualVolumeInspector(DiscreteProblem* problem);
 
     void updateAllLevelsAboveZero();
 
