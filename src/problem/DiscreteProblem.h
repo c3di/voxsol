@@ -35,7 +35,9 @@ public:
     DirichletBoundary getDirichletBoundaryAtVertex(unsigned int index);
     NeumannBoundary getNeumannBoundaryAtVertex(VertexCoordinate& coordinate);
     NeumannBoundary getNeumannBoundaryAtVertex(unsigned int index);
-    std::unordered_map<unsigned int, NeumannBoundary> getNeumannBoundaryMap();
+    std::unordered_map<unsigned int, NeumannBoundary>* getNeumannBoundaryMap();
+    std::unordered_map<unsigned int, DirichletBoundary>* getDirichletBoundaryMap();
+    MaterialDictionary* getMaterialDictionary();
 
     unsigned int mapToVoxelIndex(VoxelCoordinate& coordinate) const;
     VoxelCoordinate mapToVoxelCoordinate(unsigned int index) const;
@@ -51,10 +53,10 @@ protected:
     const libmmv::Vec3ui solutionSize;
     const libmmv::Vec3<REAL> voxelSize;
     const unsigned int numberOfCells;
+    MaterialDictionary* materialDictionary;
     std::unordered_map<unsigned int, DirichletBoundary> dirichletBoundaryConditions;
     std::unordered_map<unsigned int, NeumannBoundary> neumannBoundaryConditions;
     std::vector<unsigned char> materialIds;
-    MaterialDictionary* materialDictionary;
 
     bool outOfVoxelBounds(VoxelCoordinate& coordinate) const;
     bool outOfVertexBounds(VertexCoordinate& coordinate) const;

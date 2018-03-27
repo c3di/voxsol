@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "ImportanceBlockSampler.h"
 
-ImportanceBlockSampler::ImportanceBlockSampler(DiscreteProblem & problem, ResidualVolume* resVol) :
+ImportanceBlockSampler::ImportanceBlockSampler(ResidualVolume* resVol) :
     samplingKernel(resVol)
 {
 }

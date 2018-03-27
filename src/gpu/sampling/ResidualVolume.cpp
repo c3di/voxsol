@@ -3,9 +3,10 @@
 #include "problem/DiscreteProblem.h"
 #include "gpu/CudaCommonFunctions.h"
 
-ResidualVolume::ResidualVolume(DiscreteProblem & problem)
+ResidualVolume::ResidualVolume(DiscreteProblem* problem) :
+    problem(problem)
 {
-    initializePyramidFromProblem(problem);
+
 }
 
 ResidualVolume::~ResidualVolume()
@@ -119,24 +120,29 @@ unsigned int ResidualVolume::getNumberOfLevels() const {
     return numberOfLevels;
 }
 
-void ResidualVolume::initializePyramidFromProblem(DiscreteProblem & problem) {
-    computeDepthOfPyramid(problem);
-    allocateManagedMemory(problem);
-    initializeLeveLZeroResidualsFromProblem(problem);
+unsigned int ResidualVolume::getNumVerticesOnLevelZero() const
+{
+    return levelZeroSize.x * levelZeroSize.y * levelZeroSize.z;
 }
 
-void ResidualVolume::computeDepthOfPyramid(DiscreteProblem & problem)
+void ResidualVolume::initializePyramidFromProblem() {
+    computeDepthOfPyramid();
+    allocateManagedMemory();
+    initializeLeveLZeroResidualsFromProblem();
+}
+
+void ResidualVolume::computeDepthOfPyramid()
 {
-    levelZeroSize = (problem.getSize() + libmmv::Vec3ui(2, 2, 2)) / 2;
+    levelZeroSize = (problem->getSize() + libmmv::Vec3ui(2, 2, 2)) / 2;
     unsigned int maxDim = std::max(std::max(levelZeroSize.x, levelZeroSize.y), levelZeroSize.z);
     double log = std::log((double)maxDim) / std::log(2.0);
     numberOfLevels = (int)std::ceil(log) + 1;
 }
 
-void ResidualVolume::allocateManagedMemory(DiscreteProblem& problem) {
-    unsigned int x = problem.getSize().x + 1; // number of vertices is 1 greater than number of voxels
-    unsigned int y = problem.getSize().y + 1;
-    unsigned int z = problem.getSize().z + 1;
+void ResidualVolume::allocateManagedMemory() {
+    unsigned int x = problem->getSize().x + 1; // number of vertices is 1 greater than number of voxels
+    unsigned int y = problem->getSize().y + 1;
+    unsigned int z = problem->getSize().z + 1;
 
     cudaCheckSuccess(cudaMallocManaged(&levelStatsManaged, numberOfLevels * sizeof(LevelStats)));
 
@@ -161,11 +167,11 @@ void ResidualVolume::allocateManagedMemory(DiscreteProblem& problem) {
 
 // Initially all residuals are 0 and the only "active" region of the simulation are the Neumann Boundary areas,
 // so we set those areas to 1 to ensure the first simulation pass updates them first
-void ResidualVolume::initializeLeveLZeroResidualsFromProblem(DiscreteProblem & problem) {
-    std::unordered_map<unsigned int, NeumannBoundary> neumannBoundaries = problem.getNeumannBoundaryMap();
+void ResidualVolume::initializeLeveLZeroResidualsFromProblem() {
+    std::unordered_map<unsigned int, NeumannBoundary>* neumannBoundaries = problem->getNeumannBoundaryMap();
 
-    for (auto it = neumannBoundaries.begin(); it != neumannBoundaries.end(); it++) {
-        VertexCoordinate vertexCoord = problem.mapToVertexCoordinate(it->first);
+    for (auto it = neumannBoundaries->begin(); it != neumannBoundaries->end(); it++) {
+        VertexCoordinate vertexCoord = problem->mapToVertexCoordinate(it->first);
         REAL* locationInPyramid = getLocationOfVertexProjectedToLevel(0, vertexCoord);
         *locationInPyramid += asREAL(1.0);
     }

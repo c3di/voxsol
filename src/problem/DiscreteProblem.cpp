@@ -85,6 +85,10 @@ Material* DiscreteProblem::getMaterial(unsigned int index) const {
     return materialDictionary->getMaterialById(matId);
 }
 
+MaterialDictionary* DiscreteProblem::getMaterialDictionary() {
+    return materialDictionary;
+}
+
 libmmv::Vec3d DiscreteProblem::getVoxelSize() const {
     return libmmv::Vec3d(voxelSize);
 }
@@ -129,9 +133,14 @@ NeumannBoundary DiscreteProblem::getNeumannBoundaryAtVertex(unsigned int index) 
     }
 }
 
-std::unordered_map<unsigned int, NeumannBoundary> DiscreteProblem::getNeumannBoundaryMap()
+std::unordered_map<unsigned int, NeumannBoundary>* DiscreteProblem::getNeumannBoundaryMap()
 {
-    return neumannBoundaryConditions;
+    return &neumannBoundaryConditions;
+}
+
+std::unordered_map<unsigned int, DirichletBoundary>* DiscreteProblem::getDirichletBoundaryMap()
+{
+    return &dirichletBoundaryConditions;
 }
 
 bool DiscreteProblem::outOfVoxelBounds(VoxelCoordinate& coordinate) const {

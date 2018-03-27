@@ -8,7 +8,7 @@
 class ImportanceBlockSampler : public BlockSampler {
 
 public:
-    ImportanceBlockSampler(DiscreteProblem& problem, ResidualVolume* resVol);
+    ImportanceBlockSampler(ResidualVolume* resVol);
     ~ImportanceBlockSampler();
 
     int generateNextBlockOrigins(uint3* blockOrigins, int numOriginsToGenerate) override;

@@ -12,8 +12,10 @@ struct LevelStats {
 
 class ResidualVolume {
 public:
-    ResidualVolume(DiscreteProblem& problem);
+    ResidualVolume(DiscreteProblem* problem);
     ~ResidualVolume();
+
+    void initializePyramidFromProblem();
 
     REAL* getLocationOfVertexProjectedToLevel(unsigned int level, VertexCoordinate& fullresCoord);
     REAL getResidualOnLevel(unsigned int level, VertexCoordinate& levelCoord) const;
@@ -28,18 +30,20 @@ public:
     LevelStats* getPointerToStatsForLevel(unsigned int level);
     unsigned int getNumberOfLevels() const;
 
+    unsigned int getNumVerticesOnLevelZero() const;
+
 protected:
     // This is GPU managed memory, any read/write operations on it may trigger a costly CPU<->GPU memory sync!
     REAL* importancePyramidManaged = nullptr;
     LevelStats* levelStatsManaged = nullptr; 
+    DiscreteProblem* problem;
 
     libmmv::Vec3ui levelZeroSize;
     unsigned int numberOfLevels;
 
     void freeCudaResources();
 
-    void initializePyramidFromProblem(DiscreteProblem& problem);
-    void allocateManagedMemory(DiscreteProblem& problem);
-    void initializeLeveLZeroResidualsFromProblem(DiscreteProblem& problem);
-    void computeDepthOfPyramid(DiscreteProblem& problem);
+    void allocateManagedMemory();
+    void initializeLeveLZeroResidualsFromProblem();
+    void computeDepthOfPyramid();
 };
