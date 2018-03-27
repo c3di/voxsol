@@ -283,7 +283,7 @@ __device__ void updateVertexStochasticallyGlobalResiduals(
             updateVertexGlobalResidual(&globalVertexToUpdate, rhsVec, matrices);
             verticesOnGPU[globalIndex] = globalVertexToUpdate;
         }
-        
+
 #endif
 #ifdef SIMPLE
 
@@ -295,6 +295,52 @@ __device__ void updateVertexStochasticallyGlobalResiduals(
 #endif
     }
 
+}
+
+__device__
+void createGridCoordForThread(uint3* coord, const uint3* blockOriginCoord) {  
+    unsigned int tid = threadIdx.x;
+    coord->z = tid / (BLOCK_SIZE * BLOCK_SIZE);
+    tid -= coord->z * (BLOCK_SIZE * BLOCK_SIZE);
+    coord->y = tid / BLOCK_SIZE;
+    tid -= coord->y * BLOCK_SIZE;
+    coord->x = tid;
+
+    coord->x += blockOriginCoord->x;
+    coord->y += blockOriginCoord->y;
+    coord->z += blockOriginCoord->z;
+}
+
+__device__
+void createCheckerboardCoordForThread(uint3* coord, const uint3* blockOriginCoord) {
+    const unsigned short HALF_BLOCK = BLOCK_SIZE / 2;
+    const unsigned short bucket = threadIdx.x / (blockDim.x / 2); //either 0 or 1
+    const unsigned short indexInBucket = threadIdx.x % (blockDim.x / 2);
+
+    // Assign threads to coordinates according to a 3D checkerboard pattern so that all active warps are split into 2 groups
+    // Group 1 will be executed first, updating every other vertex, then Group 2 will be executed afterward
+    //  z == 0    z == 1   ...
+    //  1 2 1 2   2 1 2 1
+    //  2 1 2 1   1 2 1 2
+    //  1 2 1 2   2 1 2 1
+    //  2 1 2 1   1 2 1 2
+    //  
+    //
+    
+    coord->z = indexInBucket / (HALF_BLOCK * BLOCK_SIZE);
+    coord->y = (indexInBucket - coord->z*HALF_BLOCK * BLOCK_SIZE) / HALF_BLOCK;
+    coord->x = (indexInBucket - HALF_BLOCK*(coord->y + BLOCK_SIZE*coord->z)) * 2;
+    if (coord->z % 2 == bucket) {
+        coord->x += coord->y % 2 != 0;
+    }
+    else {
+        coord->x += coord->y % 2 == 0;
+    }
+
+    // Move the checkerboard pattern to the start of the block to be updated
+    coord->x += blockOriginCoord->x;
+    coord->y += blockOriginCoord->y;
+    coord->z += blockOriginCoord->z;
 }
 
 __global__
@@ -314,35 +360,8 @@ void cuda_SolveDisplacementGlobalResiduals(
         return;
     }
     curandState* localRNGState = &globalRNGStates[blockIdx.x * blockDim.x + threadIdx.x];
-
-    const unsigned short HALF_BLOCK = BLOCK_SIZE / 2;
-    const unsigned short bucket = threadIdx.x / (blockDim.x / 2); //either 0 or 1
-    const unsigned short indexInBucket = threadIdx.x % (blockDim.x / 2);
-    
-    // Assign threads to coordinates according to a 3D checkerboard pattern so that all active warps are split into 2 groups
-    // Group 1 will be executed first, updating every other vertex, then Group 2 will be executed afterward
-    //  z == 0    z == 1   ...
-    //  1 2 1 2   2 1 2 1
-    //  2 1 2 1   1 2 1 2
-    //  1 2 1 2   2 1 2 1
-    //  2 1 2 1   1 2 1 2
-    //  
-    //
-    uint3 coord;
-    coord.z = indexInBucket / (HALF_BLOCK * BLOCK_SIZE);
-    coord.y = (indexInBucket - coord.z*HALF_BLOCK * BLOCK_SIZE) / HALF_BLOCK;
-    coord.x = (indexInBucket - HALF_BLOCK*(coord.y + BLOCK_SIZE*coord.z)) * 2;
-    if (coord.z % 2 == bucket) {
-        coord.x += coord.y % 2 != 0;
-    }
-    else {
-        coord.x += coord.y % 2 == 0;
-    }
-
-    // Move the checkerboard pattern to the start of the block to be updated
-    coord.x += blockOriginCoord.x;
-    coord.y += blockOriginCoord.y;
-    coord.z += blockOriginCoord.z;
+    uint3 coord = { 0,0,0 };
+    createCheckerboardCoordForThread(&coord, &blockOriginCoord);
 
     updateVertexStochasticallyGlobalResiduals(verticesOnGPU, matConfigEquations, localRNGState, blockOriginCoord, coord, solutionDimensions);
 
@@ -392,7 +411,7 @@ extern "C" void cudaLaunchSolveDisplacementKernelGlobalResiduals(
     int threadsPerBlock = BLOCK_SIZE * BLOCK_SIZE * BLOCK_SIZE;
     int maxConcurrentBlocks = deviceProperties.multiProcessorCount * 4; //TODO: Calculate this based on GPU max for # blocks
     int numIterations = std::max(numBlockOrigins / maxConcurrentBlocks, 1);
-    
+
     // process all blocks in batches of maxConcurrentBlocks
     for (int i = 0; i < numIterations; i++) {
         uint3* currentBlockOrigins = &blockOrigins[i * maxConcurrentBlocks];
