@@ -180,15 +180,15 @@ __device__ void updateResidualsLevelZeroGlobal(
     const uint3& solutionDimensions,
     const LevelStats& levelZeroStats
 ) {
-    // We want to find residuals for vertices bordering our BLOCK_SIZE area too, so -1, then project to level 0 with / 2
-    uint3 vertexToUpdate;
-    vertexToUpdate.x = (blockOriginCoord.x > 0 ? blockOriginCoord.x - 1 : 0) / 2;
-    vertexToUpdate.y = (blockOriginCoord.y > 0 ? blockOriginCoord.y - 1 : 0) / 2;
-    vertexToUpdate.z = (blockOriginCoord.z > 0 ? blockOriginCoord.z - 1 : 0) / 2;
+    uint3 vertexToUpdate = { 0,0,0 };
+    vertexToUpdate.z = threadIdx.x / (BLOCK_SIZE*BLOCK_SIZE);
+    vertexToUpdate.y = (threadIdx.x - vertexToUpdate.z*BLOCK_SIZE*BLOCK_SIZE) / BLOCK_SIZE;
+    vertexToUpdate.x = threadIdx.x % BLOCK_SIZE;
 
-    vertexToUpdate.z += threadIdx.x / (BLOCK_SIZE*BLOCK_SIZE);
-    vertexToUpdate.y += (threadIdx.x - vertexToUpdate.z*BLOCK_SIZE*BLOCK_SIZE) / BLOCK_SIZE;
-    vertexToUpdate.x += threadIdx.x % BLOCK_SIZE;
+    // We want to find residuals for vertices bordering our BLOCK_SIZE area too, so -1, then project to level 0 with / 2
+    vertexToUpdate.x = (vertexToUpdate.x + (blockOriginCoord.x > 0 ? blockOriginCoord.x - 1 : 0)) / 2;
+    vertexToUpdate.y = (vertexToUpdate.y + (blockOriginCoord.y > 0 ? blockOriginCoord.y - 1 : 0)) / 2;
+    vertexToUpdate.z = (vertexToUpdate.z + (blockOriginCoord.z > 0 ? blockOriginCoord.z - 1 : 0)) / 2;
 
     if (vertexToUpdate.x >= levelZeroStats.sizeX ||
         vertexToUpdate.y >= levelZeroStats.sizeY ||
