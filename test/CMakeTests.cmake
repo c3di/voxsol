@@ -10,6 +10,9 @@ generate_source_tree(HOST_SOURCES "${DIRS}" "${FILE_TYPES}")
 
 set(SOLVER_TEST_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src")
 
+# silence STL4002 warnings in the gtest-1.8.0 dependency
+add_definitions(-D_SILENCE_TR2_SYS_NAMESPACE_DEPRECATION_WARNING -D_SILENCE_TR1_NAMESPACE_DEPRECATION_WARNING)
+
 # set include directories
 include_directories("${GTEST_INCLUDE_DIR}" 
                      ${LIBMMV_INCLUDE_DIR}
