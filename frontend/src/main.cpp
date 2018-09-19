@@ -4,69 +4,114 @@
 #include <iostream>
 #include <algorithm>
 #include "gpu/CudaDebugHelper.h"
+#include "gpu/CudaCommonFunctions.h"
 #include "problem/DiscreteProblem.h"
 #include "solution/Solution.h"
 #include "libmmv/math/Vec3.h"
 #include "gpu/kernels/SolveDisplacementKernel.h"
 #include "material/MaterialFactory.h"
 #include "material/MaterialDictionary.h"
-#include "problem/DirichletBoundary.h"
-#include "problem/NeumannBoundary.h"
+#include "problem/boundaryconditions/DirichletBoundary.h"
+#include "problem/boundaryconditions/NeumannBoundary.h"
 #include "io/VTKSolutionVisualizer.h"
+#include "io/VTKImportanceVisualizer.h"
+#include "io/VTKSamplingVisualizer.h"
+#include "io/MRCVoxelImporter.h"
+#include "problem/boundaryconditions/BoundaryProjector.h"
+#include "gpu/sampling/ResidualVolume.h"
+#include "gpu/sampling/ImportanceBlockSampler.h"
+#include "gpu/sampling/WaveSampler.h"
+#include "problem/ProblemInstance.h"
 
 #define ACTIVE_DEVICE 0
 
-void solveCPU(DiscreteProblem& problem) {
-    Solution solution(problem);
-    solution.computeMaterialConfigurationEquations();
+void solveGPU(ProblemInstance& problemInstance, int lod) {
 
-    VTKSolutionVisualizer visualizer(&solution);
-    visualizer.writeToFile("c:\\tmp\\step_0.vtk");
-    SolveDisplacementKernel kernel(&solution);
+    WaveSampler sampler(problemInstance.getSolutionLOD(lod));
+    sampler.setWaveOrientation(libmmv::Vec3ui(0, 0, 0), libmmv::Vec3ui(0, 0, 1));
 
-    std::cout << "Solving 20 * 183,600 updates with CPU...";
+    VTKSolutionVisualizer visualizer(problemInstance.getSolutionLOD(lod));
+	visualizer.filterOutNullVoxels(false);
 
-    for (int i = 0; i < 20; i++) {
-        std::cout << " " << i;
-        kernel.solveCPU();
-        std::stringstream fp;
-        fp << "c:\\tmp\\step_cpu_" << i << ".vtk";
-        visualizer.writeToFile(fp.str());
-    }
+    VTKSamplingVisualizer samplingVis(problemInstance.getSolutionLOD(lod));
 
-    std::cout << " DONE" << std::endl << std::endl;
+    VTKImportanceVisualizer impVis(problemInstance.getProblemLOD(lod), problemInstance.getResidualVolumeLOD(lod));
 
-    kernel.debugOutputEquationsCPU();
-    kernel.debugOutputEquationsGPU();
-}
+    SolveDisplacementKernel kernel(problemInstance.getSolutionLOD(lod), &sampler, problemInstance.getResidualVolumeLOD(lod));
 
-void solveGPU(DiscreteProblem& problem) {
-    Solution solution(problem);
-    solution.computeMaterialConfigurationEquations();
+    std::cout << "Updating with GPU...\n";
+    auto start = std::chrono::high_resolution_clock::now();
+    int iterations = 1001;
 
-    VTKSolutionVisualizer visualizer(&solution);
-    visualizer.writeToFile("c:\\tmp\\step_0.vtk");
-    SolveDisplacementKernel kernel(&solution);
+    for (int i = 1; i <= 5; i++) {
+        
+        //if (i % 100 == 0) {
+        //    REAL totalResidual = problemInstance.getResidualVolumeLOD(lod)->getTotalResidual();
+        //    std::cout << "Total residual : " << totalResidual << std::endl;
 
-    std::cout << "Solving 40 * 4,480,000 updates with GPU...";
+        //    kernel.pullVertices();
 
-    for (int i = 0; i < 400; i++) {
-        std::cout << " " << i;
+        //    //if (lod > 0) {
+        //        std::stringstream fp;
+        //        fp << "d:\\tmp\\lod" << lod << "_gpu_" << i << ".vtk";
+        //        visualizer.writeToFile(fp.str());
+        //    //}
+
+        //    if (totalResidual < 1e-15) {
+        //        break;
+        //    }
+        //}
+
+        std::cout << ".";
+
         kernel.launch();
-        std::stringstream fp;
-        fp << "c:\\tmp\\step_gpu_" << i << ".vtk";
-        visualizer.writeToFile(fp.str());
+
+		if (false) {
+            kernel.pullVertices();
+            std::cout << std::endl;
+			std::stringstream fp;
+			fp << "d:\\tmp\\step_gpu_" << i << ".vtk";
+			visualizer.writeToFile(fp.str());
+
+            fp = std::stringstream();
+            fp << "d:\\tmp\\step_sampling_" << i << ".vtk";
+            samplingVis.writeToFile(fp.str(), kernel.debugGetImportanceSamplesManaged(), 64, BLOCK_SIZE);
+
+            //fp = std::stringstream();
+            //fp << "d:\\tmp\\residuals_" << i << "_";
+            //impVis.writeAllLevels(fp.str());
+		}
     }
 
-    std::cout << " DONE" << std::endl << std::endl;
+    kernel.pullVertices();
+    auto finish = std::chrono::high_resolution_clock::now();
+    auto cpuTime = std::chrono::duration_cast<std::chrono::milliseconds>(finish - start);
+    std::cout << std::endl << "GPU execution time: " << cpuTime.count() << " ms for " << iterations <<" iterations\n\n";
 
-    kernel.debugOutputEquationsCPU();
-    kernel.debugOutputEquationsGPU();
+    //int i = 1;
+    //std::cout << std::endl;
+    //std::stringstream fp;
+    //impVis.writeAllLevels("c:\\tmp\\end_residual");
+
+    //fp = std::stringstream();
+   // fp << "c:\\tmp\\lod_" << lod << "_sampling_" << i << ".vtk";
+   // samplingVis.writeToFile(fp.str(), kernel.debugGetImportanceSamplesManaged(), 512, 8);
+
+    std::stringstream fp = std::stringstream();
+	fp << "d:\\tmp\\lod_" << lod << "_gpu_end.vtk";
+	visualizer.writeToFile(fp.str());
+
+    fp = std::stringstream();
+    fp << "d:\\tmp\\step_sampling_" << lod << ".vtk";
+    samplingVis.writeToFile(fp.str(), kernel.debugGetImportanceSamplesManaged(), 64, BLOCK_SIZE);
+    
+    std::cout << " DONE. Total residual: " << problemInstance.getResidualVolumeLOD(lod)->getTotalResidual() << std::endl << std::endl;
 }
 
 int main(int argc, char* argv[]) {
-    _putenv("CUDA_VISIBLE_DEVICES=1");
+    _putenv("CUDA_VISIBLE_DEVICES=0");
     std::cout << "Stochastic Mechanic Solver -- BY OUR GPUS COMBINED! (except currently limited to 1 GPU)\n\n";
+    
 
     CudaDebugHelper::PrintDeviceInfo(ACTIVE_DEVICE);
     //CudaDebugHelper::PrintDevicePeerAccess(0, 1);
@@ -90,58 +135,37 @@ int main(int argc, char* argv[]) {
         std::cout << "Cuda device " << ACTIVE_DEVICE << " initialized!\n\n";
     }
 
-    ettention::Vec3ui size(100, 10, 10);
-    ettention::Vec3d voxelSize(0.1, 0.1, 0.1);
-
-    MaterialFactory mFactory;
-    MaterialDictionary mDictionary;
+    bool isStumpMRC = false;
+    unsigned char matFilter = 255;
+    std::string filename("voxel_64.mrc");
+    ProblemInstance problemInstance;
+    problemInstance.initFromMaterialProbeMRC(filename);
 
     DirichletBoundary fixed(DirichletBoundary::FIXED_ALL);
-    std::vector<NeumannBoundary> boundaries;
+    BoundaryProjector bProjector(problemInstance.getProblemLOD(0));
+    bProjector.setMaxProjectionDepth(5, 5);
+    bProjector.projectDirichletBoundaryAlongNegZ(&fixed);
 
-    Material steel = mFactory.createMaterialWithProperties(asREAL(210e9), asREAL(0.3));
-    mDictionary.addMaterial(steel);
+    REAL totalNeumannStressNewtons = asREAL(1);
+    bProjector.projectNeumannStressAlongPosZ(totalNeumannStressNewtons, matFilter);
 
-    DiscreteProblem problem(size, voxelSize, &mDictionary);
+    // Re-initialize the residual volume for LOD 0 because we've added the boundary conditions now
+    //problemInstance.getResidualVolumeLOD(0)->initializePyramidFromProblem();
 
-    for (unsigned int i = 0; i < size.z*size.y*size.x; i++) {
-        problem.setMaterial(i, steel.id);
-    }
-
-    for (unsigned int z = 0; z <= size.z; z++) {
-        for (unsigned int y = 0; y <= size.y; y++) {
-            for (unsigned int x = 0; x <= size.x; x++) {
-                if (z == size.z) {
-                    REAL xFactor = 1;
-                    REAL yFactor = 1;
-                    if (x == 0 || x == size.x) {
-                        xFactor = static_cast<REAL>(0.5);
-                    }
-                    if (y == 0 || y == size.y) {
-                        yFactor = static_cast<REAL>(0.5);
-                    }
-                    NeumannBoundary stress(ettention::Vec3<REAL>(0, 0, static_cast<REAL>(-1e7 * xFactor * yFactor)));
-                    boundaries.push_back(stress);
-                    problem.setNeumannBoundaryAtVertex(ettention::Vec3ui(x, y, z), stress);
-                }
-                if (x == 0) {
-                    problem.setDirichletBoundaryAtVertex(ettention::Vec3ui(0, y, z), fixed);
-                }
-            }
-        }
-    }
-
+    problemInstance.createAdditionalLODs(2);
     
     auto start = std::chrono::high_resolution_clock::now();
-   // solveCPU(problem);
+    //solveCPU(problem);
     auto finish = std::chrono::high_resolution_clock::now();
-    auto cpuTime = finish - start;
-    std::cout << std::endl << "CPU execution time: " << cpuTime.count() << " seconds\n\n";
-    
-    start = std::chrono::high_resolution_clock::now();
-    solveGPU(problem);
-    finish = std::chrono::high_resolution_clock::now();
-    cpuTime = finish - start;
+    auto cpuTime = std::chrono::duration_cast<std::chrono::seconds>(finish - start);
+    std::cout << std::endl << "Total CPU execution time: " << cpuTime.count() << " seconds\n\n";
+
+    solveGPU(problemInstance, 2);
+    problemInstance.projectCoarseSolutionToFinerSolution(2, 1);
+    solveGPU(problemInstance, 1);
+    problemInstance.projectCoarseSolutionToFinerSolution(1, 0);
+    solveGPU(problemInstance, 0);
+
     std::cout << std::endl << "GPU execution time: " << cpuTime.count() << " seconds\n\n";
 
 }

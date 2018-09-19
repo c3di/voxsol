@@ -23,7 +23,8 @@ libmmv::Vec3<REAL> MRCVoxelImporter::getVoxelSizeInMeters() const
     // MRC voxel (cell) sizes are in mm
     //libmmv::Vec3<REAL> voxelSize(mrcHeader.cellDimX / asREAL(1000.0), mrcHeader.cellDimY / asREAL(1000.0), mrcHeader.cellDimZ / asREAL(1000.0));
     //libmmv::Vec3<REAL> voxelSize(asREAL(0.0024), asREAL(0.0024), asREAL(0.0030)); //stumpf
-    libmmv::Vec3<REAL> voxelSize(asREAL(0.0024), asREAL(0.0024), asREAL(0.014));
+    //libmmv::Vec3<REAL> voxelSize(asREAL(0.0024), asREAL(0.0024), asREAL(0.0014)); //stumpf
+    libmmv::Vec3<REAL> voxelSize(asREAL(0.0046), asREAL(0.0046), asREAL(0.046));
     return voxelSize;
 }
 

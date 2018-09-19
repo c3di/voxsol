@@ -5,7 +5,7 @@
 #include <iostream>
 #include <fstream>
 
-#define NUM_SAMPLING_CANDIDATES 256
+#define NUM_SAMPLING_CANDIDATES 64
 
 SolveDisplacementKernel::SolveDisplacementKernel(Solution* sol, BlockSampler* sampler, ResidualVolume* resVol) :
     solution(sol),

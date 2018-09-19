@@ -31,18 +31,18 @@ int SequentialBlockSampler::generateNextBlockOrigins(uint3* blockOrigins, int ma
     int halfBlockSize = (blockStride - 1) / 2;
     for (i = 0; i < maxNumBlocks; i++) {
 #pragma warning(suppress: 4018) //Suppress signed/unsigned mismatch in conditional
-        if (lastOrigin.x >= solutionDims.x - blockStride) {
+        if (lastOrigin.x >= solutionDims.x) {
             lastOrigin.x = currentOffset.x;
             lastOrigin.y += blockStride;
         }
 #pragma warning(suppress: 4018)
-        if (lastOrigin.y >= solutionDims.y - blockStride) {
+        if (lastOrigin.y >= solutionDims.y) {
             lastOrigin.y = currentOffset.y;
             lastOrigin.z += blockStride;
         }
 #pragma warning(suppress: 4018)
-        if (lastOrigin.z >= solutionDims.z - blockStride) {
-            shiftOffsetDeterministically();
+        if (lastOrigin.z >= solutionDims.z) {
+            //shiftOffsetDeterministically();
             lastOrigin.x = currentOffset.x;
             lastOrigin.y = currentOffset.y;
             lastOrigin.z = currentOffset.z;

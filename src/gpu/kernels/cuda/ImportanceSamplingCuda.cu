@@ -9,8 +9,7 @@
 #include "gpu/CudaCommonFunctions.h"
 #include "gpu/sampling/ResidualVolume.h"
 #include "solution/Vertex.h"
-
-#define THREADS_PER_BLOCK 512
+#include "gpu/kernels/cuda/InvalidateOverlappingBlocks.cu"
 
 __device__ REAL cuda_getPyramidValue(const REAL* importancePyramid, const LevelStats levelStats, int x, int y, int z) {
     int globalIndex = levelStats.startIndex + z * levelStats.sizeX * levelStats.sizeY + y * levelStats.sizeX + x;
@@ -65,44 +64,6 @@ void cuda_selectImportanceSamplingCandidates(uint3* candidates, const REAL* impo
 }
 
 __global__
-void cuda_invalidateOverlappingBlocks(uint3* candidates, const int numberOfCandidates, const unsigned int updateRegionSize) {
-    extern __shared__ uint3 batch[];
-    int globalId = blockIdx.x * blockDim.x + threadIdx.x;
-    if (globalId >= numberOfCandidates) {
-        return;
-    }
-    int localId = threadIdx.x;
-    uint3 myCandidate = candidates[globalId];
-    batch[localId] = myCandidate;
-
-    __syncthreads();
-
-    // Walk through the candidates toward the left
-    while (localId > 0) {
-        localId -= 1;
-        uint3 leftNeighbor = batch[localId];
-        // Check for cube intersection, if any condition is true the two rectangular regions cannot intersect
-        bool doesNotIntersect = false;
-        doesNotIntersect = doesNotIntersect || leftNeighbor.x > myCandidate.x + updateRegionSize;
-        doesNotIntersect = doesNotIntersect || leftNeighbor.x + updateRegionSize < myCandidate.x;
-        doesNotIntersect = doesNotIntersect || leftNeighbor.z + updateRegionSize < myCandidate.z;
-        doesNotIntersect = doesNotIntersect || leftNeighbor.z > myCandidate.z + updateRegionSize;
-        doesNotIntersect = doesNotIntersect || leftNeighbor.y > myCandidate.y + updateRegionSize;
-        doesNotIntersect = doesNotIntersect || leftNeighbor.y + updateRegionSize < myCandidate.y;
-        if (!doesNotIntersect) {
-            // Invalidate this block, it will later be skipped in the update phase since it lies outside the solution by definition of max_uint
-            //printf("Invalid block: %i %i %i with %i %i %i\n", myCandidate.x, myCandidate.y, myCandidate.z, leftNeighbor.x, leftNeighbor.y, leftNeighbor.z);
-            myCandidate.x = UINT_MAX;
-            myCandidate.y = UINT_MAX;
-            myCandidate.z = UINT_MAX;
-            break;
-        }
-    }
-
-    candidates[globalId] = myCandidate;
-}
-
-__global__
 void cuda_init_curand_statePyramid(curandState* rngState) {
     int id = blockIdx.x * blockDim.x + threadIdx.x;
     // seed, sequence number, offset, curandState
@@ -119,13 +80,12 @@ extern "C" void cudaInitializePyramidRNGStates(curandState** rngStateOnGPU, cons
     cudaCheckExecution();
 }
 
-// Note: activeLevel is always >=1 because level 0 is updated by the solve displacement kernel
 __host__
 extern "C" void cudaLaunchImportanceSamplingKernel(
-    uint3* candidates, 
-    const int numCandidatesToFind, 
-    const REAL* importancePyramid, 
-    const LevelStats* levelStats, 
+    uint3* candidates,
+    const int numCandidatesToFind,
+    const REAL* importancePyramid,
+    const LevelStats* levelStats,
     curandState* rngStateOnGPU,
     const int topLevel
 ) {
@@ -135,15 +95,11 @@ extern "C" void cudaLaunchImportanceSamplingKernel(
     int numBlocks = numCandidatesToFind / THREADS_PER_BLOCK + (numCandidatesToFind % THREADS_PER_BLOCK == 0 ? 0 : 1);
 
     // setup curand
-    cuda_selectImportanceSamplingCandidates <<< numBlocks, THREADS_PER_BLOCK >>>(candidates, importancePyramid, levelStats, rngStateOnGPU, topLevel, BLOCK_SIZE);
+    cuda_selectImportanceSamplingCandidates << < numBlocks, THREADS_PER_BLOCK >> > (candidates, importancePyramid, levelStats, rngStateOnGPU, topLevel, BLOCK_SIZE);
     cudaDeviceSynchronize();
     cudaCheckExecution();
 
-    // Now check 'updatePhaseBatchSize' blocks at a time and invalidate any that are overlapping
-    // During the update phase the blocks will be processed in batches of this size, and any overlapping blocks in the same batch can cause divergence
-    numBlocks = numCandidatesToFind / updatePhaseBatchSize + (numCandidatesToFind % updatePhaseBatchSize == 0 ? 0 : 1);
-    cuda_invalidateOverlappingBlocks <<< numBlocks, updatePhaseBatchSize, updatePhaseBatchSize * sizeof(uint3) >>> (candidates, numCandidatesToFind, BLOCK_SIZE+2);
-    cudaDeviceSynchronize();
+    cudaLaunchInvalidateOverlappingBlocksKernel(candidates, numCandidatesToFind, updatePhaseBatchSize);
 }
 
 

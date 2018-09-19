@@ -9,6 +9,7 @@
 #include "solution/Vertex.h"
 #include "solution/samplers/BlockSampler.h"
 #include "gpu/sampling/ResidualVolume.h"
+#include "gpu/kernels/cuda/InvalidateOverlappingBlocks.cu"
 
 
 #define MATRIX_ENTRY(rhsMatricesStartPointer, matrixIndex, row, col) rhsMatricesStartPointer[matrixIndex*9 + col*3 + row]
@@ -43,7 +44,7 @@ __device__ bool isInsideSolution(const uint3 coord, const uint3 solutionDimensio
 
 __device__ void buildRHSVectorForVertexGlobal(
     REAL* rhsVec,
-    Vertex* verticesOnGPU,
+    Vertex localVertices[BLOCK_SIZE+2][BLOCK_SIZE+2][BLOCK_SIZE+2],
     const REAL* matrices,
     const uint3& centerCoord,
     const uint3& solutionDimensions
@@ -68,13 +69,8 @@ __device__ void buildRHSVectorForVertexGlobal(
 
                 //Local problem size is always 3x3x3 vertices, regardless of solution size
                 localNeighborIndex = localOffsetZ * 9 + localOffsetY * 3 + localOffsetX;
-                globalNeighborIndex = solutionDimensions.y*solutionDimensions.x*localNeighborCoord.z + solutionDimensions.x*localNeighborCoord.y + localNeighborCoord.x;
-
-                Vertex neighbor = dummy;
-
-                if (isInsideSolution(localNeighborCoord, solutionDimensions)) {
-                    neighbor = verticesOnGPU[globalNeighborIndex];
-                }
+                
+                Vertex neighbor = localVertices[localNeighborCoord.x][localNeighborCoord.y][localNeighborCoord.z];
 
                 // RHS[neighbor] * displacement[neighbor]
                 rhsVec[0] += MATRIX_ENTRY(matrices, localNeighborIndex, 0, 0) * neighbor.x;
@@ -134,163 +130,159 @@ __device__ void updateVertexGlobalResidual(Vertex* vertexToUpdate, REAL* rhsVec,
     vertexToUpdate->z = dz;
 }
 
-__device__ void addResidualFromFullresVertex(
-    const unsigned int x,
-    const unsigned int y,
-    const unsigned int z,
-    REAL* residual,
-    const REAL* matConfigEquations,
-    const uint3& solutionDimensions,
-    Vertex* verticesOnGPU
-) {
-    uint3 coord = { x, y, z };
-    int fullresIndex = solutionDimensions.y*solutionDimensions.x*coord.z + solutionDimensions.x*coord.y + coord.x;
-    if (!isInsideSolution(coord, solutionDimensions)) {
-        // this vertex could lie outside the solution space because we expand the working block by 1 when gathering residuals, in this case residual is 0
-        return;
-    }
-    Vertex globalFullresVertex = verticesOnGPU[fullresIndex];
-    if (globalFullresVertex.materialConfigId == static_cast<ConfigId>(0)) {
-        // config id 0 should always be the case where the vertex is surrounded by empty cells, therefore not updateable so residual is 0
-        return;
-    }
-    REAL oldX = globalFullresVertex.x;
-    REAL oldY = globalFullresVertex.y;
-    REAL oldZ = globalFullresVertex.z;
-    REAL rhsVec[3] = { 0,0,0 };
-    const REAL* matrices = getPointerToMatricesForVertexGlobal(globalFullresVertex, matConfigEquations);
-    buildRHSVectorForVertexGlobal(rhsVec, verticesOnGPU, matrices, coord, solutionDimensions);
-    updateVertexGlobalResidual(&globalFullresVertex, rhsVec, matrices);
-
-    // Get the magnitude of the displacement difference (residual)
-    oldX = globalFullresVertex.x - oldX;
-    oldY = globalFullresVertex.y - oldY;
-    oldZ = globalFullresVertex.z - oldZ;
-    oldX *= oldX;
-    oldY *= oldY;
-    oldZ *= oldZ;
-    *residual += oldX + oldY + oldZ;
-}
-
-__device__ void updateResidualsLevelZeroGlobal(
-    Vertex* verticesOnGPU,
-    REAL* residualVolume,
-    const REAL* matConfigEquations,
-    const uint3& blockOriginCoord,
-    const uint3& solutionDimensions,
-    const LevelStats& levelZeroStats
-) {
-    uint3 vertexToUpdate = { 0,0,0 };
-    vertexToUpdate.z = threadIdx.x / (BLOCK_SIZE*BLOCK_SIZE);
-    vertexToUpdate.y = (threadIdx.x - vertexToUpdate.z*BLOCK_SIZE*BLOCK_SIZE) / BLOCK_SIZE;
-    vertexToUpdate.x = threadIdx.x % BLOCK_SIZE;
-
-    // We want to find residuals for vertices bordering our BLOCK_SIZE area too, so -1, then project to level 0 with / 2
-    vertexToUpdate.x = (vertexToUpdate.x + (blockOriginCoord.x > 0 ? blockOriginCoord.x - 1 : 0)) / 2;
-    vertexToUpdate.y = (vertexToUpdate.y + (blockOriginCoord.y > 0 ? blockOriginCoord.y - 1 : 0)) / 2;
-    vertexToUpdate.z = (vertexToUpdate.z + (blockOriginCoord.z > 0 ? blockOriginCoord.z - 1 : 0)) / 2;
-
-    if (vertexToUpdate.x >= levelZeroStats.sizeX ||
-        vertexToUpdate.y >= levelZeroStats.sizeY ||
-        vertexToUpdate.z >= levelZeroStats.sizeZ)
-    {
-        // Since level 0 has half the vertices some threads may be unnecessary
-        return;
-    }
-
-    // Precompute the index of the residual we want to update on Level 0
-    unsigned int residualIndex = vertexToUpdate.z * levelZeroStats.sizeX * levelZeroStats.sizeY + vertexToUpdate.y * levelZeroStats.sizeX + vertexToUpdate.x;
-
-    // Project back down to fullres
-    vertexToUpdate.x *= 2;
-    vertexToUpdate.y *= 2;
-    vertexToUpdate.z *= 2;
-
-    REAL residual = asREAL(0.0);
-
-    // Pool the residuals from the fullres level that contribute to this Level 0 vertex's residual
-    addResidualFromFullresVertex(vertexToUpdate.x, vertexToUpdate.y, vertexToUpdate.z, &residual, matConfigEquations, solutionDimensions, verticesOnGPU);
-    addResidualFromFullresVertex(vertexToUpdate.x + 1, vertexToUpdate.y, vertexToUpdate.z, &residual, matConfigEquations, solutionDimensions, verticesOnGPU);
-    addResidualFromFullresVertex(vertexToUpdate.x, vertexToUpdate.y + 1, vertexToUpdate.z, &residual, matConfigEquations, solutionDimensions, verticesOnGPU);
-    addResidualFromFullresVertex(vertexToUpdate.x + 1, vertexToUpdate.y + 1, vertexToUpdate.z, &residual, matConfigEquations, solutionDimensions, verticesOnGPU);
-
-    addResidualFromFullresVertex(vertexToUpdate.x, vertexToUpdate.y, vertexToUpdate.z + 1, &residual, matConfigEquations, solutionDimensions, verticesOnGPU);
-    addResidualFromFullresVertex(vertexToUpdate.x + 1, vertexToUpdate.y, vertexToUpdate.z + 1, &residual, matConfigEquations, solutionDimensions, verticesOnGPU);
-    addResidualFromFullresVertex(vertexToUpdate.x, vertexToUpdate.y + 1, vertexToUpdate.z + 1, &residual, matConfigEquations, solutionDimensions, verticesOnGPU);
-    addResidualFromFullresVertex(vertexToUpdate.x + 1, vertexToUpdate.y + 1, vertexToUpdate.z + 1, &residual, matConfigEquations, solutionDimensions, verticesOnGPU);
-
-    residualVolume[residualIndex] = residual;
-}
+//__device__ void addResidualFromFullresVertex(
+//    const unsigned int x,
+//    const unsigned int y,
+//    const unsigned int z,
+//    REAL* residual,
+//    const REAL* matConfigEquations,
+//    const uint3& solutionDimensions,
+//    Vertex* verticesOnGPU
+//) {
+//    uint3 coord = { x, y, z };
+//    int fullresIndex = solutionDimensions.y*solutionDimensions.x*coord.z + solutionDimensions.x*coord.y + coord.x;
+//    if (!isInsideSolution(coord, solutionDimensions)) {
+//        // this vertex could lie outside the solution space because we expand the working block by 1 when gathering residuals, in this case residual is 0
+//        return;
+//    }
+//    Vertex globalFullresVertex = verticesOnGPU[fullresIndex];
+//    if (globalFullresVertex.materialConfigId == static_cast<ConfigId>(0)) {
+//        // config id 0 should always be the case where the vertex is surrounded by empty cells, therefore not updateable so residual is 0
+//        return;
+//    }
+//    REAL oldX = globalFullresVertex.x;
+//    REAL oldY = globalFullresVertex.y;
+//    REAL oldZ = globalFullresVertex.z;
+//    REAL rhsVec[3] = { 0,0,0 };
+//    const REAL* matrices = getPointerToMatricesForVertexGlobal(globalFullresVertex, matConfigEquations);
+//    buildRHSVectorForVertexGlobal(rhsVec, verticesOnGPU, matrices, coord, solutionDimensions);
+//    updateVertexGlobalResidual(&globalFullresVertex, rhsVec, matrices);
+//
+//    // Get the magnitude of the displacement difference (residual)
+//    oldX = globalFullresVertex.x - oldX;
+//    oldY = globalFullresVertex.y - oldY;
+//    oldZ = globalFullresVertex.z - oldZ;
+//    oldX *= oldX;
+//    oldY *= oldY;
+//    oldZ *= oldZ;
+//    *residual += oldX + oldY + oldZ;
+//}
+//
+//__device__ void updateResidualsLevelZeroGlobal(
+//    Vertex* verticesOnGPU,
+//    REAL* residualVolume,
+//    const REAL* matConfigEquations,
+//    const uint3& blockOriginCoord,
+//    const uint3& solutionDimensions,
+//    const LevelStats& levelZeroStats
+//) {
+//    uint3 vertexToUpdate = { 0,0,0 };
+//    vertexToUpdate.z = threadIdx.x / (BLOCK_SIZE*BLOCK_SIZE);
+//    vertexToUpdate.y = (threadIdx.x - vertexToUpdate.z*BLOCK_SIZE*BLOCK_SIZE) / BLOCK_SIZE;
+//    vertexToUpdate.x = threadIdx.x % BLOCK_SIZE;
+//
+//    // We want to find residuals for vertices bordering our BLOCK_SIZE area too, so -1, then project to level 0 with / 2
+//    vertexToUpdate.x = (vertexToUpdate.x + (blockOriginCoord.x > 0 ? blockOriginCoord.x - 1 : 0)) / 2;
+//    vertexToUpdate.y = (vertexToUpdate.y + (blockOriginCoord.y > 0 ? blockOriginCoord.y - 1 : 0)) / 2;
+//    vertexToUpdate.z = (vertexToUpdate.z + (blockOriginCoord.z > 0 ? blockOriginCoord.z - 1 : 0)) / 2;
+//
+//    if (vertexToUpdate.x >= levelZeroStats.sizeX ||
+//        vertexToUpdate.y >= levelZeroStats.sizeY ||
+//        vertexToUpdate.z >= levelZeroStats.sizeZ)
+//    {
+//        // Since level 0 has half the vertices some threads may be unnecessary
+//        return;
+//    }
+//
+//    // Precompute the index of the residual we want to update on Level 0
+//    unsigned int residualIndex = vertexToUpdate.z * levelZeroStats.sizeX * levelZeroStats.sizeY + vertexToUpdate.y * levelZeroStats.sizeX + vertexToUpdate.x;
+//
+//    // Project back down to fullres
+//    vertexToUpdate.x *= 2;
+//    vertexToUpdate.y *= 2;
+//    vertexToUpdate.z *= 2;
+//
+//    REAL residual = asREAL(0.0);
+//
+//    // Pool the residuals from the fullres level that contribute to this Level 0 vertex's residual
+//    addResidualFromFullresVertex(vertexToUpdate.x, vertexToUpdate.y, vertexToUpdate.z, &residual, matConfigEquations, solutionDimensions, verticesOnGPU);
+//    addResidualFromFullresVertex(vertexToUpdate.x + 1, vertexToUpdate.y, vertexToUpdate.z, &residual, matConfigEquations, solutionDimensions, verticesOnGPU);
+//    addResidualFromFullresVertex(vertexToUpdate.x, vertexToUpdate.y + 1, vertexToUpdate.z, &residual, matConfigEquations, solutionDimensions, verticesOnGPU);
+//    addResidualFromFullresVertex(vertexToUpdate.x + 1, vertexToUpdate.y + 1, vertexToUpdate.z, &residual, matConfigEquations, solutionDimensions, verticesOnGPU);
+//
+//    addResidualFromFullresVertex(vertexToUpdate.x, vertexToUpdate.y, vertexToUpdate.z + 1, &residual, matConfigEquations, solutionDimensions, verticesOnGPU);
+//    addResidualFromFullresVertex(vertexToUpdate.x + 1, vertexToUpdate.y, vertexToUpdate.z + 1, &residual, matConfigEquations, solutionDimensions, verticesOnGPU);
+//    addResidualFromFullresVertex(vertexToUpdate.x, vertexToUpdate.y + 1, vertexToUpdate.z + 1, &residual, matConfigEquations, solutionDimensions, verticesOnGPU);
+//    addResidualFromFullresVertex(vertexToUpdate.x + 1, vertexToUpdate.y + 1, vertexToUpdate.z + 1, &residual, matConfigEquations, solutionDimensions, verticesOnGPU);
+//
+//    residualVolume[residualIndex] = residual;
+//}
 
 #define STAGGER
 //#define SIMPLE
 //#define BUCKET
 
 __device__ void updateVertexStochasticallyGlobalResiduals(
-    Vertex* verticesOnGPU,
+    Vertex localVertices[BLOCK_SIZE+2][BLOCK_SIZE+2][BLOCK_SIZE+2],
     const REAL* matConfigEquations,
     curandState* localRNGState,
     const uint3& blockOriginCoord,
-    const uint3& threadCoord,
+    const uint3& localCoord,
     const uint3 solutionDimensions
 ) {
-    if (!isInsideSolution(threadCoord, solutionDimensions)) {
-        return;
-    }
-    Vertex globalVertexToUpdate;
-    const int globalIndex = solutionDimensions.y*solutionDimensions.x*threadCoord.z + solutionDimensions.x*threadCoord.y + threadCoord.x;
-    globalVertexToUpdate = verticesOnGPU[globalIndex];
+    Vertex vertexToUpdate = localVertices[localCoord.x][localCoord.y][localCoord.z];
+    const REAL* matrices = getPointerToMatricesForVertexGlobal(vertexToUpdate, matConfigEquations);
 
-    const REAL* matrices = getPointerToMatricesForVertexGlobal(globalVertexToUpdate, matConfigEquations);
-    //const unsigned short bucketId = threadIdx.x / (blockDim.x / 2);
-    //const unsigned short warpId = threadIdx.x / 32;
+#ifdef BUCKET
+    const unsigned short bucketId = threadIdx.x / (blockDim.x / 2);
+    const unsigned short warpId = threadIdx.x / 32;
+#endif
     
  
     for (int i = 0; i < UPDATES_PER_THREAD; i++) {
         REAL rhsVec[3] = { 0,0,0 };
-        float diceRoll = curand_uniform(localRNGState);
+        
 
 #ifdef BUCKET
         // ping-pong between the two buckets of warps, effectively updating every second vertex per iteration
         // This strategy leads to divergence
-        if (warpId % 2 == 1) {
-            buildRHSVectorForVertexGlobal(rhsVec, verticesOnGPU, matrices, threadCoord, solutionDimensions);
-            updateVertexGlobalResidual(&globalVertexToUpdate, rhsVec, matrices);
-            verticesOnGPU[globalIndex] = globalVertexToUpdate;
-        }
-        
-        if (warpId % 2 == 0) {
-            buildRHSVectorForVertexGlobal(rhsVec, verticesOnGPU, matrices, threadCoord, solutionDimensions);
-            updateVertexGlobalResidual(&globalVertexToUpdate, rhsVec, matrices);
-            verticesOnGPU[globalIndex] = globalVertexToUpdate;
+        if (warpId % i == 0) {
+            buildRHSVectorForVertexGlobal(rhsVec, localVertices, matrices, localCoord, solutionDimensions);
+            updateVertexGlobalResidual(&vertexToUpdate, rhsVec, matrices);
+            localVertices[localCoord.x][localCoord.y][localCoord.z] = vertexToUpdate;
         }
 
-        if (threadCoord.x == 4 && threadCoord.y == 1 && threadCoord.z == 2) {
-            printf("Roll %f with RHS: %f %f %f with disp %f %f %f\n", diceRoll, rhsVec[0], rhsVec[1], rhsVec[2], globalVertexToUpdate.x, globalVertexToUpdate.y, globalVertexToUpdate.z);
+        if (warpId % i == 1) {
+            buildRHSVectorForVertexGlobal(rhsVec, localVertices, matrices, localCoord, solutionDimensions);
+            updateVertexGlobalResidual(&vertexToUpdate, rhsVec, matrices);
+            localVertices[localCoord.x][localCoord.y][localCoord.z] = vertexToUpdate;
         }
+
+        //if (threadCoord.x == 4 && threadCoord.y == 1 && threadCoord.z == 2) {
+        //    printf("Roll %f with RHS: %f %f %f with disp %f %f %f\n", diceRoll, rhsVec[0], rhsVec[1], rhsVec[2], globalVertexToUpdate.x, globalVertexToUpdate.y, globalVertexToUpdate.z);
+        //}
         
 #endif
 #ifdef STAGGER
-
+        float diceRoll = curand_uniform(localRNGState);
         //This strategy is stable up to a dice threshold of 0.7
         if (diceRoll < 0.5) {
-            buildRHSVectorForVertexGlobal(rhsVec, verticesOnGPU, matrices, threadCoord, solutionDimensions);
-            updateVertexGlobalResidual(&globalVertexToUpdate, rhsVec, matrices);
-            verticesOnGPU[globalIndex] = globalVertexToUpdate;
+            buildRHSVectorForVertexGlobal(rhsVec, localVertices, matrices, localCoord, solutionDimensions);
+            updateVertexGlobalResidual(&vertexToUpdate, rhsVec, matrices);
+            localVertices[localCoord.x][localCoord.y][localCoord.z] = vertexToUpdate;
         }
         else {
-            buildRHSVectorForVertexGlobal(rhsVec, verticesOnGPU, matrices, threadCoord, solutionDimensions);
-            updateVertexGlobalResidual(&globalVertexToUpdate, rhsVec, matrices);
-            verticesOnGPU[globalIndex] = globalVertexToUpdate;
+            buildRHSVectorForVertexGlobal(rhsVec, localVertices, matrices, localCoord, solutionDimensions);
+            updateVertexGlobalResidual(&vertexToUpdate, rhsVec, matrices);
+            localVertices[localCoord.x][localCoord.y][localCoord.z] = vertexToUpdate;
         }
 
 #endif
 #ifdef SIMPLE
-
         // This strategy diverges
-        buildRHSVectorForVertexGlobal(rhsVec, verticesOnGPU, matrices, threadCoord, solutionDimensions);
-        updateVertexGlobalResidual(&globalVertexToUpdate, rhsVec, matrices);
-        verticesOnGPU[globalIndex] = globalVertexToUpdate;
+        buildRHSVectorForVertexGlobal(rhsVec, localVertices, matrices, localCoord, solutionDimensions);
+        updateVertexGlobalResidual(&vertexToUpdate, rhsVec, matrices);
+        localVertices[localCoord.x][localCoord.y][localCoord.z] = vertexToUpdate;
 
 #endif
     }
@@ -325,7 +317,6 @@ void createCheckerboardCoordForThread(uint3* coord, const uint3* blockOriginCoor
     //  1 2 1 2   2 1 2 1
     //  2 1 2 1   1 2 1 2
     //  
-    //
     
     coord->z = indexInBucket / (HALF_BLOCK * BLOCK_SIZE);
     coord->y = (indexInBucket - coord->z*HALF_BLOCK * BLOCK_SIZE) / HALF_BLOCK;
@@ -337,10 +328,37 @@ void createCheckerboardCoordForThread(uint3* coord, const uint3* blockOriginCoor
         coord->x += coord->y % 2 == 0;
     }
 
-    // Move the checkerboard pattern to the start of the block to be updated
-    coord->x += blockOriginCoord->x;
-    coord->y += blockOriginCoord->y;
-    coord->z += blockOriginCoord->z;
+}
+
+__device__
+void copyVertexFromGlobalToShared(
+    Vertex localVertices[BLOCK_SIZE + 2][BLOCK_SIZE + 2][BLOCK_SIZE + 2],
+    Vertex* verticesOnGPU,
+    const uint3 blockOriginCoord,
+    const uint3 solutionDimensions
+) {
+    const int blockSizeWithBorder = BLOCK_SIZE + 2;
+    const int numThreadsNeeded = blockSizeWithBorder * blockSizeWithBorder; //each thread will copy over a given x,y for all z ("top down")
+
+    if (threadIdx.x < numThreadsNeeded) {
+        uint3 localCoord = { 0,0,0 };
+        localCoord.x += threadIdx.x % blockSizeWithBorder;
+        localCoord.y += threadIdx.x / blockSizeWithBorder;
+        localCoord.z = 0;
+
+        for (int z = 0; z < BLOCK_SIZE + 2; z++) {
+            localCoord.z = z;
+            uint3 globalCoord = { blockOriginCoord.x + localCoord.x - 1, blockOriginCoord.y + localCoord.y - 1, blockOriginCoord.z + z - 1 }; //-1 to account for border at both ends
+
+            if (isInsideSolution(globalCoord, solutionDimensions)) {
+                int globalIndex = solutionDimensions.y*solutionDimensions.x*globalCoord.z + solutionDimensions.x*globalCoord.y + globalCoord.x;
+                localVertices[localCoord.x][localCoord.y][localCoord.z] = verticesOnGPU[globalIndex];
+            }
+            else {
+                localVertices[localCoord.x][localCoord.y][localCoord.z] = Vertex();
+            }
+        }
+    }
 }
 
 __global__
@@ -359,15 +377,50 @@ void cuda_SolveDisplacementGlobalResiduals(
         // should not be processed
         return;
     }
-    curandState* localRNGState = &globalRNGStates[blockIdx.x * blockDim.x + threadIdx.x];
-    uint3 coord = { 0,0,0 };
-    createCheckerboardCoordForThread(&coord, &blockOriginCoord);
+    curandState localRNGState = globalRNGStates[blockIdx.x * blockDim.x + threadIdx.x];
+    uint3 localCoord = { 0,0,0 };
+    createCheckerboardCoordForThread(&localCoord, &blockOriginCoord);
+   
+    uint3 globalCoord(localCoord);
+    // Move the checkerboard pattern to the start of the block to be updated
+    globalCoord.x += blockOriginCoord.x;
+    globalCoord.y += blockOriginCoord.y;
+    globalCoord.z += blockOriginCoord.z;
 
-    updateVertexStochasticallyGlobalResiduals(verticesOnGPU, matConfigEquations, localRNGState, blockOriginCoord, coord, solutionDimensions);
+    // Offset by 1 because locally the border takes up position 0 in the 3D array
+    localCoord.x += 1;
+    localCoord.y += 1;
+    localCoord.z += 1;
+
+    __shared__ Vertex localVertices[BLOCK_SIZE+2][BLOCK_SIZE+2][BLOCK_SIZE+2];
+    
+    copyVertexFromGlobalToShared(localVertices, verticesOnGPU, blockOriginCoord, solutionDimensions);
 
     __syncthreads();
 
-    updateResidualsLevelZeroGlobal(verticesOnGPU, residualVolume, matConfigEquations, blockOriginCoord, solutionDimensions, levelZeroStats);
+    updateVertexStochasticallyGlobalResiduals(localVertices, matConfigEquations, &localRNGState, blockOriginCoord, localCoord, solutionDimensions);
+    
+    //__syncthreads();
+
+    globalRNGStates[blockIdx.x * blockDim.x + threadIdx.x] = localRNGState;
+
+    if (isInsideSolution(globalCoord, solutionDimensions)) {
+        int globalIndex = solutionDimensions.y*solutionDimensions.x*globalCoord.z + solutionDimensions.x*globalCoord.y + globalCoord.x;
+        verticesOnGPU[globalIndex] = localVertices[localCoord.x][localCoord.y][localCoord.z];
+        
+        /*verticesOnGPU[globalIndex].x = 20;
+        verticesOnGPU[globalIndex].y = localVertices[localCoord.x][localCoord.y][localCoord.z].y;
+        
+        if (isnan(localVertices[localCoord.x][localCoord.y][localCoord.z].z)) {
+            printf("NAN encountered for block %i coord %u %u %u \n", blockIdx.x, localCoord.x, localCoord.y, localCoord.z);
+        }
+        */
+    }
+
+
+    //__syncthreads();
+
+    //updateResidualsLevelZeroGlobal(verticesOnGPU, residualVolume, matConfigEquations, blockOriginCoord, solutionDimensions, levelZeroStats);
 }
 
 __global__
@@ -384,7 +437,7 @@ extern "C" void cudaInitializeRNGStatesGlobal(curandState** rngStateOnGPU) {
 
     // setup execution parameters
     int threadsPerBlock = BLOCK_SIZE * BLOCK_SIZE * BLOCK_SIZE;
-    int maxConcurrentBlocks = deviceProperties.multiProcessorCount * 4; //TODO: Calculate this based on GPU max for # blocks
+    int maxConcurrentBlocks = deviceProperties.multiProcessorCount * 3; //TODO: Calculate this based on GPU max for # blocks
     int numThreads = maxConcurrentBlocks *  threadsPerBlock;
 
     cudaCheckSuccess(cudaMalloc(rngStateOnGPU, sizeof(curandState) * numThreads));
@@ -409,8 +462,20 @@ extern "C" void cudaLaunchSolveDisplacementKernelGlobalResiduals(
 
     // setup execution parameters
     int threadsPerBlock = BLOCK_SIZE * BLOCK_SIZE * BLOCK_SIZE;
-    int maxConcurrentBlocks = deviceProperties.multiProcessorCount * 4; //TODO: Calculate this based on GPU max for # blocks
+    int maxConcurrentBlocks = deviceProperties.multiProcessorCount * 3; //TODO: Calculate this based on GPU max for # blocks
     int numIterations = std::max(numBlockOrigins / maxConcurrentBlocks, 1);
+
+    cudaLaunchInvalidateOverlappingBlocksKernel(blockOrigins, numBlockOrigins, maxConcurrentBlocks);
+    /*
+    int numFailedBlocks = 0;
+    for (int i = 0; i < numBlockOrigins; i++) {
+        if (blockOrigins[i].x > solutionDims.x) {
+            numFailedBlocks++;
+        }
+    }
+    std::cout << numFailedBlocks << " of " << numBlockOrigins << " blocks overlapped" << std::endl;
+    
+    */
 
     // process all blocks in batches of maxConcurrentBlocks
     for (int i = 0; i < numIterations; i++) {

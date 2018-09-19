@@ -17,6 +17,7 @@ public:
     MaterialDictionary materialDictionary;
 
     void initFromMRCStack(std::string& path, bool isStumpMRC = false);
+    void initFromMaterialProbeMRC(std::string& path);
     void initFromParameters(libmmv::Vec3ui& discretization, libmmv::Vec3<REAL>& voxelSize);
     void createAdditionalLODs(int numberOfAdditionalLODs);
     void createLODTree(int smallestPermissableDimension);

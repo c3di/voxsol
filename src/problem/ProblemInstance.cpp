@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "ProblemInstance.h"
 #include "io/MRCVoxelImporter.h"
+#include "io/MRCImporter.h"
 #include "tools/LODGenerator.h"
 #include "gpu/kernels/SolveDisplacementKernel.h"
 #include "gpu/sampling/ImportanceBlockSampler.h"
@@ -61,6 +62,32 @@ void ProblemInstance::initFromMRCStack(std::string& path, bool isStumpMRC) {
     Solution* solution = new Solution(problemLODs[0]);
     solutionLODs.push_back(solution);
     
+    ResidualVolume* residual = new ResidualVolume(problemLODs[0]);
+    residualLODs.push_back(residual);
+}
+
+void ProblemInstance::initFromMaterialProbeMRC(std::string & path) {
+    std::cout << "\nImporting material probe MRC stack..." << std::endl;
+
+    MRCImporter importer(path);
+
+    Material aluminum = materialFactory.createMaterialWithProperties(asREAL(70000000000), asREAL(0.35));
+    Material silicon = materialFactory.createMaterialWithProperties(asREAL(150000000000), asREAL(0.27));
+    materialDictionary.addMaterial(aluminum);
+    materialDictionary.addMaterial(silicon);
+
+    importer.addMaterialMapping(&aluminum, 0);
+    importer.addMaterialMapping(&silicon, 255);
+
+    libmmv::Vec3<REAL> voxelSize(asREAL(46e-9), asREAL(46e-9), asREAL(46e-9));
+
+    DiscreteProblem* problem = new DiscreteProblem(importer.getDimensionsInVoxels(), voxelSize, &materialDictionary);
+    importer.populateDiscreteProblem(problem);
+    problemLODs.push_back(problem);
+
+    Solution* solution = new Solution(problemLODs[0]);
+    solutionLODs.push_back(solution);
+
     ResidualVolume* residual = new ResidualVolume(problemLODs[0]);
     residualLODs.push_back(residual);
 }
