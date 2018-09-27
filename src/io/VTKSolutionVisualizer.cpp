@@ -163,6 +163,7 @@ void VTKSolutionVisualizer::writePointData() {
     if (impVol != nullptr) {
         writeResiduals();
     }
+    writeMaterialConfigIds();
 }
 
 void VTKSolutionVisualizer::writeDisplacements() {
@@ -211,6 +212,23 @@ void VTKSolutionVisualizer::writeResiduals() {
         VertexCoordinate fullresCoord = solution->mapToCoordinate(index);
         REAL residual = impVol->getResidualOnLevel(0, (fullresCoord ) / 2);
         outFile << residual << " " << residual << " " << residual << endl;
+    }
+    outFile << endl;
+}
+
+void VTKSolutionVisualizer::writeMaterialConfigIds() {
+    outFile << "VECTORS matconfigid double" << endl;
+
+    std::vector<Vertex>* vertices = solution->getVertices();
+    for (unsigned int i = 0; i < numberOfVertices; i++) {
+        unsigned int index = filterNullVoxels ? vertexFilteredToOrigIndex[i] : i;
+        Vertex v = vertices->at(index);
+        if (filterNullVoxels && v.materialConfigId == 0) {
+            continue;
+        }
+        VertexCoordinate fullresCoord = solution->mapToCoordinate(index);
+        int configid = v.materialConfigId;
+        outFile << configid << " " << configid << " " << configid << endl;
     }
     outFile << endl;
 }

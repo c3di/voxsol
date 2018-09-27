@@ -46,4 +46,5 @@ private:
     void writeDisplacements();
     void writeResiduals();
     void writeBoundaries();
+    void writeMaterialConfigIds();
 };
