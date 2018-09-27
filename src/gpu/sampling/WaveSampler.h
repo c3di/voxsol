@@ -17,6 +17,7 @@ protected:
     libmmv::Vec3ui waveOrigin;
     libmmv::Vec3ui waveDirection;
     libmmv::Vec3ui currentWavefront;
+    libmmv::Vec3ui currentWavefrontOrigin;
     libmmv::Vec3i waveOffset;
     unsigned int numBlocksProcessedSinceLastWavefrontReset = 0;
     std::default_random_engine generator;

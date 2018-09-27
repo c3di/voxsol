@@ -24,18 +24,18 @@ if (MSVC)
 	string(APPEND CMAKE_CXX_FLAGS_RELEASE " /MT")
 	
 	# enable CUDA memory tracking and debug code
-	set(CMAKE_CUDA_FLAGS " -gencode arch=compute_52,code=compute_52")
+	set(CMAKE_CUDA_FLAGS " -gencode arch=compute_52,code=compute_52 -res-usage")
 	set(CMAKE_CUDA_FLAGS_DEBUG -Xcompiler="-MTd -Zi -Ob0 -Od /RTC1")
-	string(APPEND CMAKE_CUDA_FLAGS_DEBUG " -Xptxas=-v -G -gencode arch=compute_52,code=compute_52")
+	string(APPEND CMAKE_CUDA_FLAGS_DEBUG " -Xptxas=-v -Xptxas -dlcm=ca -G -gencode arch=compute_52,code=compute_52")
 	set(CMAKE_CUDA_FLAGS_RELWITHDEBINFO -Xcompiler="-MT -Zi -Ob0 -Od /RTC1")
 	string(APPEND CMAKE_CUDA_FLAGS_RELWITHDEBINFO " -Xptxas=-v -G -gencode arch=compute_52,code=compute_52")
-	string(APPEND CMAKE_CUDA_FLAGS_RELEASE " -Xcompiler=-MT")
+	string(APPEND CMAKE_CUDA_FLAGS_RELEASE " --ptxas-options=-v -Xcompiler=-MT -Xptxas -dlcm=ca")
 endif(MSVC)
 
 set(SOLVER_DOUBLE_PRECISION FALSE CACHE BOOL "Compile with double precision rather than single precision.")
 
 # find all directories containing source files
-set(FILE_TYPES *.c *.cc *.cu *.cpp *.h *.hpp *.tcc)
+set(FILE_TYPES *.c *.cc *.cu *.cuh *.cpp *.h *.hpp *.tcc)
 find_directories(DIRS src "${FILE_TYPES}")
 # generate source tree
 generate_source_tree(HOST_SOURCES "${DIRS}" "${FILE_TYPES}")

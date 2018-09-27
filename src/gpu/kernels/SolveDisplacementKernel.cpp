@@ -5,8 +5,6 @@
 #include <iostream>
 #include <fstream>
 
-#define NUM_SAMPLING_CANDIDATES 64
-
 SolveDisplacementKernel::SolveDisplacementKernel(Solution* sol, BlockSampler* sampler, ResidualVolume* resVol) :
     solution(sol),
     sampler(sampler),
@@ -39,15 +37,14 @@ void SolveDisplacementKernel::launch() {
 
         sampler->generateNextBlockOrigins(blockOrigins, NUM_SAMPLING_CANDIDATES);
 
-        cudaLaunchSolveDisplacementKernelGlobalResiduals(
+        cudaLaunchSolveDisplacementKernel(
             serializedVertices, 
             serializedMatConfigEquations, 
             residualVolume->getPyramidDevicePointer(),
             rngStateOnGPU,
             blockOrigins,
             NUM_SAMPLING_CANDIDATES,
-            solutionDimensions,
-            residualVolume->getLevelStatsDevicePointer()
+            solutionDimensions
         );
     }
 }
@@ -92,7 +89,7 @@ void SolveDisplacementKernel::allocateBlockOrigins() {
 }
 
 void SolveDisplacementKernel::initCurandState() {
-    cudaInitializeRNGStatesGlobal(&rngStateOnGPU);
+    cudaInitializeRNGStates(&rngStateOnGPU);
 }
 
 void SolveDisplacementKernel::pushMatConfigEquationsManaged() {

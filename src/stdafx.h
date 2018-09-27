@@ -20,3 +20,11 @@ typedef float REAL;
 
 #define asREAL(num) static_cast<REAL>(num)
 
+//#define DEBUG_OUTPUT_ENABLED 1
+
+#ifdef DEBUG_OUTPUT_ENABLED
+#define OUTPUT_NUM_FAILED_BLOCKS 1
+#define OUTPUT_NAN_DISPLACEMENTS 1
+#define OUTPUT_BAD_DISPLACEMENTS 1
+#endif
+

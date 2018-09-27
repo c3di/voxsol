@@ -5,6 +5,7 @@
 WaveSampler::WaveSampler(Solution * solution) : 
     solutionSize(solution->getSize())
 {
+    currentWavefrontOrigin = chooseNextWavefrontOrigin();
 }
 
 WaveSampler::~WaveSampler()
@@ -13,8 +14,6 @@ WaveSampler::~WaveSampler()
 
 int WaveSampler::generateNextBlockOrigins(uint3 * blockOrigins, int numOriginsToGenerate)
 {
-    libmmv::Vec3ui currentWavefrontOrigin = chooseNextWavefrontOrigin();
-
     for (int i = 0; i < numOriginsToGenerate; i++) {
         blockOrigins[i] = make_uint3(currentWavefrontOrigin.x, currentWavefrontOrigin.y, currentWavefrontOrigin.z);
         nextBlockOrigin(&currentWavefrontOrigin);
@@ -47,7 +46,7 @@ void WaveSampler::nextBlockOrigin(libmmv::Vec3ui* currentWavefrontOrigin) {
         currentWavefrontOrigin->z += BLOCK_SIZE;
     }
     if (currentWavefrontOrigin->z >= solutionSize.z) {
-        //progressWavefront();
+        progressWavefront();
         *currentWavefrontOrigin = chooseNextWavefrontOrigin();
     }
 }

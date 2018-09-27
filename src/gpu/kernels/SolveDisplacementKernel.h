@@ -12,9 +12,9 @@
 #include "solution/samplers/BlockSampler.h"
 
 //extern "C" void cudaLaunchSolveDisplacementKernelGlobal(Vertex* verticesOnGPU, REAL* matConfigEquationsOnGPU, Vertex* blockOrigins, const SolutionDim solutionDims);
-extern "C" void cudaLaunchSolveDisplacementKernelGlobalResiduals(Vertex* verticesOnGPU, REAL* matConfigEquationsOnGPU, REAL* residualVolume, curandState* rngStateOnGPU, uint3* blockOrigins, const int numBlocks, const uint3 solutionDims, const LevelStats* levelStats);
+extern "C" void cudaLaunchSolveDisplacementKernel(volatile Vertex* verticesOnGPU, REAL* matConfigEquationsOnGPU, REAL* residualVolume, curandState* rngStateOnGPU, uint3* blockOrigins, const int numBlocks, const uint3 solutionDims);
 //extern "C" void cudaLaunchSolveDisplacementKernelShared(Vertex* verticesOnGPU, REAL* matConfigEquationsOnGPU, REAL* importanceVolume, curandState* rngStateOnGPU, uint3* blockOrigins, const int numBlocks, const uint3 solutionDims, const LevelStats* levelStats);
-extern "C" void cudaInitializeRNGStatesGlobal(curandState** rngState);
+extern "C" void cudaInitializeRNGStates(curandState** rngState);
 
 class SolveDisplacementKernel : public CudaKernel {
 
