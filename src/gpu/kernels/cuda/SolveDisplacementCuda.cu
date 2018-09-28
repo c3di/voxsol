@@ -11,12 +11,13 @@
 
 #define MATRIX_ENTRY(rhsMatricesStartPointer, matrixIndex, row, col) rhsMatricesStartPointer[matrixIndex*9 + col*3 + row]
 
-#define LHS_MATRIX_INDEX 13            // Position of the LHS matrix in the material config equations
-#define EQUATION_ENTRY_SIZE 9 * 27 + 3 // 27 3x3 matrices and one 1x3 vector for Neumann stress
-#define NEUMANN_OFFSET 9 * 27          // Offset to the start of the Neumann stress vector inside an equation block
-#define UPDATES_PER_THREAD 50  // Number of vertices that should be updated stochastically per worker 
+#define LHS_MATRIX_INDEX        13          // Position of the LHS matrix in the material config equations
+#define EQUATION_ENTRY_SIZE     9 * 27 + 3  // 27 3x3 matrices and one 1x3 vector for Neumann stress
+#define NEUMANN_OFFSET          9 * 27      // Offset to the start of the Neumann stress vector inside an equation block
+#define UPDATES_PER_THREAD      50          // Number of vertices that should be updated stochastically per worker 
+#define NUM_WORKERS             6           // Number of vertices per block that are being updated in parallel
 
-#define DYN_ADJUSTMENT_MAX 0.01f
+#define DYN_ADJUSTMENT_MAX      0.01f
 
 __device__
 int getGlobalIdx_1D_3DGlobal() {
@@ -40,7 +41,7 @@ __device__ bool isInsideSolution(const uint3 coord, const uint3 solutionDimensio
 }
 
 __device__ void buildRHSVectorForVertex(
-    REAL rhsVec[BLOCK_SIZE][3][27],
+    REAL rhsVec[NUM_WORKERS][3][27],
     volatile Vertex localVertices[BLOCK_SIZE+2][BLOCK_SIZE+2][BLOCK_SIZE+2],
     const REAL* matrices,
     const char3& localCenterCoord
@@ -80,7 +81,7 @@ __device__ const REAL* getPointerToMatricesForVertexGlobal(volatile Vertex* vert
     return &matConfigEquations[equationIndex];
 }
 
-__device__ void updateVertex(volatile Vertex* vertexToUpdate, REAL rhsVec[BLOCK_SIZE][3][27], const REAL* matrices) {
+__device__ void updateVertex(volatile Vertex* vertexToUpdate, REAL rhsVec[NUM_WORKERS][3][27], const REAL* matrices) {
     // Choose exactly 3 threads in the same warp to sum up the 3 RHS components and solve the system
     if (threadIdx.y == 0 && threadIdx.x < 3) {
         REAL rhsValue = 0;
@@ -157,7 +158,7 @@ __device__ void updateVerticesStochastically(
     const REAL* matConfigEquations,
     const unsigned int* localVertexUpdateIndices
 ) {
-    __shared__ REAL rhsVec[BLOCK_SIZE][3][27];
+    __shared__ REAL rhsVec[NUM_WORKERS][3][27];
 
     const unsigned int* myVertexListStart = localVertexUpdateIndices + blockIdx.x * blockDim.z * UPDATES_PER_THREAD + threadIdx.z * UPDATES_PER_THREAD;
     for (int i = 0; i < UPDATES_PER_THREAD; i++) {
@@ -378,7 +379,7 @@ extern "C" void cudaInitializeRNGStates(curandState** rngStateOnGPU) {
     cudaGetDeviceProperties(&deviceProperties, 0);
 
     // setup execution parameters
-    int threadsPerBlock = BLOCK_SIZE;
+    int threadsPerBlock = NUM_WORKERS;
     int maxConcurrentBlocks = deviceProperties.multiProcessorCount * 3; //TODO: Calculate this based on GPU max for # blocks
     int numThreads = maxConcurrentBlocks * threadsPerBlock;
 
@@ -402,7 +403,7 @@ extern "C" void cudaLaunchSolveDisplacementKernel(
     cudaGetDeviceProperties(&deviceProperties, 0);
 
     // Blocks are divided into warps starting with x, then y, then z
-    dim3 threadsPerBlock = { 32, 3, BLOCK_SIZE };
+    dim3 threadsPerBlock = { 32, 3, NUM_WORKERS };
     int maxConcurrentBlocks = deviceProperties.multiProcessorCount * 3; //TODO: Calculate this based on GPU max for # blocks
     int numIterations = std::max(numBlockOrigins / maxConcurrentBlocks, 1);
 
@@ -420,7 +421,7 @@ extern "C" void cudaLaunchSolveDisplacementKernel(
 #endif
 
     unsigned int* localVertexUpdateIndices;
-    cudaCheckSuccess(cudaMalloc(&localVertexUpdateIndices, sizeof(unsigned int) * BLOCK_SIZE * maxConcurrentBlocks * UPDATES_PER_THREAD));
+    cudaCheckSuccess(cudaMalloc(&localVertexUpdateIndices, sizeof(unsigned int) * NUM_WORKERS * maxConcurrentBlocks * UPDATES_PER_THREAD));
 
     // process all blocks in batches of maxConcurrentBlocks
     for (int i = 0; i < numIterations; i++) {
