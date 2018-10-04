@@ -192,7 +192,7 @@ std::vector<VertexCoordinate> LODGenerator::findCandidateVerticesForBoundaryCond
 }
 
 bool LODGenerator::existsInCoarserLOD(libmmv::Vec3ui & fineCoord, libmmv::Vec3ui coarseSize) {
-    if (isEvenCoord(fineCoord)) {
+    if (!isEvenCoord(fineCoord)) {
         // Coarser level is always a factor of 2 smaller -> only even coordinates map to it directly
         return false;
     }

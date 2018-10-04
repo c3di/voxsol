@@ -68,6 +68,18 @@ public:
 
             return problem;
         }
+
+        static DiscreteProblem STEEL(libmmv::Vec3ui& discretization, libmmv::Vec3<REAL>& dimensions) {
+            libmmv::Vec3<REAL> voxelSize(dimensions.x / discretization.x, dimensions.y / discretization.y, dimensions.z / discretization.z);
+            int numVoxels = discretization.x * discretization.y * discretization.z;
+            DiscreteProblem problem(discretization, voxelSize, &Templates::Mat.DICTIONARY);
+
+            for (int i = 0; i < numVoxels; i++) {
+                problem.setMaterial(i, Templates::Mat.STEEL.id);
+            }
+
+            return problem;
+        }
     };
 
 };
