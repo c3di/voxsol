@@ -29,7 +29,7 @@ public:
 
     void projectDirichletBoundaryAlongPosX(DirichletBoundary* condition);
     //void projectNeumannBoundaryAlongPosX(NeumannBoundary* condition);
-    //void projectDirichletBoundaryAlongPosY(DirichletBoundary* condition);
+    void projectDirichletBoundaryAlongPosY(DirichletBoundary* condition);
     //void projectNeumannBoundaryAlongPosY(NeumannBoundary* condition);
     void projectDirichletBoundaryAlongPosZ(DirichletBoundary* condition, unsigned char matIdFilter = 255);
     void projectNeumannStressAlongPosZ(REAL totalNeumannStress, unsigned char matIdFilter = 255);

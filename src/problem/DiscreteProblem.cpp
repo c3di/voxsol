@@ -32,7 +32,12 @@ void DiscreteProblem::setDirichletBoundaryAtVertex(VertexCoordinate& coordinate,
 }
 
 void DiscreteProblem::setDirichletBoundaryAtVertex(unsigned int index, DirichletBoundary& condition) {
-    dirichletBoundaryConditions[index] = condition;
+    if (dirichletBoundaryConditions.count(index) > 0) {
+        dirichletBoundaryConditions[index].combine(condition);
+    }
+    else {
+        dirichletBoundaryConditions[index] = condition;
+    }
 }
 
 void DiscreteProblem::setNeumannBoundaryAtVertex(VertexCoordinate& coordinate, NeumannBoundary& condition, bool combineIfAlreadyExists) {
