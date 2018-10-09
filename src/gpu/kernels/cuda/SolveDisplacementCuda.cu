@@ -300,7 +300,7 @@ __global__
 void cuda_permute_vertex_update_list(unsigned int* localVertexUpdateIndices, curandState* rngState) {
     const unsigned int threadIndex = blockIdx.x * blockDim.x + threadIdx.x;
     const unsigned int bucketIndex = blockIdx.x * blockDim.x * UPDATES_PER_THREAD + threadIdx.x * UPDATES_PER_THREAD;
-    const unsigned int fullBlockSize = BLOCK_SIZE * BLOCK_SIZE * BLOCK_SIZE;
+    const unsigned int fullBlockSize = BLOCK_SIZE * BLOCK_SIZE * BLOCK_SIZE - 1;
 
     curandState localRngState = rngState[threadIndex];
     unsigned int* myListStart = localVertexUpdateIndices + bucketIndex;
