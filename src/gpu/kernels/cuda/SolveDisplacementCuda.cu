@@ -14,10 +14,12 @@
 #define LHS_MATRIX_INDEX        13          // Position of the LHS matrix in the material config equations
 #define EQUATION_ENTRY_SIZE     9 * 27 + 3  // 27 3x3 matrices and one 1x3 vector for Neumann stress
 #define NEUMANN_OFFSET          9 * 27      // Offset to the start of the Neumann stress vector inside an equation block
-#define UPDATES_PER_THREAD      200          // Number of vertices that should be updated stochastically per worker 
+#define UPDATES_PER_THREAD      250          // Number of vertices that should be updated stochastically per worker 
 #define NUM_WORKERS             6           // Number of workers that are updating vertices in parallel (one warp per worker)
 
 //#define DYN_ADJUSTMENT_MAX 0.01f
+
+__constant__ uint3 c_solutionDimensions;
 
 __device__
 int getGlobalIdx_1D_3DGlobal() {
@@ -36,8 +38,8 @@ int getGlobalIdx_3D_3DGlobal() {
     return threadId;
 }
 
-__device__ bool isInsideSolution(const uint3 coord, const uint3 solutionDimensions) {
-    return coord.x < solutionDimensions.x && coord.y < solutionDimensions.y && coord.z < solutionDimensions.z;
+__device__ bool isInsideSolution(const uint3 coord) {
+    return coord.x < c_solutionDimensions.x && coord.y < c_solutionDimensions.y && coord.z < c_solutionDimensions.z;
 }
 
 __device__ void buildRHSVectorForVertex(
@@ -169,61 +171,11 @@ __device__ void updateVerticesStochastically(
 
 }
 
-//#define SLOWER_COPY 1
-
-#ifdef SLOWER_COPY
-
-__device__
-void copyVertexFromGlobalToShared(
-    volatile Vertex localVertices[BLOCK_SIZE + 2][BLOCK_SIZE + 2][BLOCK_SIZE + 2],
-    volatile Vertex* verticesOnGPU,
-    const uint3 blockOriginCoord,
-    const uint3 solutionDimensions
-) {
-    const int blockSizeWithBorder = BLOCK_SIZE + 2;
-    const int numThreadsNeeded = blockSizeWithBorder * blockSizeWithBorder; //each thread will copy over a given x,y for all z ("top down")
-    const int threadIdx_1D = threadIdx.z * 32 * 3 + threadIdx.y * 32 + threadIdx.x;
-
-    // Choose the first numThreadsNeeded threads to copy over the vertics
-    if (threadIdx_1D < numThreadsNeeded) {
-        char3 localCoord = { 0,0,0 };
-        localCoord.x = 0;
-        localCoord.y += threadIdx_1D / blockSizeWithBorder;
-        localCoord.z += threadIdx_1D % blockSizeWithBorder;
-
-        for (int x = 0; x < BLOCK_SIZE + 2; x++) {
-            localCoord.x = x;
-            uint3 globalCoord = { blockOriginCoord.x + localCoord.x - 1, blockOriginCoord.y + localCoord.y - 1, blockOriginCoord.z + localCoord.z - 1 }; //-1 to account for border at both ends
-            volatile Vertex* local = &localVertices[localCoord.z][localCoord.y][localCoord.x];
-
-            if (isInsideSolution(globalCoord, solutionDimensions)) {
-                int globalIndex = solutionDimensions.y*solutionDimensions.x*globalCoord.z + solutionDimensions.x*globalCoord.y + globalCoord.x;
-
-                //Turns out it's easier to copy the values manually than to get CUDA to play nice with a volatile struct assignment
-                volatile Vertex* global = &verticesOnGPU[globalIndex];
-                local->x = global->x;
-                local->y = global->y;
-                local->z = global->z;
-                local->materialConfigId = global->materialConfigId;
-            }
-            else {
-                local->x = 0;
-                local->y = 0;
-                local->z = 0;
-                local->materialConfigId = 0;
-            }
-        }
-    }
-}
-
-#else
-
 __device__
 void copyVertexFromGlobalToShared(
     Vertex localVertices[BLOCK_SIZE + 2][BLOCK_SIZE + 2][BLOCK_SIZE + 2],
     volatile Vertex* verticesOnGPU,
-    const uint3 blockOriginCoord,
-    const uint3 solutionDimensions
+    const uint3 blockOriginCoord
 ) {
     const int blockSizeWithBorder = BLOCK_SIZE + 2;
     const int numThreadsNeeded = blockSizeWithBorder * blockSizeWithBorder; //each thread will copy over a given x,y for all z ("top down")
@@ -241,8 +193,8 @@ void copyVertexFromGlobalToShared(
             uint3 globalCoord = { blockOriginCoord.x + localCoord.x - 1, blockOriginCoord.y + localCoord.y - 1, blockOriginCoord.z + z - 1 }; //-1 to account for border at both ends
             Vertex* local = &localVertices[localCoord.z][localCoord.y][localCoord.x];
 
-            if (isInsideSolution(globalCoord, solutionDimensions)) {
-                int globalIndex = solutionDimensions.y*solutionDimensions.x*globalCoord.z + solutionDimensions.x*globalCoord.y + globalCoord.x;
+            if (isInsideSolution(globalCoord)) {
+                int globalIndex = c_solutionDimensions.y*c_solutionDimensions.x*globalCoord.z + c_solutionDimensions.x*globalCoord.y + globalCoord.x;
 
                 //Turns out it's easier to copy the values manually than to get CUDA to play nice with a volatile struct assignment
                 volatile Vertex* global = &verticesOnGPU[globalIndex];
@@ -261,14 +213,11 @@ void copyVertexFromGlobalToShared(
     }
 }
 
-#endif
-
 __device__
 void copyVertexFromSharedToGlobal(
     Vertex localVertices[BLOCK_SIZE + 2][BLOCK_SIZE + 2][BLOCK_SIZE + 2],
     volatile Vertex* verticesOnGPU,
-    const uint3 blockOriginCoord,
-    const uint3 solutionDimensions
+    const uint3 blockOriginCoord
 ) {
     const int numThreadsNeeded = BLOCK_SIZE * BLOCK_SIZE * BLOCK_SIZE; //each thread will copy over one vertex in the inner block (without the border)
     const int threadIdx_1D = threadIdx.z * 32 * 3 + threadIdx.y * 32 + threadIdx.x;
@@ -285,8 +234,8 @@ void copyVertexFromSharedToGlobal(
         globalCoord.y += localCoord.y + blockOriginCoord.y - 1;
         globalCoord.x += localCoord.x + blockOriginCoord.x - 1;
 
-        if (isInsideSolution(globalCoord, solutionDimensions)) {
-            int globalIndex = solutionDimensions.y*solutionDimensions.x*globalCoord.z + solutionDimensions.x*globalCoord.y + globalCoord.x;
+        if (isInsideSolution(globalCoord)) {
+            int globalIndex = c_solutionDimensions.y*c_solutionDimensions.x*globalCoord.z + c_solutionDimensions.x*globalCoord.y + globalCoord.x;
             Vertex* local = &localVertices[localCoord.z][localCoord.y][localCoord.x];
             volatile Vertex* global = &verticesOnGPU[globalIndex];
             global->x = local->x;
@@ -300,21 +249,17 @@ void copyVertexFromSharedToGlobal(
 #endif
         }
     }
-
-    
 }
 
 __global__
 void cuda_SolveDisplacement(
     volatile Vertex* verticesOnGPU,
     REAL* matConfigEquations,
-    REAL* residualVolume,
-    const uint3 solutionDimensions,
     const uint3* blockOrigins,
     curandState* rngState
 ) {
     const uint3 blockOriginCoord = blockOrigins[blockIdx.x];
-    if (blockOriginCoord.x >= solutionDimensions.x || blockOriginCoord.y >= solutionDimensions.y || blockOriginCoord.z >= solutionDimensions.z) {
+    if (blockOriginCoord.x >= c_solutionDimensions.x || blockOriginCoord.y >= c_solutionDimensions.y || blockOriginCoord.z >= c_solutionDimensions.z) {
         // Some blocks may have been set to an invalid value during the importance sampling phase if they overlap with some other block, these
         // should not be processed
         return;
@@ -322,7 +267,7 @@ void cuda_SolveDisplacement(
 
     __shared__ Vertex localVertices[BLOCK_SIZE+2][BLOCK_SIZE+2][BLOCK_SIZE+2];
     
-    copyVertexFromGlobalToShared(localVertices, verticesOnGPU, blockOriginCoord, solutionDimensions);
+    copyVertexFromGlobalToShared(localVertices, verticesOnGPU, blockOriginCoord);
     curandState localRngState = rngState[blockIdx.x * NUM_WORKERS + threadIdx.z];
 
     __syncthreads();
@@ -331,7 +276,7 @@ void cuda_SolveDisplacement(
     
     __syncthreads();
 
-    copyVertexFromSharedToGlobal(localVertices, verticesOnGPU, blockOriginCoord, solutionDimensions); 
+    copyVertexFromSharedToGlobal(localVertices, verticesOnGPU, blockOriginCoord); 
     rngState[blockIdx.x * NUM_WORKERS + threadIdx.z] = localRngState;
 }
 
@@ -439,16 +384,18 @@ extern "C" void cudaLaunchSolveDisplacementKernel(
             numFailedBlocks++;
         }
     }
-    float percent = (static_cast<float>(numFailedBlocks) / numBlockOrigins) * 100);
+    float percent = (static_cast<float>(numFailedBlocks) / numBlockOrigins) * 100;
     std::cout << numFailedBlocks << " of " << numBlockOrigins << " blocks overlapped (" << percent << "%)" << std::endl;
 #endif
+
+    cudaMemcpyToSymbol(c_solutionDimensions, &solutionDims, sizeof(uint3));
 
     // process all blocks in batches of maxConcurrentBlocks
     for (int i = 0; i < numIterations; i++) {
         uint3* currentBlockOrigins = &blockOrigins[i * maxConcurrentBlocks];
         int numBlocks = std::min(numBlockOrigins - i*maxConcurrentBlocks, maxConcurrentBlocks);
 
-        cuda_SolveDisplacement << < numBlocks, threadsPerBlock >> >(vertices, matConfigEquations, residualVolume, solutionDims, currentBlockOrigins, rngStateOnGPU);
+        cuda_SolveDisplacement << < numBlocks, threadsPerBlock >> >(vertices, matConfigEquations, currentBlockOrigins, rngStateOnGPU);
         cudaDeviceSynchronize();
         cudaCheckExecution();
     }
