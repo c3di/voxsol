@@ -24,12 +24,12 @@ if (MSVC)
 	string(APPEND CMAKE_CXX_FLAGS_RELEASE " /MT")
 	
 	# enable CUDA memory tracking and debug code
-	set(CMAKE_CUDA_FLAGS " -gencode arch=compute_52,code=compute_52 -res-usage")
+	set(CMAKE_CUDA_FLAGS " -Xptxas=-v -Xptxas -dlcm=ca -gencode arch=compute_61,code=sm_61 -res-usage")
 	set(CMAKE_CUDA_FLAGS_DEBUG -Xcompiler="-MTd -Zi -Ob0 -Od /RTC1")
-	string(APPEND CMAKE_CUDA_FLAGS_DEBUG " -Xptxas=-v -Xptxas -dlcm=ca -G -gencode arch=compute_52,code=compute_52")
+	string(APPEND CMAKE_CUDA_FLAGS_DEBUG "  -G ")
 	set(CMAKE_CUDA_FLAGS_RELWITHDEBINFO -Xcompiler="-MT -Zi -Ob0 -Od /RTC1")
-	string(APPEND CMAKE_CUDA_FLAGS_RELWITHDEBINFO " -Xptxas=-v -G -gencode arch=compute_52,code=compute_52")
-	string(APPEND CMAKE_CUDA_FLAGS_RELEASE " --ptxas-options=-v -Xcompiler=-MT -Xptxas -dlcm=ca")
+	string(APPEND CMAKE_CUDA_FLAGS_RELWITHDEBINFO " -G ")
+	string(APPEND CMAKE_CUDA_FLAGS_RELEASE " -Xcompiler=-MT -lineinfo")
 endif(MSVC)
 
 set(SOLVER_DOUBLE_PRECISION FALSE CACHE BOOL "Compile with double precision rather than single precision.")
