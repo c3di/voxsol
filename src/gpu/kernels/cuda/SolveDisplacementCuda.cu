@@ -11,10 +11,11 @@
 
 #define MATRIX_ENTRY(rhsMatricesStartPointer, matrixIndex, row, col) rhsMatricesStartPointer[matrixIndex*9 + col*3 + row]
 
+#define CENTER_VERTEX_INDEX     13          // 1D index of the center vertex in the local subproblem
 #define LHS_MATRIX_INDEX        13          // Position of the LHS matrix in the material config equations
 #define EQUATION_ENTRY_SIZE     9 * 27 + 3  // 27 3x3 matrices and one 1x3 vector for Neumann stress
 #define NEUMANN_OFFSET          9 * 27      // Offset to the start of the Neumann stress vector inside an equation block
-#define UPDATES_PER_THREAD      250          // Number of vertices that should be updated stochastically per worker 
+#define UPDATES_PER_THREAD      250         // Number of vertices that should be updated stochastically per worker 
 #define NUM_WORKERS             6           // Number of workers that are updating vertices in parallel (one warp per worker)
 
 //#define DYN_ADJUSTMENT_MAX 0.01f
@@ -49,12 +50,12 @@ __device__ void buildRHSVectorForVertex(
     const char3& localCenterCoord
 ) {
     // We want to keep a full warp dedicated to each worker, but we only need enough threads for the 27 neighbors (minus the center vertex)
-    const bool activeThread = threadIdx.x < 27 && threadIdx.x != 13;
+    const bool threadIsActive = threadIdx.x < 27 && threadIdx.x != CENTER_VERTEX_INDEX;
+    unsigned activeThreadMask = __ballot_sync(0xffffffff, threadIsActive);
 
-    REAL rhsEntry = 0;
-    unsigned mask = __ballot_sync(0xffffffff, activeThread);
+    if (threadIsActive) {
+        REAL rhsEntry = 0;
 
-    if (activeThread) {
         // Get coords of neighbor that this thread is responsible for, relative to the center vertex, in the 3x3x3 local problem
         char3 localNeighborCoord;
         localNeighborCoord.z = (localCenterCoord.z + threadIdx.x / 9) - 1;
@@ -68,14 +69,14 @@ __device__ void buildRHSVectorForVertex(
         rhsEntry += MATRIX_ENTRY(matrices, threadIdx.x, threadIdx.y, 2) * neighbor->z;
 
         for (int offset = 16; offset > 0; offset /= 2) {
-            rhsEntry += __shfl_down_sync(mask, rhsEntry, offset);
+            rhsEntry += __shfl_down_sync(activeThreadMask, rhsEntry, offset);
         }
 
         if (threadIdx.x == 0) {
             // Result of the shuffle reduction is stored in thread 0's variable
             rhsVec[threadIdx.z][threadIdx.y] = rhsEntry;
         }
-    } 
+    }
 }
 
 __device__ const REAL* getPointerToMatricesForVertexGlobal(Vertex* vertex, const REAL* matConfigEquations) {
@@ -86,8 +87,8 @@ __device__ const REAL* getPointerToMatricesForVertexGlobal(Vertex* vertex, const
 __device__ void updateVertex(Vertex* vertexToUpdate, REAL rhsVec[NUM_WORKERS][3], const REAL* matrices) {
     // Choose exactly 3 threads in the same warp to sum up the 3 RHS components and solve the system
     if (threadIdx.y == 0 && threadIdx.x < 3) {
-        char rhsComponentIndex = threadIdx.x;
-        char workerIndex = threadIdx.z;
+        const char rhsComponentIndex = threadIdx.x;
+        const char workerIndex = threadIdx.z;
 
         // Move to right side of equation and apply Neumann stress
         rhsVec[workerIndex][rhsComponentIndex] = -rhsVec[workerIndex][rhsComponentIndex] + matrices[NEUMANN_OFFSET + rhsComponentIndex];
@@ -153,11 +154,22 @@ __device__ void updateVerticesStochastically(
 ) {
     __shared__ REAL rhsVec[NUM_WORKERS][3];
 
+    // The local block has a 1-vertex border, so the valid update region actually starts at 1,1,1. This is taken into account below
+    char3 localCoord = { 0,0,0 };
+
     for (int i = 0; i < UPDATES_PER_THREAD; i++) {
-        char3 localCoord = { 1,1,1 }; //starts at 1 because 0 is the outer border of fixed vertices, which shouldn't be updated
-        localCoord.z += ceilf(curand_uniform(localRngState) * BLOCK_SIZE) - 1; //curand_uniform is 0.0 exclusive, 1.0 inclusive, shift to 1...n+1 and shift back with -1 to have a true uniform distribution in 0..n
-        localCoord.y += ceilf(curand_uniform(localRngState) * BLOCK_SIZE) - 1;
-        localCoord.x += ceilf(curand_uniform(localRngState) * BLOCK_SIZE) - 1;
+        // curand_uniform is 0.0 exclusive, 1.0 inclusive, shift to 1...n+1 for a true uniform distribution and leave it there 
+        // since we need to take the 1-vertex border into account anyway
+        if (threadIdx.x == 0) {
+            localCoord.x = ceilf(curand_uniform(localRngState) * BLOCK_SIZE);
+            localCoord.y = ceilf(curand_uniform(localRngState) * BLOCK_SIZE);
+            localCoord.z = ceilf(curand_uniform(localRngState) * BLOCK_SIZE);
+        }
+
+        localCoord.x = __shfl_sync(0xffffffff, localCoord.x, 0);
+        localCoord.y = __shfl_sync(0xffffffff, localCoord.y, 0);
+        localCoord.z = __shfl_sync(0xffffffff, localCoord.z, 0);
+
         Vertex* vertexToUpdate = &localVertices[localCoord.z][localCoord.y][localCoord.x];
 
         const REAL* matrices = getPointerToMatricesForVertexGlobal(vertexToUpdate, matConfigEquations);
@@ -172,7 +184,7 @@ __device__ void updateVerticesStochastically(
 }
 
 __device__
-void copyVertexFromGlobalToShared(
+void copyVerticesFromGlobalToShared(
     Vertex localVertices[BLOCK_SIZE + 2][BLOCK_SIZE + 2][BLOCK_SIZE + 2],
     volatile Vertex* verticesOnGPU,
     const uint3 blockOriginCoord
@@ -214,7 +226,7 @@ void copyVertexFromGlobalToShared(
 }
 
 __device__
-void copyVertexFromSharedToGlobal(
+void copyVerticesFromSharedToGlobal(
     Vertex localVertices[BLOCK_SIZE + 2][BLOCK_SIZE + 2][BLOCK_SIZE + 2],
     volatile Vertex* verticesOnGPU,
     const uint3 blockOriginCoord
@@ -267,7 +279,7 @@ void cuda_SolveDisplacement(
 
     __shared__ Vertex localVertices[BLOCK_SIZE+2][BLOCK_SIZE+2][BLOCK_SIZE+2];
     
-    copyVertexFromGlobalToShared(localVertices, verticesOnGPU, blockOriginCoord);
+    copyVerticesFromGlobalToShared(localVertices, verticesOnGPU, blockOriginCoord);
     curandState localRngState = rngState[blockIdx.x * NUM_WORKERS + threadIdx.z];
 
     __syncthreads();
@@ -276,8 +288,12 @@ void cuda_SolveDisplacement(
     
     __syncthreads();
 
-    copyVertexFromSharedToGlobal(localVertices, verticesOnGPU, blockOriginCoord); 
-    rngState[blockIdx.x * NUM_WORKERS + threadIdx.z] = localRngState;
+    copyVerticesFromSharedToGlobal(localVertices, verticesOnGPU, blockOriginCoord); 
+
+    if (threadIdx.x == 0) {
+        // Only thread 0 actually generates values using the RNG state so only this updated copy should be sent back to global
+        rngState[blockIdx.x * NUM_WORKERS + threadIdx.z] = localRngState;
+    }
 }
 
 __global__
@@ -314,7 +330,6 @@ void cuda_invalidateOverlappingBlocks(uint3* candidates, const int numberOfCandi
         doesNotIntersect = doesNotIntersect || leftNeighbor.y + updateRegionSize <= myCandidate.y;
         if (!doesNotIntersect) {
             // Invalidate this block, it will later be skipped in the update phase since it lies outside the solution by definition of max_uint
-            //printf("Invalid block: %i %i %i with %i %i %i\n", myCandidate.x, myCandidate.y, myCandidate.z, leftNeighbor.x, leftNeighbor.y, leftNeighbor.z);
             myCandidate.x = UINT_MAX;
             myCandidate.y = UINT_MAX;
             myCandidate.z = UINT_MAX;
