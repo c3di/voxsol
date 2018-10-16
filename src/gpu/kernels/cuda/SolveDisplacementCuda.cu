@@ -57,12 +57,11 @@ __device__ void buildRHSVectorForVertex(
         REAL rhsEntry = 0;
 
         // Get coords of neighbor that this thread is responsible for, relative to the center vertex, in the 3x3x3 local problem
-        char3 localNeighborCoord;
-        localNeighborCoord.z = (localCenterCoord.z + threadIdx.x / 9) - 1;
-        localNeighborCoord.y = (localCenterCoord.y + (threadIdx.x / 3) % 3) - 1;
-        localNeighborCoord.x = (localCenterCoord.x + threadIdx.x % 3) - 1;
+        const char localNeighborCoordX = (localCenterCoord.x + threadIdx.x % 3) - 1;
+        const char localNeighborCoordY = (localCenterCoord.y + (threadIdx.x / 3) % 3) - 1;
+        const char localNeighborCoordZ = (localCenterCoord.z + threadIdx.x / 9) - 1;
 
-        Vertex* neighbor = &localVertices[localNeighborCoord.z][localNeighborCoord.y][localNeighborCoord.x];
+        Vertex* neighbor = &localVertices[localNeighborCoordZ][localNeighborCoordY][localNeighborCoordX];
 
         rhsEntry = MATRIX_ENTRY(matrices, threadIdx.x, threadIdx.y, 0) * neighbor->x;
         rhsEntry += MATRIX_ENTRY(matrices, threadIdx.x, threadIdx.y, 1) * neighbor->y;
@@ -195,21 +194,20 @@ void copyVerticesFromGlobalToShared(
 
     // Choose the first numThreadsNeeded threads to copy over the vertics
     if (threadIdx_1D < numThreadsNeeded) {
-        char3 localCoord = { 0,0,0 };
-        localCoord.x = threadIdx_1D % blockSizeWithBorder;
-        localCoord.y = threadIdx_1D / blockSizeWithBorder;
-        localCoord.z = 0;
+        const char localCoordX = threadIdx_1D % blockSizeWithBorder;
+        const char localCoordY = threadIdx_1D / blockSizeWithBorder;
+        char localCoordZ = 0;
 
         for (int z = 0; z < BLOCK_SIZE + 2; z++) {
-            localCoord.z = z;
-            uint3 globalCoord = { blockOriginCoord.x + localCoord.x - 1, blockOriginCoord.y + localCoord.y - 1, blockOriginCoord.z + z - 1 }; //-1 to account for border at both ends
-            Vertex* local = &localVertices[localCoord.z][localCoord.y][localCoord.x];
+            localCoordZ = z;
+            const uint3 globalCoord = { blockOriginCoord.x + localCoordX - 1, blockOriginCoord.y + localCoordY - 1, blockOriginCoord.z + z - 1 }; //-1 to account for border at both ends
+            Vertex* local = &localVertices[localCoordZ][localCoordY][localCoordX];
 
             if (isInsideSolution(globalCoord)) {
-                int globalIndex = c_solutionDimensions.y*c_solutionDimensions.x*globalCoord.z + c_solutionDimensions.x*globalCoord.y + globalCoord.x;
+                const int globalIndex = c_solutionDimensions.y*c_solutionDimensions.x*globalCoord.z + c_solutionDimensions.x*globalCoord.y + globalCoord.x;
 
                 //Turns out it's easier to copy the values manually than to get CUDA to play nice with a volatile struct assignment
-                volatile Vertex* global = &verticesOnGPU[globalIndex];
+                volatile const Vertex* global = &verticesOnGPU[globalIndex];
                 local->x = global->x;
                 local->y = global->y;
                 local->z = global->z;
@@ -235,27 +233,26 @@ void copyVerticesFromSharedToGlobal(
     const int threadIdx_1D = threadIdx.z * 32 * 3 + threadIdx.y * 32 + threadIdx.x;
 
     if (threadIdx_1D < numThreadsNeeded) {
-        char3 localCoord = {1,1,1};
-        localCoord.z += threadIdx_1D / (BLOCK_SIZE * BLOCK_SIZE);
-        localCoord.y += (threadIdx_1D / BLOCK_SIZE) % BLOCK_SIZE;
-        localCoord.x += threadIdx_1D % BLOCK_SIZE;
+        const char localCoordZ = 1 + threadIdx_1D / (BLOCK_SIZE * BLOCK_SIZE);
+        const char localCoordY = 1 + (threadIdx_1D / BLOCK_SIZE) % BLOCK_SIZE;
+        const char localCoordX = 1 + threadIdx_1D % BLOCK_SIZE;
 
         uint3 globalCoord = { 0,0,0 };
         // Move the checkerboard pattern to the start of the block to be updated
-        globalCoord.z += localCoord.z + blockOriginCoord.z - 1;
-        globalCoord.y += localCoord.y + blockOriginCoord.y - 1;
-        globalCoord.x += localCoord.x + blockOriginCoord.x - 1;
+        globalCoord.z += localCoordZ + blockOriginCoord.z - 1;
+        globalCoord.y += localCoordY + blockOriginCoord.y - 1;
+        globalCoord.x += localCoordX + blockOriginCoord.x - 1;
 
         if (isInsideSolution(globalCoord)) {
             int globalIndex = c_solutionDimensions.y*c_solutionDimensions.x*globalCoord.z + c_solutionDimensions.x*globalCoord.y + globalCoord.x;
-            Vertex* local = &localVertices[localCoord.z][localCoord.y][localCoord.x];
+            const Vertex* local = &localVertices[localCoordZ][localCoordY][localCoordX];
             volatile Vertex* global = &verticesOnGPU[globalIndex];
             global->x = local->x;
             global->y = local->y;
             global->z = local->z;
 
 #ifdef OUTPUT_NAN_DISPLACEMENTS
-            if (isnan(localVertices[localCoord.z][localCoord.y][localCoord.x].x)) {
+            if (isnan(localVertices[localCoordZ][localCoordY][localCoordX].x)) {
                 printf("NAN encountered for block %i coord %u %u %u \n", blockIdx.x, localCoord.x, localCoord.y, localCoord.z);
             }
 #endif
@@ -306,7 +303,7 @@ void cuda_InitCurandState(curandState* rngState) {
 __global__
 void cuda_invalidateOverlappingBlocks(uint3* candidates, const int numberOfCandidates, const unsigned int updateRegionSize) {
     extern __shared__ uint3 batch[];
-    int globalId = blockIdx.x * blockDim.x + threadIdx.x;
+    const int globalId = blockIdx.x * blockDim.x + threadIdx.x;
     if (globalId >= numberOfCandidates) {
         return;
     }
@@ -319,7 +316,7 @@ void cuda_invalidateOverlappingBlocks(uint3* candidates, const int numberOfCandi
     // Walk through the candidates toward the left
     while (localId > 0) {
         localId -= 1;
-        uint3 leftNeighbor = batch[localId];
+        const uint3 leftNeighbor = batch[localId];
         // Check for cube intersection, if any condition is true the two rectangular regions cannot intersect
         bool doesNotIntersect = false;
         doesNotIntersect = doesNotIntersect || leftNeighbor.x >= myCandidate.x + updateRegionSize;
