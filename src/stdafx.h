@@ -23,8 +23,9 @@ typedef float REAL;
 //#define DEBUG_OUTPUT_ENABLED 1
 
 #ifdef DEBUG_OUTPUT_ENABLED
-#define OUTPUT_NUM_FAILED_BLOCKS 1
-#define OUTPUT_NAN_DISPLACEMENTS 1
-#define OUTPUT_BAD_DISPLACEMENTS 1
+//#define OUTPUT_NUM_FAILED_BLOCKS 1    // Number of blocks that were invalidated, eg. for overlapping with another block
+//#define OUTPUT_NAN_DISPLACEMENTS 1    // GPU LEVEL: Output a debug message if a NaN displacement is encountered
+//#define OUTPUT_BAD_DISPLACEMENTS 1    // GPU LEVEL: Output a debug message if a displacement is discarded due to dynamical adjustment
+//#define OUTPUT_NEW_EQUATIONS_DEBUG 1    // Each time a new material configuration is encountered output info about it
 #endif
 

@@ -1,5 +1,6 @@
 #include <stdafx.h>
 #include "Solution.h"
+#include <iomanip>
 #include "problem/ProblemFragment.h"
 #include "problem/DiscreteProblem.h"
 #include "material/MaterialConfigurationEquationsFactory.h"
@@ -67,6 +68,17 @@ void Solution::gatherUniqueMaterialConfigurations() {
                 MaterialConfiguration materialConfiguration = fragment.getMaterialConfiguration();
 
                 if (matConfigToEquationId.count(materialConfiguration) <= 0) {
+#ifdef OUTPUT_NEW_EQUATIONS_DEBUG
+                    std::stringstream ss;
+                    ss << "  [New conf] Dirichlet: " << materialConfiguration.dirichletBoundaryCondition.fixed;
+                    ss << std::setprecision(10) << "  Neumann: (" << materialConfiguration.neumannBoundaryCondition.stress.x << "," << materialConfiguration.neumannBoundaryCondition.stress.y << "," << materialConfiguration.neumannBoundaryCondition.stress.z;
+                    ss << ")  Materials: [";
+                    for (int i = 0; i < 8; i++) {
+                        ss << std::setw(3) << static_cast<int>(materialConfiguration.ids[i]) << " ";
+                    }
+                    ss << "\b] Hash: " << std::hash<MaterialConfiguration>{}(materialConfiguration) << std::endl;
+                    std::cout << ss.str();
+#endif
                     matConfigToEquationId[materialConfiguration] = equationIdCounter;
                     equationIdCounter++;
                 }
