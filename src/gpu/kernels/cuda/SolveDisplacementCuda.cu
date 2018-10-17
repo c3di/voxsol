@@ -22,22 +22,6 @@
 
 __constant__ uint3 c_solutionDimensions;
 
-__device__
-int getGlobalIdx_1D_3DGlobal() {
-    return blockIdx.x * blockDim.x * blockDim.y * blockDim.z
-        + threadIdx.z * blockDim.y * blockDim.x
-        + threadIdx.y * blockDim.x + threadIdx.x;
-}
-
-__device__
-int getGlobalIdx_3D_3DGlobal() {
-    int blockId = blockIdx.x + blockIdx.y * gridDim.x
-        + gridDim.x * gridDim.y * blockIdx.z;
-    int threadId = blockId * (blockDim.x * blockDim.y * blockDim.z)
-        + (threadIdx.z * (blockDim.x * blockDim.y))
-        + (threadIdx.y * blockDim.x) + threadIdx.x;
-    return threadId;
-}
 
 __device__ bool isInsideSolution(const uint3 coord) {
     return coord.x < c_solutionDimensions.x && coord.y < c_solutionDimensions.y && coord.z < c_solutionDimensions.z;
