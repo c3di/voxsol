@@ -79,9 +79,11 @@ void ProblemInstance::initFromMaterialProbeMRC(std::string & path) {
     importer.addMaterialMapping(&aluminum, 0);
     importer.addMaterialMapping(&silicon, 255);
 
-    libmmv::Vec3<REAL> voxelSize(asREAL(46e-9), asREAL(46e-9), asREAL(46e-9));
+    libmmv::Vec3ui voxelDims = importer.getDimensionsInVoxels();
 
-    DiscreteProblem* problem = new DiscreteProblem(importer.getDimensionsInVoxels(), voxelSize, &materialDictionary);
+    libmmv::Vec3<REAL> voxelSize(asREAL(1.0 / voxelDims.x), asREAL(1.0 / voxelDims.y), asREAL(1.0 / voxelDims.z));
+
+    DiscreteProblem* problem = new DiscreteProblem(voxelDims, voxelSize, &materialDictionary);
     importer.populateDiscreteProblem(problem);
     problemLODs.push_back(problem);
 
