@@ -22,8 +22,13 @@
 #include "gpu/sampling/ImportanceBlockSampler.h"
 #include "gpu/sampling/WaveSampler.h"
 #include "problem/ProblemInstance.h"
+#include "material/MaterialConfiguration.h"
 
 #define ACTIVE_DEVICE 0
+#define ENABLE_VTK_OUTPUT 1
+
+int totalIterations = 0;
+int totalMilliseconds = 0;
 
 void solveGPU(ProblemInstance& problemInstance, int lod) {
 
@@ -38,55 +43,33 @@ void solveGPU(ProblemInstance& problemInstance, int lod) {
     VTKImportanceVisualizer impVis(problemInstance.getProblemLOD(lod), problemInstance.getResidualVolumeLOD(lod));
 
     SolveDisplacementKernel kernel(problemInstance.getSolutionLOD(lod), &sampler, problemInstance.getResidualVolumeLOD(lod));
-
+    
     std::cout << "Updating with GPU...\n";
-    auto start = std::chrono::high_resolution_clock::now();
-    int iterations = 1001;
+    long targetMilliseconds = 10000 / (lod+1);
 
-    for (int i = 1; i <= 5; i++) {
-        
-        //if (i % 100 == 0) {
-        //    REAL totalResidual = problemInstance.getResidualVolumeLOD(lod)->getTotalResidual();
-        //    std::cout << "Total residual : " << totalResidual << std::endl;
+    auto now = std::chrono::high_resolution_clock::now();
+    __int64 elapsed = 0;
+    int numIterationsDone = 0;
+    int numIterationsTarget = 10 / (lod+1);
 
-        //    kernel.pullVertices();
-
-        //    //if (lod > 0) {
-        //        std::stringstream fp;
-        //        fp << "d:\\tmp\\lod" << lod << "_gpu_" << i << ".vtk";
-        //        visualizer.writeToFile(fp.str());
-        //    //}
-
-        //    if (totalResidual < 1e-15) {
-        //        break;
-        //    }
-        //}
-
+    //for (int i = 1; i <= numIterationsTarget; i++) {
+    while (elapsed < targetMilliseconds) {
+        auto start = std::chrono::high_resolution_clock::now();
+        totalIterations++;
         std::cout << ".";
 
         kernel.launch();
 
-		if (false) {
-            kernel.pullVertices();
-            std::cout << std::endl;
-			std::stringstream fp;
-			fp << "d:\\tmp\\step_gpu_" << i << ".vtk";
-			visualizer.writeToFile(fp.str());
-
-            fp = std::stringstream();
-            fp << "d:\\tmp\\step_sampling_" << i << ".vtk";
-            samplingVis.writeToFile(fp.str(), kernel.debugGetImportanceSamplesManaged(), 64, BLOCK_SIZE);
-
-            //fp = std::stringstream();
-            //fp << "d:\\tmp\\residuals_" << i << "_";
-            //impVis.writeAllLevels(fp.str());
-		}
+        now = std::chrono::high_resolution_clock::now();
+        elapsed += std::chrono::duration_cast<std::chrono::milliseconds>(now - start).count();
+        numIterationsDone++;
     }
 
     kernel.pullVertices();
-    auto finish = std::chrono::high_resolution_clock::now();
-    auto cpuTime = std::chrono::duration_cast<std::chrono::milliseconds>(finish - start);
-    std::cout << std::endl << "GPU execution time: " << cpuTime.count() << " ms for " << iterations <<" iterations\n\n";
+
+    //std::cout << std::endl << "GPU execution time: " << cpuTime.count() << " ms for " << iterations <<" iterations\n\n";
+    std::cout << "\nFinished simulating for " << targetMilliseconds << "ms. Did " << numIterationsDone << " iterations\n\n";
+    totalMilliseconds += targetMilliseconds;
 
     //int i = 1;
     //std::cout << std::endl;
@@ -96,7 +79,7 @@ void solveGPU(ProblemInstance& problemInstance, int lod) {
     //fp = std::stringstream();
    // fp << "c:\\tmp\\lod_" << lod << "_sampling_" << i << ".vtk";
    // samplingVis.writeToFile(fp.str(), kernel.debugGetImportanceSamplesManaged(), 512, 8);
-
+#ifdef ENABLE_VTK_OUTPUT
     std::stringstream fp = std::stringstream();
 	fp << "d:\\tmp\\lod_" << lod << "_gpu_end.vtk";
 	visualizer.writeToFile(fp.str());
@@ -104,7 +87,7 @@ void solveGPU(ProblemInstance& problemInstance, int lod) {
     fp = std::stringstream();
     fp << "d:\\tmp\\step_sampling_" << lod << ".vtk";
     samplingVis.writeToFile(fp.str(), kernel.debugGetImportanceSamplesManaged(), 64, BLOCK_SIZE);
-    
+#endif 
     std::cout << " DONE. Total residual: " << problemInstance.getResidualVolumeLOD(lod)->getTotalResidual() << std::endl << std::endl;
 }
 
@@ -141,18 +124,25 @@ int main(int argc, char* argv[]) {
     ProblemInstance problemInstance;
     problemInstance.initFromMaterialProbeMRC(filename);
 
-    DirichletBoundary fixed(DirichletBoundary::FIXED_ALL);
+    std::cout << std::endl;
+
+    DirichletBoundary fixed(DirichletBoundary::FIXED_Z);
+    DirichletBoundary fixedX(DirichletBoundary::FIXED_X);
+    DirichletBoundary fixedY(DirichletBoundary::FIXED_Y);
     BoundaryProjector bProjector(problemInstance.getProblemLOD(0));
     bProjector.setMaxProjectionDepth(5, 5);
-    bProjector.projectDirichletBoundaryAlongNegZ(&fixed);
 
-    REAL totalNeumannStressNewtons = asREAL(1);
+    REAL totalNeumannStressNewtons = asREAL(1e9);
+    std::cout << "Project neumann boundaries\n";
     bProjector.projectNeumannStressAlongPosZ(totalNeumannStressNewtons, matFilter);
+    bProjector.projectDirichletBoundaryAlongNegZ(&fixed);
+    bProjector.projectDirichletBoundaryAlongPosY(&fixedY);
+    bProjector.projectDirichletBoundaryAlongPosX(&fixedX);
 
     // Re-initialize the residual volume for LOD 0 because we've added the boundary conditions now
     //problemInstance.getResidualVolumeLOD(0)->initializePyramidFromProblem();
 
-    problemInstance.createAdditionalLODs(2);
+    problemInstance.createAdditionalLODs(0);
     
     auto start = std::chrono::high_resolution_clock::now();
     //solveCPU(problem);
@@ -160,12 +150,16 @@ int main(int argc, char* argv[]) {
     auto cpuTime = std::chrono::duration_cast<std::chrono::seconds>(finish - start);
     std::cout << std::endl << "Total CPU execution time: " << cpuTime.count() << " seconds\n\n";
 
-    solveGPU(problemInstance, 2);
-    problemInstance.projectCoarseSolutionToFinerSolution(2, 1);
-    solveGPU(problemInstance, 1);
-    problemInstance.projectCoarseSolutionToFinerSolution(1, 0);
+    //solveGPU(problemInstance, 4);
+    //problemInstance.projectCoarseSolutionToFinerSolution(4, 3);
+    //solveGPU(problemInstance, 3);
+    //problemInstance.projectCoarseSolutionToFinerSolution(3, 2);
+    //solveGPU(problemInstance, 2);
+    //problemInstance.projectCoarseSolutionToFinerSolution(2, 1);
+    //solveGPU(problemInstance, 1);
+    //problemInstance.projectCoarseSolutionToFinerSolution(1, 0);
     solveGPU(problemInstance, 0);
 
-    std::cout << std::endl << "GPU execution time: " << cpuTime.count() << " seconds\n\n";
+    std::cout << std::endl << "Total simulation time: " << totalMilliseconds << " ms\n\n";
 
 }
