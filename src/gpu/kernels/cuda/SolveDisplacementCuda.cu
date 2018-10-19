@@ -12,11 +12,14 @@
 #define MATRIX_ENTRY(rhsMatricesStartPointer, matrixIndex, row, col) rhsMatricesStartPointer[matrixIndex*9 + col*3 + row]
 
 #define CENTER_VERTEX_INDEX     13          // 1D index of the center vertex in the local subproblem
-#define LHS_MATRIX_INDEX        13          // Position of the LHS matrix in the material config equations
 #define EQUATION_ENTRY_SIZE     9 * 27 + 3  // 27 3x3 matrices and one 1x3 vector for Neumann stress
 #define NEUMANN_OFFSET          9 * 27      // Offset to the start of the Neumann stress vector inside an equation block
 #define UPDATES_PER_THREAD      250         // Number of vertices that should be updated stochastically per worker 
 #define NUM_WORKERS             6           // Number of workers that are updating vertices in parallel (one warp per worker)
+
+#define NEIGHBOR_INDEX          threadIdx.x
+#define RHS_INDEX               threadIdx.y
+#define WORKER_INDEX            threadIdx.z
 
 //#define DYN_ADJUSTMENT_MAX 0.01f
 
@@ -34,30 +37,30 @@ __device__ void buildRHSVectorForVertex(
     const char3& localCenterCoord
 ) {
     // We want to keep a full warp dedicated to each worker, but we only need enough threads for the 27 neighbors (minus the center vertex)
-    const bool threadIsActive = threadIdx.x < 27 && threadIdx.x != CENTER_VERTEX_INDEX;
+    const bool threadIsActive = NEIGHBOR_INDEX < 27 && NEIGHBOR_INDEX != CENTER_VERTEX_INDEX;
     unsigned activeThreadMask = __ballot_sync(0xffffffff, threadIsActive);
 
     if (threadIsActive) {
         REAL rhsEntry = 0;
 
         // Get coords of neighbor that this thread is responsible for, relative to the center vertex, in the 3x3x3 local problem
-        const char localNeighborCoordX = (localCenterCoord.x + threadIdx.x % 3) - 1;
-        const char localNeighborCoordY = (localCenterCoord.y + (threadIdx.x / 3) % 3) - 1;
-        const char localNeighborCoordZ = (localCenterCoord.z + threadIdx.x / 9) - 1;
+        const char localNeighborCoordX = (localCenterCoord.x + NEIGHBOR_INDEX % 3) - 1;
+        const char localNeighborCoordY = (localCenterCoord.y + (NEIGHBOR_INDEX / 3) % 3) - 1;
+        const char localNeighborCoordZ = (localCenterCoord.z + NEIGHBOR_INDEX / 9) - 1;
 
         Vertex* neighbor = &localVertices[localNeighborCoordZ][localNeighborCoordY][localNeighborCoordX];
 
-        rhsEntry = MATRIX_ENTRY(matrices, threadIdx.x, threadIdx.y, 0) * neighbor->x;
-        rhsEntry += MATRIX_ENTRY(matrices, threadIdx.x, threadIdx.y, 1) * neighbor->y;
-        rhsEntry += MATRIX_ENTRY(matrices, threadIdx.x, threadIdx.y, 2) * neighbor->z;
+        rhsEntry = MATRIX_ENTRY(matrices, NEIGHBOR_INDEX, RHS_INDEX, 0) * neighbor->x;
+        rhsEntry += MATRIX_ENTRY(matrices, NEIGHBOR_INDEX, RHS_INDEX, 1) * neighbor->y;
+        rhsEntry += MATRIX_ENTRY(matrices, NEIGHBOR_INDEX, RHS_INDEX, 2) * neighbor->z;
 
         for (int offset = 16; offset > 0; offset /= 2) {
             rhsEntry += __shfl_down_sync(activeThreadMask, rhsEntry, offset);
         }
 
-        if (threadIdx.x == 0) {
+        if (NEIGHBOR_INDEX == 0) {
             // Result of the shuffle reduction is stored in thread 0's variable
-            rhsVec[threadIdx.z][threadIdx.y] = rhsEntry;
+            rhsVec[WORKER_INDEX][RHS_INDEX] = rhsEntry;
         }
     }
 }
@@ -69,9 +72,9 @@ __device__ const REAL* getPointerToMatricesForVertexGlobal(Vertex* vertex, const
 
 __device__ void updateVertex(Vertex* vertexToUpdate, REAL rhsVec[NUM_WORKERS][3], const REAL* matrices) {
     // Choose exactly 3 threads in the same warp to sum up the 3 RHS components and solve the system
-    if (threadIdx.y == 0 && threadIdx.x < 3) {
+    if (RHS_INDEX == 0 && NEIGHBOR_INDEX < 3) {
         const char rhsComponentIndex = threadIdx.x;
-        const char workerIndex = threadIdx.z;
+        const char workerIndex = WORKER_INDEX;
 
         // Move to right side of equation and apply Neumann stress
         rhsVec[workerIndex][rhsComponentIndex] = -rhsVec[workerIndex][rhsComponentIndex] + matrices[NEUMANN_OFFSET + rhsComponentIndex];
@@ -79,9 +82,9 @@ __device__ void updateVertex(Vertex* vertexToUpdate, REAL rhsVec[NUM_WORKERS][3]
         __syncwarp();
 
         REAL newDisplacement = 0;
-        newDisplacement += MATRIX_ENTRY(matrices, LHS_MATRIX_INDEX, 0, rhsComponentIndex) * rhsVec[workerIndex][0];
-        newDisplacement += MATRIX_ENTRY(matrices, LHS_MATRIX_INDEX, 1, rhsComponentIndex) * rhsVec[workerIndex][1];
-        newDisplacement += MATRIX_ENTRY(matrices, LHS_MATRIX_INDEX, 2, rhsComponentIndex) * rhsVec[workerIndex][2];
+        newDisplacement += MATRIX_ENTRY(matrices, CENTER_VERTEX_INDEX, 0, rhsComponentIndex) * rhsVec[workerIndex][0];
+        newDisplacement += MATRIX_ENTRY(matrices, CENTER_VERTEX_INDEX, 1, rhsComponentIndex) * rhsVec[workerIndex][1];
+        newDisplacement += MATRIX_ENTRY(matrices, CENTER_VERTEX_INDEX, 2, rhsComponentIndex) * rhsVec[workerIndex][2];
 
         if (rhsComponentIndex == 0) {
 #ifdef DYN_ADJUSTMENT_MAX
@@ -174,7 +177,7 @@ void copyVerticesFromGlobalToShared(
 ) {
     const int blockSizeWithBorder = BLOCK_SIZE + 2;
     const int numThreadsNeeded = blockSizeWithBorder * blockSizeWithBorder; //each thread will copy over a given x,y for all z ("top down")
-    const int threadIdx_1D = threadIdx.z * 32 * 3 + threadIdx.y * 32 + threadIdx.x;
+    const int threadIdx_1D = WORKER_INDEX * 32 * 3 + RHS_INDEX * 32 + NEIGHBOR_INDEX;
 
     // Choose the first numThreadsNeeded threads to copy over the vertics
     if (threadIdx_1D < numThreadsNeeded) {
@@ -214,7 +217,7 @@ void copyVerticesFromSharedToGlobal(
     const uint3 blockOriginCoord
 ) {
     const int numThreadsNeeded = BLOCK_SIZE * BLOCK_SIZE * BLOCK_SIZE; //each thread will copy over one vertex in the inner block (without the border)
-    const int threadIdx_1D = threadIdx.z * 32 * 3 + threadIdx.y * 32 + threadIdx.x;
+    const int threadIdx_1D = WORKER_INDEX * 32 * 3 + RHS_INDEX * 32 + NEIGHBOR_INDEX;
 
     if (threadIdx_1D < numThreadsNeeded) {
         const char localCoordZ = 1 + threadIdx_1D / (BLOCK_SIZE * BLOCK_SIZE);
@@ -261,7 +264,7 @@ void cuda_SolveDisplacement(
     __shared__ Vertex localVertices[BLOCK_SIZE+2][BLOCK_SIZE+2][BLOCK_SIZE+2];
     
     copyVerticesFromGlobalToShared(localVertices, verticesOnGPU, blockOriginCoord);
-    curandState localRngState = rngState[blockIdx.x * NUM_WORKERS + threadIdx.z];
+    curandState localRngState = rngState[blockIdx.x * NUM_WORKERS + WORKER_INDEX];
 
     __syncthreads();
 
@@ -271,9 +274,9 @@ void cuda_SolveDisplacement(
 
     copyVerticesFromSharedToGlobal(localVertices, verticesOnGPU, blockOriginCoord); 
 
-    if (threadIdx.x == 0) {
+    if (NEIGHBOR_INDEX == 0) {
         // Only thread 0 actually generates values using the RNG state so only this updated copy should be sent back to global
-        rngState[blockIdx.x * NUM_WORKERS + threadIdx.z] = localRngState;
+        rngState[blockIdx.x * NUM_WORKERS + WORKER_INDEX] = localRngState;
     }
 }
 
