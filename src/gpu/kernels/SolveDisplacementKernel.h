@@ -47,6 +47,7 @@ protected:
     REAL* serializedMatConfigEquations;
     uint3* blockOrigins;
     curandState* rngStateOnGPU;
+    int numBlockOriginsPerIteration;
 
     void prepareInputs();
 

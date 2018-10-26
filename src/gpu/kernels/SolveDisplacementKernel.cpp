@@ -38,7 +38,7 @@ void SolveDisplacementKernel::launch() {
 
     if (canExecute()) {
 
-        sampler->generateNextBlockOrigins(blockOrigins, NUM_SAMPLING_CANDIDATES);
+        sampler->generateNextBlockOrigins(blockOrigins, numBlockOriginsPerIteration);
 
         cudaLaunchSolveDisplacementKernel(
             serializedVertices, 
@@ -46,7 +46,7 @@ void SolveDisplacementKernel::launch() {
             residualVolume->getPyramidDevicePointer(),
             rngStateOnGPU,
             blockOrigins,
-            NUM_SAMPLING_CANDIDATES,
+            numBlockOriginsPerIteration,
             solutionDimensions
         );
     }
@@ -87,7 +87,7 @@ void SolveDisplacementKernel::prepareInputs() {
 }
 
 void SolveDisplacementKernel::allocateBlockOrigins() {
-    size_t size = NUM_SAMPLING_CANDIDATES * sizeof(uint3);
+    size_t size = numBlockOriginsPerIteration * sizeof(uint3);
     cudaCheckSuccess(cudaMallocManaged(&blockOrigins, size));
 }
 

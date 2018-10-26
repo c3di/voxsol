@@ -6,7 +6,7 @@ class IOHelper {
 public:
 
     static std::string getAbsolutePathToFile(const std::string& relativePath) {
-        namespace fs = std::tr2::sys;
+        namespace fs = std::experimental::filesystem;
         // or namespace fs = boost::filesystem;
         auto baseDir = fs::current_path();
         while (baseDir.has_parent_path())

@@ -23,6 +23,7 @@
 #include "gpu/sampling/WaveSampler.h"
 #include "problem/ProblemInstance.h"
 #include "material/MaterialConfiguration.h"
+#include "io/XMLProblemDeserializer.h"
 
 #define ACTIVE_DEVICE 0
 #define ENABLE_VTK_OUTPUT 1
@@ -44,7 +45,7 @@ void solveGPU(ProblemInstance& problemInstance, int lod) {
 
     SolveDisplacementKernel kernel(problemInstance.getSolutionLOD(lod), &sampler, problemInstance.getResidualVolumeLOD(lod));
     
-    std::cout << "Updating with GPU...\n";
+    std::cout << "Solving LOD " << lod << " with GPU...\n";
     long targetMilliseconds = 10000 / (lod+1);
 
     auto now = std::chrono::high_resolution_clock::now();
@@ -67,18 +68,9 @@ void solveGPU(ProblemInstance& problemInstance, int lod) {
 
     kernel.pullVertices();
 
-    //std::cout << std::endl << "GPU execution time: " << cpuTime.count() << " ms for " << iterations <<" iterations\n\n";
     std::cout << "\nFinished simulating for " << targetMilliseconds << "ms. Did " << numIterationsDone << " iterations\n\n";
     totalMilliseconds += targetMilliseconds;
 
-    //int i = 1;
-    //std::cout << std::endl;
-    //std::stringstream fp;
-    //impVis.writeAllLevels("c:\\tmp\\end_residual");
-
-    //fp = std::stringstream();
-   // fp << "c:\\tmp\\lod_" << lod << "_sampling_" << i << ".vtk";
-   // samplingVis.writeToFile(fp.str(), kernel.debugGetImportanceSamplesManaged(), 512, 8);
 #ifdef ENABLE_VTK_OUTPUT
     std::stringstream fp = std::stringstream();
 	fp << "d:\\tmp\\lod_" << lod << "_gpu_end.vtk";
@@ -118,47 +110,18 @@ int main(int argc, char* argv[]) {
         std::cout << "Cuda device " << ACTIVE_DEVICE << " initialized!\n\n";
     }
 
-    bool isStumpMRC = false;
-    unsigned char matFilter = 255;
-    std::string filename("voxel_64.mrc");
-    ProblemInstance problemInstance;
-    problemInstance.initFromMaterialProbeMRC(filename);
+    std::string xmlInputFile("voxel_64.xml");
 
-    std::cout << std::endl;
+    XMLProblemDeserializer xmlDeserializer(xmlInputFile);
+    ProblemInstance problemInstance = xmlDeserializer.getProblemInstance();
 
-    DirichletBoundary fixed(DirichletBoundary::FIXED_Z);
-    DirichletBoundary fixedX(DirichletBoundary::FIXED_X);
-    DirichletBoundary fixedY(DirichletBoundary::FIXED_Y);
-    BoundaryProjector bProjector(problemInstance.getProblemLOD(0));
-    bProjector.setMaxProjectionDepth(5, 5);
-
-    REAL totalNeumannStressNewtons = asREAL(1e9);
-    std::cout << "Project neumann boundaries\n";
-    bProjector.projectNeumannStressAlongPosZ(totalNeumannStressNewtons, matFilter);
-    bProjector.projectDirichletBoundaryAlongNegZ(&fixed);
-    bProjector.projectDirichletBoundaryAlongPosY(&fixedY);
-    bProjector.projectDirichletBoundaryAlongPosX(&fixedX);
-
-    // Re-initialize the residual volume for LOD 0 because we've added the boundary conditions now
-    //problemInstance.getResidualVolumeLOD(0)->initializePyramidFromProblem();
-
-    problemInstance.createAdditionalLODs(0);
-    
-    auto start = std::chrono::high_resolution_clock::now();
-    //solveCPU(problem);
-    auto finish = std::chrono::high_resolution_clock::now();
-    auto cpuTime = std::chrono::duration_cast<std::chrono::seconds>(finish - start);
-    std::cout << std::endl << "Total CPU execution time: " << cpuTime.count() << " seconds\n\n";
-
-    //solveGPU(problemInstance, 4);
-    //problemInstance.projectCoarseSolutionToFinerSolution(4, 3);
-    //solveGPU(problemInstance, 3);
-    //problemInstance.projectCoarseSolutionToFinerSolution(3, 2);
-    //solveGPU(problemInstance, 2);
-    //problemInstance.projectCoarseSolutionToFinerSolution(2, 1);
-    //solveGPU(problemInstance, 1);
-    //problemInstance.projectCoarseSolutionToFinerSolution(1, 0);
-    solveGPU(problemInstance, 0);
+    int numLODs = problemInstance.getNumberOfLODs();
+    for (int lod = numLODs-1; lod >= 0; lod--) {
+        solveGPU(problemInstance, lod);
+        if (lod > 0) {
+            problemInstance.projectCoarseSolutionToFinerSolution(lod, lod - 1);
+        }
+    }
 
     std::cout << std::endl << "Total simulation time: " << totalMilliseconds << " ms\n\n";
 
