@@ -1,6 +1,6 @@
 #include "stdafx.h"
 #include "WaveSampler.h"
-#include "gpu/CudaCommonFunctions.h"
+#include "gpu/GPUParameters.h"
 
 WaveSampler::WaveSampler(Solution * solution) : 
     solutionSize(solution->getSize())

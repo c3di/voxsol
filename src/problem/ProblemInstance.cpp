@@ -105,6 +105,9 @@ void ProblemInstance::initFromParameters(libmmv::Vec3ui& discretization, libmmv:
     residualLODs.push_back(residual);
 }
 
+int ProblemInstance::getNumberOfLODs() {
+    return (int)problemLODs.size();
+}
 DiscreteProblem* ProblemInstance::getProblemLOD(int lod)
 {
     if (problemLODs.size() <= lod) {

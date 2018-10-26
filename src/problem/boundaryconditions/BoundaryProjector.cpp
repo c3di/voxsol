@@ -32,24 +32,26 @@ void BoundaryProjector::projectDirichletBoundaryAlongNegZ(DirichletBoundary* con
         }
     }
 
-    auto maxElement = std::max_element(surfaceVoxels.begin(), surfaceVoxels.end(), [](const libmmv::Vec3ui& a, const libmmv::Vec3ui& b) -> bool {
-        return a.z < b.z;
-    });
-    unsigned int topZ = maxElement->z;
-    unsigned int numBoundaryVoxels = 0;
-    for (auto it = surfaceVoxels.begin(); it != surfaceVoxels.end(); it++) {
-        // We only want to fix the voxels near the outer edge of the space
-        if (abs((int)topZ - (int)it->z) < (int)maxDepthFromTopmostHit) {
-            libmmv::Vec3ui vertexCoord(*it);
-            vertexCoord.z++; //go to the top layer of vertices for this voxel
-            problem->setDirichletBoundaryAtVertex(vertexCoord, *condition);
-            vertexCoord.x++;
-            problem->setDirichletBoundaryAtVertex(vertexCoord, *condition);
-            vertexCoord.y++;
-            problem->setDirichletBoundaryAtVertex(vertexCoord, *condition);
-            vertexCoord.x--;
-            problem->setDirichletBoundaryAtVertex(vertexCoord, *condition);
-            numBoundaryVoxels++;
+    if (surfaceVoxels.size() > 0) {
+        auto maxElement = std::max_element(surfaceVoxels.begin(), surfaceVoxels.end(), [](const libmmv::Vec3ui& a, const libmmv::Vec3ui& b) -> bool {
+            return a.z < b.z;
+        });
+        unsigned int topZ = maxElement->z;
+        unsigned int numBoundaryVoxels = 0;
+        for (auto it = surfaceVoxels.begin(); it != surfaceVoxels.end(); it++) {
+            // We only want to fix the voxels near the outer edge of the space
+            if (abs((int)topZ - (int)it->z) < (int)maxDepthFromTopmostHit) {
+                libmmv::Vec3ui vertexCoord(*it);
+                vertexCoord.z++; //go to the top layer of vertices for this voxel
+                problem->setDirichletBoundaryAtVertex(vertexCoord, *condition);
+                vertexCoord.x++;
+                problem->setDirichletBoundaryAtVertex(vertexCoord, *condition);
+                vertexCoord.y++;
+                problem->setDirichletBoundaryAtVertex(vertexCoord, *condition);
+                vertexCoord.x--;
+                problem->setDirichletBoundaryAtVertex(vertexCoord, *condition);
+                numBoundaryVoxels++;
+            }
         }
     }
 	std::cout << "Projected Dirichlet boundary onto " << surfaceVoxels.size() << " voxels along -Z\n";
@@ -66,23 +68,25 @@ void BoundaryProjector::projectDirichletBoundaryAlongPosZ(DirichletBoundary* con
         }
     }
 
-    auto minElement = std::min_element(surfaceVoxels.begin(), surfaceVoxels.end(), [](const libmmv::Vec3ui& a, const libmmv::Vec3ui& b) -> bool {
-        return a.z < b.z;
-    });
-    unsigned int topZ = minElement->z;
-    unsigned int numBoundaryVoxels = 0;
-    for (auto it = surfaceVoxels.begin(); it != surfaceVoxels.end(); it++) {
-        // We only want to fix the voxels near the outer edge of the space
-        if (abs((int)topZ - (int)it->z) < (int)maxDepthFromTopmostHit) {
-            libmmv::Vec3ui vertexCoord(*it);
-            problem->setDirichletBoundaryAtVertex(vertexCoord, *condition);
-            vertexCoord.x++;
-            problem->setDirichletBoundaryAtVertex(vertexCoord, *condition);
-            vertexCoord.y++;
-            problem->setDirichletBoundaryAtVertex(vertexCoord, *condition);
-            vertexCoord.x--;
-            problem->setDirichletBoundaryAtVertex(vertexCoord, *condition);
-            numBoundaryVoxels++;
+    if (surfaceVoxels.size() > 0) {
+        auto minElement = std::min_element(surfaceVoxels.begin(), surfaceVoxels.end(), [](const libmmv::Vec3ui& a, const libmmv::Vec3ui& b) -> bool {
+            return a.z < b.z;
+        });
+        unsigned int topZ = minElement->z;
+        unsigned int numBoundaryVoxels = 0;
+        for (auto it = surfaceVoxels.begin(); it != surfaceVoxels.end(); it++) {
+            // We only want to fix the voxels near the outer edge of the space
+            if (abs((int)topZ - (int)it->z) < (int)maxDepthFromTopmostHit) {
+                libmmv::Vec3ui vertexCoord(*it);
+                problem->setDirichletBoundaryAtVertex(vertexCoord, *condition);
+                vertexCoord.x++;
+                problem->setDirichletBoundaryAtVertex(vertexCoord, *condition);
+                vertexCoord.y++;
+                problem->setDirichletBoundaryAtVertex(vertexCoord, *condition);
+                vertexCoord.x--;
+                problem->setDirichletBoundaryAtVertex(vertexCoord, *condition);
+                numBoundaryVoxels++;
+            }
         }
     }
     std::cout << "Projected Dirichlet boundary onto " << surfaceVoxels.size() << " voxels along +Z\n";
@@ -101,39 +105,40 @@ void BoundaryProjector::projectNeumannStressAlongNegZ(REAL totalNeumannForce, un
     }
 
     std::cout << "Found " << surfaceVoxels.size() << " voxels for Neumann boundary max depth " << (int)maxDepthFromTop << std::endl;
+    if (surfaceVoxels.size() > 0) {
+        auto maxElement = std::max_element(surfaceVoxels.begin(), surfaceVoxels.end(), [](const libmmv::Vec3ui& a, const libmmv::Vec3ui& b) -> bool {
+            return a.z > b.z;
+        });
+        unsigned int zLayerCutoff = maxElement->z - maxDepthFromTopmostHit;
+        std::vector<libmmv::Vec3ui> filteredSurface;
+        std::copy_if(surfaceVoxels.begin(), surfaceVoxels.end(), std::back_inserter(filteredSurface), [zLayerCutoff](const libmmv::Vec3ui& a) -> bool {
+            return a.z > zLayerCutoff;
+        });
 
-    auto maxElement = std::max_element(surfaceVoxels.begin(), surfaceVoxels.end(), [](const libmmv::Vec3ui& a, const libmmv::Vec3ui& b) -> bool {
-        return a.z > b.z;
-    });
-    unsigned int zLayerCutoff = maxElement->z - maxDepthFromTopmostHit;
-    std::vector<libmmv::Vec3ui> filteredSurface;
-    std::copy_if(surfaceVoxels.begin(), surfaceVoxels.end(), std::back_inserter(filteredSurface), [zLayerCutoff](const libmmv::Vec3ui& a) -> bool {
-        return a.z > zLayerCutoff;
-    });
+        // Scale the total stress in sqm to stress per vertex, depends on total surface area hit by the ray casting above
+        REAL surfaceAreaPerVoxelInSqMeters = asREAL(problem->getVoxelSize().x * problem->getVoxelSize().y);
+        REAL totalSurfaceAreaInSqMeters = surfaceAreaPerVoxelInSqMeters * filteredSurface.size();
+        REAL neumannStressPerVoxel = totalNeumannForce / filteredSurface.size();
+        REAL neumannStressPerVertex = neumannStressPerVoxel * asREAL(0.25); // exposed surface of each voxel has 4 vertices
 
-    // Scale the total stress in sqm to stress per vertex, depends on total surface area hit by the ray casting above
-    REAL surfaceAreaPerVoxelInSqMeters = asREAL(problem->getVoxelSize().x * problem->getVoxelSize().y);
-    REAL totalSurfaceAreaInSqMeters = surfaceAreaPerVoxelInSqMeters * filteredSurface.size();
-    REAL neumannStressPerVoxel = totalNeumannForce / filteredSurface.size();
-    REAL neumannStressPerVertex = neumannStressPerVoxel * asREAL(0.25); // exposed surface of each voxel has 4 vertices
-
-    // For each relevant voxel, add the stress to each of its 4 vertices lying on the exposed surface
-    unsigned int numBoundaryVoxels = 0;
-    for (auto it = filteredSurface.begin(); it != filteredSurface.end(); it++) {
-        libmmv::Vec3ui vertexCoord(*it);
-        NeumannBoundary stress(libmmv::Vec3<REAL>(0, 0, neumannStressPerVertex));
-        vertexCoord.z++;
-        problem->setNeumannBoundaryAtVertex(vertexCoord, stress, true);
-        vertexCoord.x++;
-        problem->setNeumannBoundaryAtVertex(vertexCoord, stress, true);
-        vertexCoord.y++;
-        problem->setNeumannBoundaryAtVertex(vertexCoord, stress, true);
-        vertexCoord.x--;
-        problem->setNeumannBoundaryAtVertex(vertexCoord, stress, true);
-        numBoundaryVoxels++;
+        // For each relevant voxel, add the stress to each of its 4 vertices lying on the exposed surface
+        unsigned int numBoundaryVoxels = 0;
+        for (auto it = filteredSurface.begin(); it != filteredSurface.end(); it++) {
+            libmmv::Vec3ui vertexCoord(*it);
+            NeumannBoundary stress(libmmv::Vec3<REAL>(0, 0, neumannStressPerVertex));
+            vertexCoord.z++;
+            problem->setNeumannBoundaryAtVertex(vertexCoord, stress, true);
+            vertexCoord.x++;
+            problem->setNeumannBoundaryAtVertex(vertexCoord, stress, true);
+            vertexCoord.y++;
+            problem->setNeumannBoundaryAtVertex(vertexCoord, stress, true);
+            vertexCoord.x--;
+            problem->setNeumannBoundaryAtVertex(vertexCoord, stress, true);
+            numBoundaryVoxels++;
+        }
+        std::cout << "Projected Neumann boundary onto " << filteredSurface.size() << " voxels along -Z\n";
     }
 
-    std::cout << "Projected Neumann boundary onto " << filteredSurface.size() << " voxels along -Z\n";
 }
 
 void BoundaryProjector::projectDirichletBoundaryAlongPosX(DirichletBoundary * condition)
@@ -147,32 +152,81 @@ void BoundaryProjector::projectDirichletBoundaryAlongPosX(DirichletBoundary * co
         }
     }
 
-    auto minElement = std::min_element(surfaceVoxels.begin(), surfaceVoxels.end(), [](const libmmv::Vec3ui& a, const libmmv::Vec3ui& b) -> bool {
-        return a.x < b.x;
-    });
-    unsigned int firstX = minElement->x;
-    unsigned int numBoundaryVoxels = 0;
-    for (auto it = surfaceVoxels.begin(); it != surfaceVoxels.end(); it++) {
-        // We only want to fix the voxels near the outer edge of the space
-        if (abs((int)firstX - (int)it->x) < (int)maxDepthFromTopmostHit) {
-            libmmv::Vec3ui vertexCoord(*it);
-            //Set boundary conditions for vertices at coord, coord.y+1, coord.z+1 and coord.y+1 & coord.z+1
-            problem->setDirichletBoundaryAtVertex(vertexCoord, *condition);
-            vertexCoord.y++;
-            problem->setDirichletBoundaryAtVertex(vertexCoord, *condition);
-            vertexCoord.z++;
-            problem->setDirichletBoundaryAtVertex(vertexCoord, *condition);
-            vertexCoord.y--;
-            problem->setDirichletBoundaryAtVertex(vertexCoord, *condition);
-            numBoundaryVoxels++;
+    if (surfaceVoxels.size() > 0) {
+        auto minElement = std::min_element(surfaceVoxels.begin(), surfaceVoxels.end(), [](const libmmv::Vec3ui& a, const libmmv::Vec3ui& b) -> bool {
+            return a.x < b.x;
+        });
+        unsigned int firstX = minElement->x;
+        unsigned int numBoundaryVoxels = 0;
+        for (auto it = surfaceVoxels.begin(); it != surfaceVoxels.end(); it++) {
+            // We only want to fix the voxels near the outer edge of the space
+            if (abs((int)firstX - (int)it->x) < (int)maxDepthFromTopmostHit) {
+                libmmv::Vec3ui vertexCoord(*it);
+                //Set boundary conditions for vertices at coord, coord.y+1, coord.z+1 and coord.y+1 & coord.z+1
+                problem->setDirichletBoundaryAtVertex(vertexCoord, *condition);
+                vertexCoord.y++;
+                problem->setDirichletBoundaryAtVertex(vertexCoord, *condition);
+                vertexCoord.z++;
+                problem->setDirichletBoundaryAtVertex(vertexCoord, *condition);
+                vertexCoord.y--;
+                problem->setDirichletBoundaryAtVertex(vertexCoord, *condition);
+                numBoundaryVoxels++;
+            }
         }
     }
     std::cout << "Projected Dirichlet boundary onto " << surfaceVoxels.size() << " voxels along +X\n";
 }
 
+void BoundaryProjector::projectNeumannStressAlongPosX(REAL totalNeumannStress, unsigned char matIdFilter)
+{
+    throw std::exception("Neumann boundary projection along +X not implemented yet");
+}
+
+void BoundaryProjector::projectDirichletBoundaryAlongNegX(DirichletBoundary * condition)
+{
+    libmmv::Vec3i projectionStep(-1, 0, 0);
+    std::vector<libmmv::Vec3ui> surfaceVoxels;
+    for (unsigned int z = 0; z < problemSize.z; z++) {
+        for (unsigned int y = 0; y < problemSize.y; y++) {
+            libmmv::Vec3ui origin(problemSize.x - 1, y, z);
+            projectRayToFindSurface(origin, &projectionStep, &surfaceVoxels, 255);
+        }
+    }
+
+    if (surfaceVoxels.size() > 0) {
+        auto maxElement = std::max_element(surfaceVoxels.begin(), surfaceVoxels.end(), [](const libmmv::Vec3ui& a, const libmmv::Vec3ui& b) -> bool {
+            return a.x > b.x;
+        });
+        unsigned int firstX = maxElement->x;
+        unsigned int numBoundaryVoxels = 0;
+        for (auto it = surfaceVoxels.begin(); it != surfaceVoxels.end(); it++) {
+            // We only want to fix the voxels near the outer edge of the space
+            if (abs((int)firstX - (int)it->x) < (int)maxDepthFromTopmostHit) {
+                libmmv::Vec3ui vertexCoord(*it);
+                //Set boundary conditions for vertices at coord, coord.y+1, coord.z+1 and coord.y+1 & coord.z+1
+                vertexCoord.x++;
+                problem->setDirichletBoundaryAtVertex(vertexCoord, *condition);
+                vertexCoord.y++;
+                problem->setDirichletBoundaryAtVertex(vertexCoord, *condition);
+                vertexCoord.z++;
+                problem->setDirichletBoundaryAtVertex(vertexCoord, *condition);
+                vertexCoord.y--;
+                problem->setDirichletBoundaryAtVertex(vertexCoord, *condition);
+                numBoundaryVoxels++;
+            }
+        }
+    }
+    std::cout << "Projected Dirichlet boundary onto " << surfaceVoxels.size() << " voxels along -X\n";
+}
+
+void BoundaryProjector::projectNeumannStressAlongNegX(REAL totalNeumannStress, unsigned char matIdFilter)
+{
+    throw std::exception("Neumann boundary projection along -X not implemented yet");
+}
+
 void BoundaryProjector::projectDirichletBoundaryAlongPosY(DirichletBoundary * condition)
 {
-    libmmv::Vec3i projectionStep(1, 0, 0);
+    libmmv::Vec3i projectionStep(0, 1, 0);
     std::vector<libmmv::Vec3ui> surfaceVoxels;
     for (unsigned int z = 0; z < problemSize.z; z++) {
         for (unsigned int x = 0; x < problemSize.x; x++) {
@@ -181,27 +235,76 @@ void BoundaryProjector::projectDirichletBoundaryAlongPosY(DirichletBoundary * co
         }
     }
 
-    auto minElement = std::min_element(surfaceVoxels.begin(), surfaceVoxels.end(), [](const libmmv::Vec3ui& a, const libmmv::Vec3ui& b) -> bool {
-        return a.y < b.y;
-    });
-    unsigned int firstY = minElement->y;
-    unsigned int numBoundaryVoxels = 0;
-    for (auto it = surfaceVoxels.begin(); it != surfaceVoxels.end(); it++) {
-        // We only want to fix the voxels near the outer edge of the space
-        if (abs((int)firstY - (int)it->y) < (int)maxDepthFromTopmostHit) {
-            libmmv::Vec3ui vertexCoord(*it);
-            //Set boundary conditions for vertices at coord, coord.x+1, coord.z+1 and coord.x-1 & coord.z-1
-            problem->setDirichletBoundaryAtVertex(vertexCoord, *condition);
-            vertexCoord.x++;
-            problem->setDirichletBoundaryAtVertex(vertexCoord, *condition);
-            vertexCoord.z++;
-            problem->setDirichletBoundaryAtVertex(vertexCoord, *condition);
-            vertexCoord.x--;
-            problem->setDirichletBoundaryAtVertex(vertexCoord, *condition);
-            numBoundaryVoxels++;
+    if (surfaceVoxels.size() > 0) {
+        auto minElement = std::min_element(surfaceVoxels.begin(), surfaceVoxels.end(), [](const libmmv::Vec3ui& a, const libmmv::Vec3ui& b) -> bool {
+            return a.y < b.y;
+        });
+        unsigned int firstY = minElement->y;
+        unsigned int numBoundaryVoxels = 0;
+        for (auto it = surfaceVoxels.begin(); it != surfaceVoxels.end(); it++) {
+            // We only want to fix the voxels near the outer edge of the space
+            if (abs((int)firstY - (int)it->y) < (int)maxDepthFromTopmostHit) {
+                libmmv::Vec3ui vertexCoord(*it);
+                //Set boundary conditions for vertices at coord, coord.x+1, coord.z+1 and coord.x-1 & coord.z-1
+                problem->setDirichletBoundaryAtVertex(vertexCoord, *condition);
+                vertexCoord.x++;
+                problem->setDirichletBoundaryAtVertex(vertexCoord, *condition);
+                vertexCoord.z++;
+                problem->setDirichletBoundaryAtVertex(vertexCoord, *condition);
+                vertexCoord.x--;
+                problem->setDirichletBoundaryAtVertex(vertexCoord, *condition);
+                numBoundaryVoxels++;
+            }
         }
     }
     std::cout << "Projected Dirichlet boundary onto " << surfaceVoxels.size() << " voxels along +Y\n";
+}
+
+void BoundaryProjector::projectNeumannStressAlongPosY(REAL totalNeumannStress, unsigned char matIdFilter)
+{
+    throw std::exception("Neumann boundary projection along +Y not implemented yet");
+}
+
+void BoundaryProjector::projectDirichletBoundaryAlongNegY(DirichletBoundary * condition)
+{
+    libmmv::Vec3i projectionStep(0, -1, 0);
+    std::vector<libmmv::Vec3ui> surfaceVoxels;
+    for (unsigned int z = 0; z < problemSize.z; z++) {
+        for (unsigned int x = 0; x < problemSize.x; x++) {
+            libmmv::Vec3ui origin(x, problemSize.y - 1, z);
+            projectRayToFindSurface(origin, &projectionStep, &surfaceVoxels, 255);
+        }
+    }
+
+    if (surfaceVoxels.size() > 0) {
+        auto maxElement = std::max_element(surfaceVoxels.begin(), surfaceVoxels.end(), [](const libmmv::Vec3ui& a, const libmmv::Vec3ui& b) -> bool {
+            return a.y > b.y;
+        });
+        unsigned int firstY = maxElement->y;
+        unsigned int numBoundaryVoxels = 0;
+        for (auto it = surfaceVoxels.begin(); it != surfaceVoxels.end(); it++) {
+            // We only want to fix the voxels near the outer edge of the space
+            if (abs((int)firstY - (int)it->y) < (int)maxDepthFromTopmostHit) {
+                libmmv::Vec3ui vertexCoord(*it);
+                //Set boundary conditions for vertices at coord, coord.x+1, coord.z+1 and coord.x-1 & coord.z-1
+                vertexCoord.y++;
+                problem->setDirichletBoundaryAtVertex(vertexCoord, *condition);
+                vertexCoord.x++;
+                problem->setDirichletBoundaryAtVertex(vertexCoord, *condition);
+                vertexCoord.z++;
+                problem->setDirichletBoundaryAtVertex(vertexCoord, *condition);
+                vertexCoord.x--;
+                problem->setDirichletBoundaryAtVertex(vertexCoord, *condition);
+                numBoundaryVoxels++;
+            }
+        }
+    }
+    std::cout << "Projected Dirichlet boundary onto " << surfaceVoxels.size() << " voxels along -Y\n";
+}
+
+void BoundaryProjector::projectNeumannStressAlongNegY(REAL totalNeumannStress, unsigned char matIdFilter)
+{
+    throw std::exception("Neumann boundary projection along -Y not implemented yet");
 }
 
 void BoundaryProjector::projectNeumannStressAlongPosZ(REAL totalNeumannForce, unsigned char matIdFilter)
@@ -216,38 +319,40 @@ void BoundaryProjector::projectNeumannStressAlongPosZ(REAL totalNeumannForce, un
         }
     }
 
-    // Only consider voxels within 20 layers of the first non-null-material voxel encountered, to ensure we don't add a boundary to surfaces far away from the force origin
-    auto minElement = std::min_element(surfaceVoxels.begin(), surfaceVoxels.end(), [](const libmmv::Vec3ui& a, const libmmv::Vec3ui& b) -> bool {
-        return a.z > b.z;
-    });
-    unsigned int zLayerCutoff = minElement->z + maxDepthFromTopmostHit;
-    std::vector<libmmv::Vec3ui> filteredSurface;
-    std::copy_if(surfaceVoxels.begin(), surfaceVoxels.end(), std::back_inserter(filteredSurface), [zLayerCutoff](const libmmv::Vec3ui& a) -> bool {
-        return a.z < zLayerCutoff;
-    });
-    
-    // Scale the total stress in sqm to stress per vertex, depends on total surface area hit by the ray casting above
-    REAL surfaceAreaPerVoxelInSqMeters = asREAL(problem->getVoxelSize().x * problem->getVoxelSize().y);
-    REAL totalSurfaceAreaInSqMeters = surfaceAreaPerVoxelInSqMeters * filteredSurface.size();
-    REAL neumannStressPerVoxel = totalNeumannForce / filteredSurface.size();
-    REAL neumannStressPerVertex = neumannStressPerVoxel * asREAL(0.25); // exposed surface of each voxel has 4 vertices
-    
-    // For each relevant voxel, add the stress to each of its 4 vertices lying on the exposed surface
-    unsigned int numBoundaryVoxels = 0;
-    for (auto it = filteredSurface.begin(); it != filteredSurface.end(); it++) {
-        libmmv::Vec3ui vertexCoord(*it);
-        NeumannBoundary stress(libmmv::Vec3<REAL>(0, 0, neumannStressPerVertex));
-        problem->setNeumannBoundaryAtVertex(vertexCoord, stress, true);
-        vertexCoord.x++;
-        problem->setNeumannBoundaryAtVertex(vertexCoord, stress, true);
-        vertexCoord.y++;
-        problem->setNeumannBoundaryAtVertex(vertexCoord, stress, true);
-        vertexCoord.x--;
-        problem->setNeumannBoundaryAtVertex(vertexCoord, stress, true);
-        numBoundaryVoxels++;
-    }
+    if (surfaceVoxels.size() > 0) {
+        // Only consider voxels within 20 layers of the first non-null-material voxel encountered, to ensure we don't add a boundary to surfaces far away from the force origin
+        auto minElement = std::min_element(surfaceVoxels.begin(), surfaceVoxels.end(), [](const libmmv::Vec3ui& a, const libmmv::Vec3ui& b) -> bool {
+            return a.z > b.z;
+        });
+        unsigned int zLayerCutoff = minElement->z + maxDepthFromTopmostHit;
+        std::vector<libmmv::Vec3ui> filteredSurface;
+        std::copy_if(surfaceVoxels.begin(), surfaceVoxels.end(), std::back_inserter(filteredSurface), [zLayerCutoff](const libmmv::Vec3ui& a) -> bool {
+            return a.z < zLayerCutoff;
+        });
 
-	std::cout << "Projected Neumann boundary onto " << filteredSurface.size() << " voxels along +Z\n";
+        // Scale the total stress in sqm to stress per vertex, depends on total surface area hit by the ray casting above
+        REAL surfaceAreaPerVoxelInSqMeters = asREAL(problem->getVoxelSize().x * problem->getVoxelSize().y);
+        REAL totalSurfaceAreaInSqMeters = surfaceAreaPerVoxelInSqMeters * filteredSurface.size();
+        REAL neumannStressPerVoxel = totalNeumannForce / filteredSurface.size();
+        REAL neumannStressPerVertex = neumannStressPerVoxel * asREAL(0.25); // exposed surface of each voxel has 4 vertices
+
+        // For each relevant voxel, add the stress to each of its 4 vertices lying on the exposed surface
+        unsigned int numBoundaryVoxels = 0;
+        for (auto it = filteredSurface.begin(); it != filteredSurface.end(); it++) {
+            libmmv::Vec3ui vertexCoord(*it);
+            NeumannBoundary stress(libmmv::Vec3<REAL>(0, 0, neumannStressPerVertex));
+            problem->setNeumannBoundaryAtVertex(vertexCoord, stress, true);
+            vertexCoord.x++;
+            problem->setNeumannBoundaryAtVertex(vertexCoord, stress, true);
+            vertexCoord.y++;
+            problem->setNeumannBoundaryAtVertex(vertexCoord, stress, true);
+            vertexCoord.x--;
+            problem->setNeumannBoundaryAtVertex(vertexCoord, stress, true);
+            numBoundaryVoxels++;
+        }
+        std::cout << "Projected Neumann boundary onto " << filteredSurface.size() << " voxels along +Z\n";
+    }
+	
 }
 
 // Projects a ray along updateStep direction checking each voxel along the way to find the first non-null-material voxel

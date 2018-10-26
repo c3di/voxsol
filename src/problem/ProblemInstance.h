@@ -23,6 +23,7 @@ public:
     void createLODTree(int smallestPermissableDimension);
     void projectCoarseSolutionToFinerSolution(int coarseLod, int fineLod);
 
+    int getNumberOfLODs();
     int solveLOD(int lod);
 
     DiscreteProblem* getProblemLOD(int lod);

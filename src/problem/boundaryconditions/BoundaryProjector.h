@@ -20,17 +20,17 @@ public:
     // where hits can apply the boundary starting from the outer most hit. 
     void setMaxProjectionDepth(unsigned int depthFromTop, unsigned int depthFromFirstHit);
 
-    //void projectDirichletBoundaryAlongNegX(DirichletBoundary* condition);
-    //void projectNeumannBoundaryAlongNegX(NeumannBoundary* condition);
-    //void projectDirichletBoundaryAlongNegY(DirichletBoundary* condition);
-    //void projectNeumannBoundaryAlongNegY(NeumannBoundary* condition);
+    void projectDirichletBoundaryAlongNegX(DirichletBoundary* condition);
+    void projectNeumannStressAlongNegX(REAL totalNeumannStress, unsigned char matIdFilter = 255);
+    void projectDirichletBoundaryAlongNegY(DirichletBoundary* condition);
+    void projectNeumannStressAlongNegY(REAL totalNeumannStress, unsigned char matIdFilter = 255);
     void projectDirichletBoundaryAlongNegZ(DirichletBoundary* condition);
     void projectNeumannStressAlongNegZ(REAL totalNeumannStress, unsigned char matIdFilter = 255);
 
     void projectDirichletBoundaryAlongPosX(DirichletBoundary* condition);
-    //void projectNeumannBoundaryAlongPosX(NeumannBoundary* condition);
+    void projectNeumannStressAlongPosX(REAL totalNeumannStress, unsigned char matIdFilter = 255);
     void projectDirichletBoundaryAlongPosY(DirichletBoundary* condition);
-    //void projectNeumannBoundaryAlongPosY(NeumannBoundary* condition);
+    void projectNeumannStressAlongPosY(REAL totalNeumannStress, unsigned char matIdFilter = 255);
     void projectDirichletBoundaryAlongPosZ(DirichletBoundary* condition, unsigned char matIdFilter = 255);
     void projectNeumannStressAlongPosZ(REAL totalNeumannStress, unsigned char matIdFilter = 255);
 
