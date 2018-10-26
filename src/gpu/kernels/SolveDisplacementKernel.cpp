@@ -2,6 +2,7 @@
 #include "stdafx.h"
 #include "SolveDisplacementKernel.h"
 #include "problem/boundaryconditions/NeumannBoundary.h"
+#include "gpu/GPUParameters.h"
 #include <iostream>
 #include <fstream>
 

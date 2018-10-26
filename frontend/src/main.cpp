@@ -4,7 +4,7 @@
 #include <iostream>
 #include <algorithm>
 #include "gpu/CudaDebugHelper.h"
-#include "gpu/CudaCommonFunctions.h"
+#include "gpu/GPUParameters.h"
 #include "problem/DiscreteProblem.h"
 #include "solution/Solution.h"
 #include "libmmv/math/Vec3.h"

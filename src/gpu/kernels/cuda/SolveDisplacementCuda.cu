@@ -8,14 +8,9 @@
 #include "solution/samplers/BlockSampler.h"
 #include "gpu/sampling/ResidualVolume.h"
 #include "gpu/CudaCommonFunctions.h"
+#include "gpu/GPUParameters.h"
 
 #define MATRIX_ENTRY(rhsMatricesStartPointer, matrixIndex, row, col) rhsMatricesStartPointer[matrixIndex*9 + col*3 + row]
-
-#define CENTER_VERTEX_INDEX     13          // 1D index of the center vertex in the local subproblem
-#define EQUATION_ENTRY_SIZE     9 * 27 + 3  // 27 3x3 matrices and one 1x3 vector for Neumann stress
-#define NEUMANN_OFFSET          9 * 27      // Offset to the start of the Neumann stress vector inside an equation block
-#define UPDATES_PER_THREAD      250         // Number of vertices that should be updated stochastically per worker 
-#define NUM_WORKERS             6           // Number of workers that are updating vertices in parallel (one warp per worker)
 
 #define NEIGHBOR_INDEX          threadIdx.x
 #define RHS_INDEX               threadIdx.y
@@ -179,7 +174,7 @@ void copyVerticesFromGlobalToShared(
     const int numThreadsNeeded = blockSizeWithBorder * blockSizeWithBorder; //each thread will copy over a given x,y for all z ("top down")
     const int threadIdx_1D = WORKER_INDEX * 32 * 3 + RHS_INDEX * 32 + NEIGHBOR_INDEX;
 
-    // Choose the first numThreadsNeeded threads to copy over the vertics
+    // Choose the first numThreadsNeeded threads to copy over the vertices
     if (threadIdx_1D < numThreadsNeeded) {
         const char localCoordX = threadIdx_1D % blockSizeWithBorder;
         const char localCoordY = threadIdx_1D / blockSizeWithBorder;
@@ -225,7 +220,6 @@ void copyVerticesFromSharedToGlobal(
         const char localCoordX = 1 + threadIdx_1D % BLOCK_SIZE;
 
         uint3 globalCoord = { 0,0,0 };
-        // Move the checkerboard pattern to the start of the block to be updated
         globalCoord.z += localCoordZ + blockOriginCoord.z - 1;
         globalCoord.y += localCoordY + blockOriginCoord.y - 1;
         globalCoord.x += localCoordX + blockOriginCoord.x - 1;

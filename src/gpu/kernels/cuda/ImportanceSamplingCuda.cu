@@ -9,6 +9,7 @@
 #include "gpu/CudaCommonFunctions.h"
 #include "gpu/sampling/ResidualVolume.h"
 #include "solution/Vertex.h"
+#include "gpu/GPUParameters.h"
 
 __device__ REAL cuda_getPyramidValue(const REAL* importancePyramid, const LevelStats levelStats, int x, int y, int z) {
     int globalIndex = levelStats.startIndex + z * levelStats.sizeX * levelStats.sizeY + y * levelStats.sizeX + x;
