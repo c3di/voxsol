@@ -4,11 +4,13 @@
 		<Material id="6" name="aluminium" youngsModulus="70000000000" poissonRatio="0.35"></Material>
 	</MaterialDictionary>
 	
-	<DiscreteProblem sizeX="8" sizeY="8" sizeZ="8" voxelSizeX="0.125" voxelSizeY="0.125" voxelSizeZ="0.125" inputFile="8x8x8_with_4x4x6_cube.mrc">
-		<MaterialMapping>
-			<MaterialMap materialID="0" colorValue="0"></MaterialMap>
-			<MaterialMap materialID="6" colorValue="255"></MaterialMap>
-		</MaterialMapping>
+	<DiscreteProblem sizeX="8" sizeY="8" sizeZ="8" voxelSizeX="0.125" voxelSizeY="0.125" voxelSizeZ="0.125">
+		<InputFile inputFileName="8x8x8_with_4x4x6_cube.mrc">
+			<MaterialMapping>
+				<MaterialMap materialID="0" colorValue="0"></MaterialMap>
+				<MaterialMap materialID="6" colorValue="255"></MaterialMap>
+			</MaterialMapping>
+		</InputFile>
 	</DiscreteProblem>
 	
 	<DirichletBoundaries>

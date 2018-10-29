@@ -22,10 +22,10 @@ protected:
     MRCImporter mrcImporter;
 
     void parseMaterialDictionary();
-    void parseMaterialMapping(MRCImporter* importer, tinyxml2::XMLElement* discreteProblemElement);
+    void parseMaterialMapping(MRCImporter* importer, tinyxml2::XMLElement* inputFileElement);
     void parseDiscreteProblem();
     void parseDirichletBoundaryProjection();
     void parseNeumannBoundaryProjection();
     void parseLevelsOfDetail();
-
+    void parseInputFile(tinyxml2::XMLElement* discreteProblemElement);
 };

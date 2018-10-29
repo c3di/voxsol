@@ -78,8 +78,8 @@ void XMLProblemDeserializer::parseMaterialDictionary() {
     problemInstance.materialDictionary = dict;
 }
 
-void XMLProblemDeserializer::parseMaterialMapping(MRCImporter* importer, tinyxml2::XMLElement* discreteProblemElement) {
-    tinyxml2::XMLElement* matMappingElement = discreteProblemElement->FirstChildElement("MaterialMapping");
+void XMLProblemDeserializer::parseMaterialMapping(MRCImporter* importer, tinyxml2::XMLElement* inputFileElement) {
+    tinyxml2::XMLElement* matMappingElement = inputFileElement->FirstChildElement("MaterialMapping");
     if (matMappingElement == NULL) {
         throw std::ios_base::failure("A MaterialMapping is required when importing a problem from an MRC stack");
     }
@@ -128,19 +128,22 @@ void XMLProblemDeserializer::parseDiscreteProblem() {
 
     problemInstance.initFromParameters(libmmv::Vec3ui(sizeX, sizeY, sizeZ), libmmv::Vec3<REAL>(voxelSizeX, voxelSizeY, voxelSizeZ));
 
-    const char* inputFilePath = problemElement->Attribute("inputFile");
-    if (inputFilePath != NULL) {
-        std::string filePathString(inputFilePath);
+    parseInputFile(problemElement);
+}
 
-        filePathString = getFullPathToInputFile(filePathString);
-
-        MRCImporter importer(filePathString);
-
-        parseMaterialMapping(&importer, problemElement);
-
-        importer.populateDiscreteProblem(problemInstance.getProblemLOD(0));
+void XMLProblemDeserializer::parseInputFile(tinyxml2::XMLElement* discreteProblemElement) {
+    tinyxml2::XMLElement* inputFileElement = discreteProblemElement->FirstChildElement("InputFile");
+    if (inputFileElement == NULL) {
+        return;
     }
 
+    const char* inputFilePath = inputFileElement->Attribute("inputFileName");
+    std::string filePathString(inputFilePath);
+    filePathString = getFullPathToInputFile(filePathString);
+
+    MRCImporter importer(filePathString);
+    parseMaterialMapping(&importer, inputFileElement);
+    importer.populateDiscreteProblem(problemInstance.getProblemLOD(0));
 }
 
 void XMLProblemDeserializer::parseDirichletBoundaryProjection() {
