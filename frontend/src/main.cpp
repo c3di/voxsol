@@ -32,9 +32,9 @@ int totalIterations = 0;
 int totalMilliseconds = 0;
 
 void solveGPU(ProblemInstance& problemInstance, int lod) {
-
-    WaveSampler sampler(problemInstance.getSolutionLOD(lod));
-    sampler.setWaveOrientation(libmmv::Vec3ui(0, 0, 0), libmmv::Vec3ui(0, 0, 1));
+    libmmv::Vec3ui waveOrigin(0, 0, 0);
+    libmmv::Vec3i waveDirection(0, 0, 1);
+    WaveSampler sampler(problemInstance.getSolutionLOD(lod), waveOrigin, waveDirection);
 
     VTKSolutionVisualizer visualizer(problemInstance.getSolutionLOD(lod));
 	visualizer.filterOutNullVoxels(false);
@@ -46,7 +46,7 @@ void solveGPU(ProblemInstance& problemInstance, int lod) {
     SolveDisplacementKernel kernel(problemInstance.getSolutionLOD(lod), &sampler, problemInstance.getResidualVolumeLOD(lod));
     
     std::cout << "Solving LOD " << lod << " with GPU...\n";
-    long targetMilliseconds = 10000 / (lod+1);
+    long targetMilliseconds = 12000 / (lod+1);
 
     auto now = std::chrono::high_resolution_clock::now();
     __int64 elapsed = 0;

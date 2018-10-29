@@ -2,9 +2,10 @@
 #include "WaveSampler.h"
 #include "gpu/GPUParameters.h"
 
-WaveSampler::WaveSampler(Solution * solution) : 
+WaveSampler::WaveSampler(Solution * solution, libmmv::Vec3ui& origin, libmmv::Vec3i& direction) :
     solutionSize(solution->getSize())
 {
+    setWaveOrientation(origin, direction);
     currentWavefrontOrigin = chooseNextWavefrontOrigin();
 }
 
@@ -51,10 +52,10 @@ void WaveSampler::nextBlockOrigin(libmmv::Vec3ui* currentWavefrontOrigin) {
     }
 }
 
-void WaveSampler::setWaveOrientation(libmmv::Vec3ui& origin, libmmv::Vec3ui& direction)
+void WaveSampler::setWaveOrientation(libmmv::Vec3ui& origin, libmmv::Vec3i& direction)
 {
     waveOrigin = libmmv::Vec3ui(origin);
-    waveDirection = libmmv::Vec3ui(direction);
+    waveDirection = libmmv::Vec3i(direction);
     currentWavefront = libmmv::Vec3ui(origin);
 }
 
