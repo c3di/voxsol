@@ -26,4 +26,5 @@ protected:
     void progressWavefront();
     void nextBlockOrigin(libmmv::Vec3ui* currentWavefrontOrigin);
     void setWaveOrientation(libmmv::Vec3ui& origin, libmmv::Vec3i& direction);
+    void moveWavefrontToOrigin();
 };

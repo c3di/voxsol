@@ -25,14 +25,23 @@ int WaveSampler::generateNextBlockOrigins(uint3 * blockOrigins, int numOriginsTo
 
 void WaveSampler::progressWavefront() {
     currentWavefront = currentWavefront + waveDirection * BLOCK_SIZE;
-    if (currentWavefront.x >= solutionSize.x) {
-        currentWavefront.x = 0;
+    if (currentWavefront.x >= solutionSize.x || currentWavefront.y >= solutionSize.y || currentWavefront.z >= solutionSize.z) {
+        moveWavefrontToOrigin();
     }
-    if (currentWavefront.y >= solutionSize.y) {
-        currentWavefront.y = 0;
+}
+
+void WaveSampler::moveWavefrontToOrigin() {
+    currentWavefront = libmmv::Vec3ui(waveOrigin);
+
+    // In any of these cases the wave is moving in the negative direction through the problem, so the block should start at Edge - BLOCK_SIZE
+    if (waveDirection.x < 0) {
+        currentWavefront.x += waveDirection.x * (BLOCK_SIZE - 1);
     }
-    if (currentWavefront.z >= solutionSize.z) {
-        currentWavefront.z = 0;
+    if (waveDirection.y < 0) {
+        currentWavefront.y += waveDirection.y * (BLOCK_SIZE - 1);
+    }
+    if (waveDirection.z < 0) {
+        currentWavefront.z += waveDirection.z * (BLOCK_SIZE - 1);
     }
 }
 
@@ -56,24 +65,24 @@ void WaveSampler::setWaveOrientation(libmmv::Vec3ui& origin, libmmv::Vec3i& dire
 {
     waveOrigin = libmmv::Vec3ui(origin);
     waveDirection = libmmv::Vec3i(direction);
-    currentWavefront = libmmv::Vec3ui(origin);
+    moveWavefrontToOrigin();
 }
 
 libmmv::Vec3ui WaveSampler::chooseNextWavefrontOrigin() {
     std::uniform_int_distribution<int> distribution(-1, 1);
     waveOffset.x = distribution(generator);
     waveOffset.y = distribution(generator);
-    waveOffset.z = distribution(generator);
+    waveOffset.z = 0;
 
-    libmmv::Vec3ui wavefront = waveOrigin + waveOffset + (waveDirection * currentWavefront);
+    libmmv::Vec3ui wavefront = currentWavefront + waveOffset;
     if (wavefront.x > solutionSize.x) {
-        wavefront.x = 0;
+        wavefront.x = waveOrigin.x;
     }
     if (wavefront.y > solutionSize.y) {
-        wavefront.y = 0;
+        wavefront.y = waveOrigin.y;
     }
     if (wavefront.z > solutionSize.z) {
-        wavefront.z = 0;
+        wavefront.z = waveOrigin.z;
     }
     return wavefront;
 }

@@ -44,7 +44,7 @@ void MRCImporter::populateDiscreteProblem(DiscreteProblem * problem)
             std::cout << i << ": " << stats[i] << " voxels, ";
         }
     }
-
+    std::cout << std::endl;
     delete[] stats;
 }
 
