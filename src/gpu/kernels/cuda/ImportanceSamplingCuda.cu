@@ -53,6 +53,12 @@ void cuda_selectImportanceSamplingCandidates(uint3* candidates, const REAL* impo
 
     cuda_traversePyramid(importancePyramid, levelStats, &position, diceRoll, topLevel);
 
+    // need to add a random offset to the blocks. The less precise residual update can otherwise cause them to become trapped in a certain region, as the residuals at the previous block 
+    // borders cause the importance sampling algorithm to always choose locations inside this region.
+    position.x += 2 - floor(curand_uniform(&localRNGState) * 5);
+    position.y += 2 - floor(curand_uniform(&localRNGState) * 5);
+    position.z += 2 - floor(curand_uniform(&localRNGState) * 5);
+
     // if the block origin would cause most of the block to be outside the solution space, push it inward so that its outer edge is on the outer edge of the solution space
     position.x -= max(position.x + (int)updateRegionSize - (int)levelStats[0].sizeX*2, 0); //*2 because level 0 is already half the size of the solution space
     position.y -= max(position.y + (int)updateRegionSize - (int)levelStats[0].sizeY*2, 0);
@@ -61,6 +67,7 @@ void cuda_selectImportanceSamplingCandidates(uint3* candidates, const REAL* impo
     // convert to unsigned int, clip negative coordinates to 0
     uint3 pos = make_uint3(max(position.x, 0), max(position.y, 0), max(position.z, 0));
     candidates[id] = pos;
+    rngState[id] = localRNGState;
 }
 
 __global__

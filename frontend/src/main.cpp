@@ -32,9 +32,7 @@ int totalIterations = 0;
 int totalMilliseconds = 0;
 
 void solveGPU(ProblemInstance& problemInstance, int lod) {
-    libmmv::Vec3ui waveOrigin(0, 0, 0);
-    libmmv::Vec3i waveDirection(0, 0, 1);
-    WaveSampler sampler(problemInstance.getSolutionLOD(lod), waveOrigin, waveDirection);
+    ImportanceBlockSampler sampler(problemInstance.getResidualVolumeLOD(lod));
 
     VTKSolutionVisualizer visualizer(problemInstance.getSolutionLOD(lod));
 	visualizer.filterOutNullVoxels(false);

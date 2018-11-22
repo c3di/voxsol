@@ -129,6 +129,7 @@ void ResidualVolume::initializePyramidFromProblem() {
     computeDepthOfPyramid();
     allocateManagedMemory();
     initializeLeveLZeroResidualsFromProblem();
+    updateEntirePyramid();
 }
 
 void ResidualVolume::computeDepthOfPyramid()

@@ -206,10 +206,11 @@ void copyVerticesFromGlobalToShared(
 }
 
 __device__
-void copyVerticesFromSharedToGlobal(
+void copyVerticesFromSharedToGlobalAndUpdateResiduals(
     Vertex localVertices[BLOCK_SIZE + 2][BLOCK_SIZE + 2][BLOCK_SIZE + 2],
     volatile Vertex* verticesOnGPU,
-    const uint3 blockOriginCoord
+    const uint3 blockOriginCoord,
+    REAL* residualVolume
 ) {
     const int numThreadsNeeded = BLOCK_SIZE * BLOCK_SIZE * BLOCK_SIZE; //each thread will copy over one vertex in the inner block (without the border)
     const int threadIdx_1D = WORKER_INDEX * 32 * 3 + RHS_INDEX * 32 + NEIGHBOR_INDEX;
@@ -228,6 +229,22 @@ void copyVerticesFromSharedToGlobal(
             int globalIndex = c_solutionDimensions.y*c_solutionDimensions.x*globalCoord.z + c_solutionDimensions.x*globalCoord.y + globalCoord.x;
             const Vertex* local = &localVertices[localCoordZ][localCoordY][localCoordX];
             volatile Vertex* global = &verticesOnGPU[globalIndex];
+
+            // First set residual to 0 for all updated vertices, then set the outer edge of vertices to the actual residual so future update blocks will
+            // be placed near the edges of the current block, where the vertices are no longer in equilibrium.
+            int residualIndex = (globalCoord.z + 1) / 2 * (c_solutionDimensions.y+1) / 2 * (c_solutionDimensions.x+1) / 2 + (globalCoord.y + 1) / 2 * (c_solutionDimensions.x+1) / 2 + (globalCoord.x + 1) / 2;
+            residualVolume[residualIndex] = asREAL(0.0);
+            REAL residual = abs(global->x - local->x) + abs(global->y - local->y) + abs(global->z - local->z);
+            if (localCoordZ == 1 || localCoordZ == BLOCK_SIZE) {
+                residualVolume[residualIndex] = residual;
+            }
+            if (localCoordY == 1 || localCoordY == BLOCK_SIZE) {
+                residualVolume[residualIndex] = residual;
+            }
+            if (localCoordX == 1 || localCoordX == BLOCK_SIZE) {
+                residualVolume[residualIndex] = residual;
+            }
+
             global->x = local->x;
             global->y = local->y;
             global->z = local->z;
@@ -246,7 +263,8 @@ void cuda_SolveDisplacement(
     volatile Vertex* verticesOnGPU,
     REAL* matConfigEquations,
     const uint3* blockOrigins,
-    curandState* rngState
+    curandState* rngState,
+    REAL* residualVolume
 ) {
     const uint3 blockOriginCoord = blockOrigins[blockIdx.x];
     if (blockOriginCoord.x >= c_solutionDimensions.x || blockOriginCoord.y >= c_solutionDimensions.y || blockOriginCoord.z >= c_solutionDimensions.z) {
@@ -266,7 +284,7 @@ void cuda_SolveDisplacement(
     
     __syncthreads();
 
-    copyVerticesFromSharedToGlobal(localVertices, verticesOnGPU, blockOriginCoord); 
+    copyVerticesFromSharedToGlobalAndUpdateResiduals(localVertices, verticesOnGPU, blockOriginCoord, residualVolume); 
 
     if (NEIGHBOR_INDEX == 0) {
         // Only thread 0 actually generates values using the RNG state so only this updated copy should be sent back to global
@@ -388,7 +406,7 @@ extern "C" void cudaLaunchSolveDisplacementKernel(
         uint3* currentBlockOrigins = &blockOrigins[i * maxConcurrentBlocks];
         int numBlocks = std::min(numBlockOrigins - i*maxConcurrentBlocks, maxConcurrentBlocks);
 
-        cuda_SolveDisplacement << < numBlocks, threadsPerBlock >> >(vertices, matConfigEquations, currentBlockOrigins, rngStateOnGPU);
+        cuda_SolveDisplacement << < numBlocks, threadsPerBlock >> >(vertices, matConfigEquations, currentBlockOrigins, rngStateOnGPU, residualVolume);
         cudaDeviceSynchronize();
         cudaCheckExecution();
     }
