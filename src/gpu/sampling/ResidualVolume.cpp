@@ -42,6 +42,23 @@ REAL ResidualVolume::getResidualOnLevel(unsigned int level, VertexCoordinate & l
     return getResidualOnLevel(level, levelCoord.x, levelCoord.y, levelCoord.z);
 }
 
+REAL ResidualVolume::getMaxResidualOnLevelZero() const {
+    LevelStats levelZeroStats = levelStatsManaged[0];
+    REAL* levelStart = &importancePyramidManaged[levelZeroStats.startIndex];
+    REAL maxResidual = 0;
+
+    for (unsigned int z = 0; z <= levelZeroStats.sizeZ; z++)
+        for (unsigned int y = 0; y <= levelZeroStats.sizeY; y++)
+            for (unsigned int x = 0; x <= levelZeroStats.sizeX; x++) {
+                REAL res = getResidualOnLevel(0, x, y, z);
+                if (res > maxResidual) {
+                    maxResidual = res;
+                }
+            }
+
+    return maxResidual;
+}
+
 REAL ResidualVolume::getResidualOnLevel(unsigned int level, unsigned int x, unsigned int y, unsigned int z) const
 {
     LevelStats statsForLevel = levelStatsManaged[level];

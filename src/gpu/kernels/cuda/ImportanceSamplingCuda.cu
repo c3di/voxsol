@@ -44,8 +44,19 @@ void cuda_traversePyramid(const REAL* importancePyramid, const LevelStats* level
 }
 
 __global__ 
-void cuda_selectImportanceSamplingCandidates(uint3* candidates, const REAL* importancePyramid, const LevelStats* levelStats, curandState* rngState, const int topLevel, const unsigned int updateRegionSize) {
+void cuda_selectImportanceSamplingCandidates(
+    uint3* candidates, 
+    const int numCandidates,
+    const REAL* importancePyramid, 
+    const LevelStats* levelStats, 
+    curandState* rngState, 
+    const int topLevel, 
+    const unsigned int updateRegionSize
+) {
     int id = blockIdx.x * blockDim.x + threadIdx.x;
+    if (id >= numCandidates) {
+        return;
+    }
     curandState localRNGState = rngState[id];
     REAL totalResidual = importancePyramid[levelStats[topLevel].startIndex];
     REAL diceRoll = curand_uniform(&localRNGState) * totalResidual;
@@ -102,7 +113,7 @@ extern "C" void cudaLaunchImportanceSamplingKernel(
     int numBlocks = numCandidatesToFind / THREADS_PER_BLOCK + (numCandidatesToFind % THREADS_PER_BLOCK == 0 ? 0 : 1);
 
     // setup curand
-    cuda_selectImportanceSamplingCandidates << < numBlocks, THREADS_PER_BLOCK >> > (candidates, importancePyramid, levelStats, rngStateOnGPU, topLevel, BLOCK_SIZE);
+    cuda_selectImportanceSamplingCandidates << < numBlocks, THREADS_PER_BLOCK >> > (candidates, numCandidatesToFind, importancePyramid, levelStats, rngStateOnGPU, topLevel, BLOCK_SIZE);
     cudaDeviceSynchronize();
     cudaCheckExecution();
 }

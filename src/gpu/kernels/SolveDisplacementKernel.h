@@ -10,6 +10,7 @@
 #include "solution/Solution.h"
 #include "gpu/sampling/ResidualVolume.h"
 #include "solution/samplers/BlockSampler.h"
+#include "FullResidualUpdateKernel.h"
 
 //extern "C" void cudaLaunchSolveDisplacementKernelGlobal(Vertex* verticesOnGPU, REAL* matConfigEquationsOnGPU, Vertex* blockOrigins, const SolutionDim solutionDims);
 extern "C" void cudaLaunchSolveDisplacementKernel(volatile Vertex* verticesOnGPU, REAL* matConfigEquationsOnGPU, REAL* residualVolume, curandState* rngStateOnGPU, uint3* blockOrigins, const int numBlocks, const uint3 solutionDims);
@@ -48,6 +49,9 @@ protected:
     uint3* blockOrigins;
     curandState* rngStateOnGPU;
     int numBlockOriginsPerIteration;
+    int numLaunchesSinceLastFullResidualUpdate = 0;
+    FullResidualUpdateKernel fullResidualUpdateKernel;
+    REAL maxResidualOnLevelZero = 0;
 
     void prepareInputs();
 

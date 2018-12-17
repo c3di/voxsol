@@ -23,6 +23,7 @@ public:
     void updatePyramid(unsigned int level, VertexCoordinate& from, VertexCoordinate& to);
     void updateEntirePyramid();
     REAL getTotalResidual() const;
+    REAL getMaxResidualOnLevelZero() const;
 
     REAL* getPyramidDevicePointer();
     LevelStats* getLevelStatsDevicePointer();

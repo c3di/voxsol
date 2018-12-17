@@ -1,4 +1,3 @@
-#pragma once
 #include "stdafx.h"
 #include "SolveDisplacementKernel.h"
 #include "problem/boundaryconditions/NeumannBoundary.h"
@@ -13,7 +12,8 @@ SolveDisplacementKernel::SolveDisplacementKernel(Solution* sol, BlockSampler* sa
     serializedVertices(nullptr),
     rngStateOnGPU(nullptr),
     blockOrigins(nullptr),
-    residualVolume(resVol)
+    residualVolume(resVol),
+    fullResidualUpdateKernel(sol, resVol, nullptr, nullptr)
 {
     solutionDimensions.x = sol->getSize().x;
     solutionDimensions.y = sol->getSize().y;
@@ -50,6 +50,13 @@ void SolveDisplacementKernel::launch() {
             numBlockOriginsPerIteration,
             solutionDimensions
         );
+
+        numLaunchesSinceLastFullResidualUpdate++;
+        if (numLaunchesSinceLastFullResidualUpdate > NUM_LAUNCHES_BETWEEN_RESIDUAL_UPDATES) {
+            fullResidualUpdateKernel.launch();
+            numLaunchesSinceLastFullResidualUpdate = 0;
+            maxResidualOnLevelZero = residualVolume->getMaxResidualOnLevelZero();
+        }
     }
 }
 
@@ -65,10 +72,12 @@ void SolveDisplacementKernel::freeCudaResources() {
     if (serializedMatConfigEquations != nullptr) {
         cudaCheckSuccess(cudaFree(serializedMatConfigEquations));
         serializedMatConfigEquations = nullptr;
+        fullResidualUpdateKernel.setMatConfigEquationsOnGPU(nullptr);
     }
     if (serializedVertices != nullptr) {
         cudaCheckSuccess(cudaFree(serializedVertices));
         serializedVertices = nullptr;
+        fullResidualUpdateKernel.setVerticesOnGPU(nullptr);
     }
     if (rngStateOnGPU != nullptr) {
         cudaCheckSuccess(cudaFree(rngStateOnGPU));
@@ -100,6 +109,7 @@ void SolveDisplacementKernel::pushMatConfigEquationsManaged() {
     size_t size = solution->getMaterialConfigurationEquations()->size() * MaterialConfigurationEquations::SizeInBytes;
     cudaCheckSuccess(cudaMallocManaged(&serializedMatConfigEquations, size));
     serializeMaterialConfigurationEquations(serializedMatConfigEquations);
+    fullResidualUpdateKernel.setMatConfigEquationsOnGPU(serializedMatConfigEquations);
 }
 
 void SolveDisplacementKernel::pushVerticesManaged() {
@@ -107,6 +117,7 @@ void SolveDisplacementKernel::pushVerticesManaged() {
     size_t size = vertices->size() * sizeof(Vertex);
     cudaCheckSuccess(cudaMallocManaged(&serializedVertices, size));
     memcpy(serializedVertices, vertices->data(), size);
+    fullResidualUpdateKernel.setVerticesOnGPU(serializedVertices);
 }
 
 void SolveDisplacementKernel::pullVertices() {
