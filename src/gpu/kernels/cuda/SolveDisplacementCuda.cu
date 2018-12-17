@@ -19,6 +19,7 @@
 //#define DYN_ADJUSTMENT_MAX 0.01f
 
 __constant__ uint3 c_solutionDimensions;
+__constant__ uint3 c_residualDimensions;
 
 
 __device__ bool isInsideSolution(const uint3 coord) {
@@ -232,7 +233,7 @@ void copyVerticesFromSharedToGlobalAndUpdateResiduals(
 
             // First set residual to 0 for all updated vertices, then set the outer edge of vertices to the actual residual so future update blocks will
             // be placed near the edges of the current block, where the vertices are no longer in equilibrium.
-            int residualIndex = (globalCoord.z + 1) / 2 * (c_solutionDimensions.y+1) / 2 * (c_solutionDimensions.x+1) / 2 + (globalCoord.y + 1) / 2 * (c_solutionDimensions.x+1) / 2 + (globalCoord.x + 1) / 2;
+            int residualIndex = (globalCoord.z + 1) / 2 * c_residualDimensions.y * c_residualDimensions.x + (globalCoord.y + 1) / 2 * c_residualDimensions.x + (globalCoord.x + 1) / 2;
             residualVolume[residualIndex] = asREAL(0.0);
             REAL residual = abs(global->x - local->x) + abs(global->y - local->y) + abs(global->z - local->z);
             if (localCoordZ == 1 || localCoordZ == BLOCK_SIZE) {
@@ -400,6 +401,8 @@ extern "C" void cudaLaunchSolveDisplacementKernel(
 #endif
 
     cudaMemcpyToSymbol(c_solutionDimensions, &solutionDims, sizeof(uint3));
+    const uint3 residualDims = {(solutionDims.x+1) / 2, (solutionDims.y+1) / 2, (solutionDims.z+1) / 2};
+    cudaMemcpyToSymbol(c_residualDimensions, &residualDims, sizeof(uint3));
 
     // process all blocks in batches of maxConcurrentBlocks
     for (int i = 0; i < numIterations; i++) {
