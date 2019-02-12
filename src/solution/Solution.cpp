@@ -23,6 +23,12 @@ std::vector<Vertex>* Solution::getVertices() {
     return &vertices;
 }
 
+Vertex Solution::getVertexAt(VertexCoordinate coord)
+{
+    int index = mapToIndex(coord);
+    return vertices.at(index);
+}
+
 const libmmv::Vec3ui Solution::getSize() const {
     return size;
 }

@@ -21,6 +21,7 @@ public:
 
     const std::vector<MaterialConfigurationEquations>* getMaterialConfigurationEquations() const;
     std::vector<Vertex>* getVertices();
+    Vertex getVertexAt(VertexCoordinate coord);
 
     DiscreteProblem* getProblem();
 

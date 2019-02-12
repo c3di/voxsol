@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "VTKSolutionVisualizer.h"
+#include "solution/SolutionAnalyzer.h"
 
 using namespace std;
 
@@ -44,6 +45,10 @@ void VTKSolutionVisualizer::filterOutNullVoxels(bool doFilter) {
     else {
         numberOfVertices = static_cast<unsigned int>(solution->getVertices()->size());
     }
+}
+
+void VTKSolutionVisualizer::setMechanicalValuesOutput(bool flag) {
+    enableMechanicalValuesOutput = flag;
 }
 
 void VTKSolutionVisualizer::writeToFile(const string& filename) {
@@ -139,7 +144,17 @@ void VTKSolutionVisualizer::writeCellTypes() {
 
 void VTKSolutionVisualizer::writeCellData() {
     outFile << "CELL_DATA " << numberOfCells << endl;
+
     writeMaterials();
+
+    if (enableMechanicalValuesOutput) {
+        std::cout << "Writing Mechanical values..." << std::endl;
+        SolutionAnalyzer solutionAnalyzer(solution->getProblem(), solution);
+        writeVonMisesStresses(&solutionAnalyzer);
+        writeVonMisesStrains(&solutionAnalyzer);
+        writeStressTensors(&solutionAnalyzer);
+        writeStrainTensors(&solutionAnalyzer);
+    }
 }
 
 void VTKSolutionVisualizer::writeMaterials() {
@@ -155,15 +170,166 @@ void VTKSolutionVisualizer::writeMaterials() {
     outFile << endl;
 }
 
+void VTKSolutionVisualizer::writeVonMisesStresses(SolutionAnalyzer* solutionAnalyzer) {
+    outFile << "SCALARS von_Mises_stress float 1" << endl;
+    outFile << "LOOKUP_TABLE default" << endl;
+
+    for (unsigned int i = 0; i < numberOfCells; i++) {
+        unsigned int index = filterNullVoxels ? cellFilteredToOrigIndex[i] : i;
+        REAL stress = static_cast<REAL>(solutionAnalyzer->getVonMisesStressAt(index));
+        outFile << stress << endl;
+    }
+    outFile << endl;
+}
+
+void VTKSolutionVisualizer::writeVonMisesStrains(SolutionAnalyzer* solutionAnalyzer) {
+    outFile << "SCALARS von_Mises_strain float 1" << endl;
+    outFile << "LOOKUP_TABLE default" << endl;
+
+    for (unsigned int i = 0; i < numberOfCells; i++) {
+        unsigned int index = filterNullVoxels ? cellFilteredToOrigIndex[i] : i;
+        REAL stress = static_cast<REAL>(solutionAnalyzer->getVonMisesStrainAt(index));
+        outFile << stress << endl;
+    }
+    outFile << endl;
+}
+
+void VTKSolutionVisualizer::writeStressTensors(SolutionAnalyzer* solutionAnalyzer) {
+    outFile << "SCALARS stress_sigma_xx float 1" << endl;
+    outFile << "LOOKUP_TABLE default" << endl;
+
+    for (unsigned int i = 0; i < numberOfCells; i++) {
+        unsigned int index = filterNullVoxels ? cellFilteredToOrigIndex[i] : i;
+        REAL* stressTensor = solutionAnalyzer->getStressTensorAt(index);
+        outFile << stressTensor[0] << endl;
+    }
+    outFile << endl;
+
+    outFile << "SCALARS stress_sigma_yy float 1" << endl;
+    outFile << "LOOKUP_TABLE default" << endl;
+
+    for (unsigned int i = 0; i < numberOfCells; i++) {
+        unsigned int index = filterNullVoxels ? cellFilteredToOrigIndex[i] : i;
+        REAL* stressTensor = solutionAnalyzer->getStressTensorAt(index);
+        outFile << stressTensor[1] << endl;
+    }
+    outFile << endl;
+
+    outFile << "SCALARS stress_sigma_zz float 1" << endl;
+    outFile << "LOOKUP_TABLE default" << endl;
+
+    for (unsigned int i = 0; i < numberOfCells; i++) {
+        unsigned int index = filterNullVoxels ? cellFilteredToOrigIndex[i] : i;
+        REAL* stressTensor = solutionAnalyzer->getStressTensorAt(index);
+        outFile << stressTensor[2] << endl;
+    }
+    outFile << endl;
+
+    outFile << "SCALARS stress_tau_yz float 1" << endl;
+    outFile << "LOOKUP_TABLE default" << endl;
+
+    for (unsigned int i = 0; i < numberOfCells; i++) {
+        unsigned int index = filterNullVoxels ? cellFilteredToOrigIndex[i] : i;
+        REAL* stressTensor = solutionAnalyzer->getStressTensorAt(index);
+        outFile << stressTensor[3] << endl;
+    }
+    outFile << endl;
+    
+    outFile << "SCALARS stress_tau_xz float 1" << endl;
+    outFile << "LOOKUP_TABLE default" << endl;
+
+    for (unsigned int i = 0; i < numberOfCells; i++) {
+        unsigned int index = filterNullVoxels ? cellFilteredToOrigIndex[i] : i;
+        REAL* stressTensor = solutionAnalyzer->getStressTensorAt(index);
+        outFile << stressTensor[4] << endl;
+    }
+    outFile << endl;
+
+    outFile << "SCALARS stress_tau_xy float 1" << endl;
+    outFile << "LOOKUP_TABLE default" << endl;
+
+    for (unsigned int i = 0; i < numberOfCells; i++) {
+        unsigned int index = filterNullVoxels ? cellFilteredToOrigIndex[i] : i;
+        REAL* stressTensor = solutionAnalyzer->getStressTensorAt(index);
+        outFile << stressTensor[5] << endl;
+    }
+    outFile << endl;
+}
+
+void VTKSolutionVisualizer::writeStrainTensors(SolutionAnalyzer* solutionAnalyzer) {
+    outFile << "SCALARS strain_e_xx float 1" << endl;
+    outFile << "LOOKUP_TABLE default" << endl;
+
+    for (unsigned int i = 0; i < numberOfCells; i++) {
+        unsigned int index = filterNullVoxels ? cellFilteredToOrigIndex[i] : i;
+        REAL* strainTensor = solutionAnalyzer->getStrainTensorAt(index);
+        outFile << strainTensor[0] << endl;
+    }
+    outFile << endl;
+
+    outFile << "SCALARS strain_e_yy float 1" << endl;
+    outFile << "LOOKUP_TABLE default" << endl;
+
+    for (unsigned int i = 0; i < numberOfCells; i++) {
+        unsigned int index = filterNullVoxels ? cellFilteredToOrigIndex[i] : i;
+        REAL* strainTensor = solutionAnalyzer->getStrainTensorAt(index);
+        outFile << strainTensor[1] << endl;
+    }
+    outFile << endl;
+
+    outFile << "SCALARS strain_e_zz float 1" << endl;
+    outFile << "LOOKUP_TABLE default" << endl;
+
+    for (unsigned int i = 0; i < numberOfCells; i++) {
+        unsigned int index = filterNullVoxels ? cellFilteredToOrigIndex[i] : i;
+        REAL* strainTensor = solutionAnalyzer->getStrainTensorAt(index);
+        outFile << strainTensor[2] << endl;
+    }
+    outFile << endl;
+
+    outFile << "SCALARS strain_gamma_yz float 1" << endl;
+    outFile << "LOOKUP_TABLE default" << endl;
+
+    for (unsigned int i = 0; i < numberOfCells; i++) {
+        unsigned int index = filterNullVoxels ? cellFilteredToOrigIndex[i] : i;
+        REAL* strainTensor = solutionAnalyzer->getStrainTensorAt(index);
+        outFile << strainTensor[3] << endl;
+    }
+    outFile << endl;
+
+    outFile << "SCALARS strain_gamma_xz float 1" << endl;
+    outFile << "LOOKUP_TABLE default" << endl;
+
+    for (unsigned int i = 0; i < numberOfCells; i++) {
+        unsigned int index = filterNullVoxels ? cellFilteredToOrigIndex[i] : i;
+        REAL* strainTensor = solutionAnalyzer->getStrainTensorAt(index);
+        outFile << strainTensor[4] << endl;
+    }
+    outFile << endl;
+
+    outFile << "SCALARS strain_gamma_xy float 1" << endl;
+    outFile << "LOOKUP_TABLE default" << endl;
+
+    for (unsigned int i = 0; i < numberOfCells; i++) {
+        unsigned int index = filterNullVoxels ? cellFilteredToOrigIndex[i] : i;
+        REAL* strainTensor = solutionAnalyzer->getStrainTensorAt(index);
+        outFile << strainTensor[5] << endl;
+    }
+    outFile << endl;
+}
+
 void VTKSolutionVisualizer::writePointData() {
     outFile << "POINT_DATA " << numberOfVertices << endl;
 
     writeDisplacements();
     writeBoundaries();
-    if (impVol != nullptr) {
+
+    if (enableResidualOutput && impVol != nullptr) {
         writeResiduals();
     }
-    writeMaterialConfigIds();
+    if (enableMatConfigIdOutput) {
+        writeMaterialConfigIds();
+    }
 }
 
 void VTKSolutionVisualizer::writeDisplacements() {
