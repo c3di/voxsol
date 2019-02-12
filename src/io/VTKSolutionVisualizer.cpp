@@ -383,7 +383,8 @@ void VTKSolutionVisualizer::writeResiduals() {
 }
 
 void VTKSolutionVisualizer::writeMaterialConfigIds() {
-    outFile << "VECTORS matconfigid double" << endl;
+    outFile << "SCALARS matconfigid float 1" << endl;
+    outFile << "LOOKUP_TABLE default" << endl;
 
     std::vector<Vertex>* vertices = solution->getVertices();
     for (unsigned int i = 0; i < numberOfVertices; i++) {
@@ -394,7 +395,7 @@ void VTKSolutionVisualizer::writeMaterialConfigIds() {
         }
         VertexCoordinate fullresCoord = solution->mapToCoordinate(index);
         int configid = v.materialConfigId;
-        outFile << configid << " " << configid << " " << configid << endl;
+        outFile << configid << endl;
     }
     outFile << endl;
 }
