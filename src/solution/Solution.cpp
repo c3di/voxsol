@@ -100,6 +100,23 @@ void Solution::sortUniqueConfigurationsByFrequency(std::unordered_map<MaterialCo
 
     for (auto it = matConfigToEquation.begin(); it != matConfigToEquation.end(); it++) {
         sortedByFrequency.push_back(&it->second);
+
+#ifdef OUTPUT_RARE_CONFIGURATIONS_DEBUG
+        if (it->second.numInstancesInProblem <= OUTPUT_RARE_CONFIGURATIONS_DEBUG) {
+            MaterialConfiguration materialConfiguration = it->first;
+            std::stringstream ss;
+            ss << "  [Rare conf] Dirichlet: " << materialConfiguration.dirichletBoundaryCondition.fixed;
+            ss << std::setprecision(10) << "  Neumann: (" << materialConfiguration.neumannBoundaryCondition.stress.x << "," << materialConfiguration.neumannBoundaryCondition.stress.y << "," << materialConfiguration.neumannBoundaryCondition.stress.z;
+            ss << ")  Materials: [";
+            for (int i = 0; i < 8; i++) {
+                ss << std::setw(3) << static_cast<int>(materialConfiguration.ids[i]) << " ";
+            }
+            ss << "\b] Hash: " << std::hash<MaterialConfiguration>{}(materialConfiguration);
+            ss << "\t Occurs " << matConfigToEquation[materialConfiguration].numInstancesInProblem << " times" << std::endl;
+            std::cout << ss.str();
+        }
+#endif
+
     }
 
     std::sort(sortedByFrequency.begin(), sortedByFrequency.end(), [](const UniqueConfig* a, const UniqueConfig* b) -> bool {
@@ -124,20 +141,6 @@ void Solution::assignConfigurationIdsToVertices(std::unordered_map<MaterialConfi
 
                 Vertex* vertex = &vertices[mapToIndex(centerCoord)];
                 vertex->materialConfigId = matConfigToEquation[materialConfiguration].equationId;
-#ifdef OUTPUT_RARE_CONFIGURATIONS_DEBUG
-                if (matConfigToEquation[materialConfiguration].numInstancesInProblem <= OUTPUT_RARE_CONFIGURATIONS_DEBUG) {
-                    std::stringstream ss;
-                    ss << "  [Rare conf] Dirichlet: " << materialConfiguration.dirichletBoundaryCondition.fixed;
-                    ss << std::setprecision(10) << "  Neumann: (" << materialConfiguration.neumannBoundaryCondition.stress.x << "," << materialConfiguration.neumannBoundaryCondition.stress.y << "," << materialConfiguration.neumannBoundaryCondition.stress.z;
-                    ss << ")  Materials: [";
-                    for (int i = 0; i < 8; i++) {
-                        ss << std::setw(3) << static_cast<int>(materialConfiguration.ids[i]) << " ";
-                    }
-                    ss << "\b] Hash: " << std::hash<MaterialConfiguration>{}(materialConfiguration);
-                    ss << "\t Occurs " << matConfigToEquation[materialConfiguration].numInstancesInProblem << " times" << std::endl;
-                    std::cout << ss.str();
-                }
-#endif
             }
         }
     }
