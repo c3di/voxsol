@@ -32,8 +32,17 @@ protected:
     std::vector<Vertex> vertices;
     std::vector<MaterialConfigurationEquations> matConfigEquations;
 
+    struct UniqueConfig {
+        ConfigId equationId = 0;
+        int numInstancesInProblem = 0;
+    };
+
     void gatherUniqueMaterialConfigurations();
     void computeEquationsForUniqueMaterialConfigurations();
 
     bool outOfBounds(libmmv::Vec3ui& coordinate) const;
+
+    void scanSolutionForUniqueConfigurations(std::unordered_map<MaterialConfiguration, UniqueConfig>& matConfigToEquation);
+    void sortUniqueConfigurationsByFrequency(std::unordered_map<MaterialConfiguration, UniqueConfig>& matConfigToEquation);
+    void assignConfigurationIdsToVertices(std::unordered_map<MaterialConfiguration, UniqueConfig>& matConfigToEquation);
 };

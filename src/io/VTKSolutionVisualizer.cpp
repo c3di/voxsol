@@ -383,7 +383,7 @@ void VTKSolutionVisualizer::writeResiduals() {
 }
 
 void VTKSolutionVisualizer::writeMaterialConfigIds() {
-    outFile << "SCALARS matconfigid float 1" << endl;
+    outFile << "SCALARS matconfigid int 1" << endl;
     outFile << "LOOKUP_TABLE default" << endl;
 
     std::vector<Vertex>* vertices = solution->getVertices();

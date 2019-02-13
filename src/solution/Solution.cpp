@@ -63,8 +63,19 @@ void Solution::computeMaterialConfigurationEquations() {
 }
 
 void Solution::gatherUniqueMaterialConfigurations() {
+    std::unordered_map < MaterialConfiguration, UniqueConfig> matConfigToEquation;
+
+    scanSolutionForUniqueConfigurations(matConfigToEquation);
+    sortUniqueConfigurationsByFrequency(matConfigToEquation);
+    assignConfigurationIdsToVertices(matConfigToEquation);
+    
+    matConfigEquations.resize(matConfigToEquation.size());
+
+    std::cout << "Found " << matConfigToEquation.size() << " unique local problem configurations\n";
+}
+
+void Solution::scanSolutionForUniqueConfigurations(std::unordered_map<MaterialConfiguration, UniqueConfig>& matConfigToEquation) {
     ConfigId equationIdCounter = 0;
-    std::unordered_map < MaterialConfiguration, ConfigId> matConfigToEquationId;
 
     for (unsigned int z = 0; z < size.z; z++) {
         for (unsigned int y = 0; y < size.y; y++) {
@@ -73,27 +84,63 @@ void Solution::gatherUniqueMaterialConfigurations() {
                 ProblemFragment fragment = problem->extractLocalProblem(centerCoord);
                 MaterialConfiguration materialConfiguration = fragment.getMaterialConfiguration();
 
-                if (matConfigToEquationId.count(materialConfiguration) <= 0) {
-#ifdef OUTPUT_NEW_EQUATIONS_DEBUG
+                if (matConfigToEquation.count(materialConfiguration) <= 0) {
+                    matConfigToEquation[materialConfiguration].equationId = equationIdCounter;
+                    equationIdCounter++;
+                }
+
+                matConfigToEquation[materialConfiguration].numInstancesInProblem++;
+            }
+        }
+    }
+}
+
+void Solution::sortUniqueConfigurationsByFrequency(std::unordered_map<MaterialConfiguration, UniqueConfig>& matConfigToEquation) {
+    std::vector<UniqueConfig*> sortedByFrequency;
+
+    for (auto it = matConfigToEquation.begin(); it != matConfigToEquation.end(); it++) {
+        sortedByFrequency.push_back(&it->second);
+    }
+
+    std::sort(sortedByFrequency.begin(), sortedByFrequency.end(), [](const UniqueConfig* a, const UniqueConfig* b) -> bool {
+        return a->numInstancesInProblem > b->numInstancesInProblem;
+    });
+
+    //The sorted position in the array becomes the configuration's ID. This way ID 0 will be the most common config, 1 the second most common etc.
+    for (int i = 0; i < sortedByFrequency.size(); i++) {
+        sortedByFrequency[i]->equationId = i;
+        
+    }
+
+}
+
+void Solution::assignConfigurationIdsToVertices(std::unordered_map<MaterialConfiguration, UniqueConfig>& matConfigToEquation) {
+    for (unsigned int z = 0; z < size.z; z++) {
+        for (unsigned int y = 0; y < size.y; y++) {
+            for (unsigned int x = 0; x < size.x; x++) {
+                libmmv::Vec3ui centerCoord(x, y, z);
+                ProblemFragment fragment = problem->extractLocalProblem(centerCoord);
+                MaterialConfiguration materialConfiguration = fragment.getMaterialConfiguration();
+
+                Vertex* vertex = &vertices[mapToIndex(centerCoord)];
+                vertex->materialConfigId = matConfigToEquation[materialConfiguration].equationId;
+#ifdef OUTPUT_RARE_CONFIGURATIONS_DEBUG
+                if (matConfigToEquation[materialConfiguration].numInstancesInProblem <= OUTPUT_RARE_CONFIGURATIONS_DEBUG) {
                     std::stringstream ss;
-                    ss << "  [New conf] Dirichlet: " << materialConfiguration.dirichletBoundaryCondition.fixed;
+                    ss << "  [Rare conf] Dirichlet: " << materialConfiguration.dirichletBoundaryCondition.fixed;
                     ss << std::setprecision(10) << "  Neumann: (" << materialConfiguration.neumannBoundaryCondition.stress.x << "," << materialConfiguration.neumannBoundaryCondition.stress.y << "," << materialConfiguration.neumannBoundaryCondition.stress.z;
                     ss << ")  Materials: [";
                     for (int i = 0; i < 8; i++) {
                         ss << std::setw(3) << static_cast<int>(materialConfiguration.ids[i]) << " ";
                     }
-                    ss << "\b] Hash: " << std::hash<MaterialConfiguration>{}(materialConfiguration) << std::endl;
+                    ss << "\b] Hash: " << std::hash<MaterialConfiguration>{}(materialConfiguration);
+                    ss << "\t Occurs " << matConfigToEquation[materialConfiguration].numInstancesInProblem << " times" << std::endl;
                     std::cout << ss.str();
-#endif
-                    matConfigToEquationId[materialConfiguration] = equationIdCounter;
-                    equationIdCounter++;
                 }
-                vertices[mapToIndex(centerCoord)].materialConfigId = matConfigToEquationId[materialConfiguration];
+#endif
             }
         }
     }
-    matConfigEquations.resize(equationIdCounter);
-    std::cout << "Found " << equationIdCounter << " unique problem configurations\n";
 }
 
 void Solution::computeEquationsForUniqueMaterialConfigurations() {
