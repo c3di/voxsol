@@ -84,7 +84,8 @@ __device__ void updateVertexResidual(
     volatile REAL* residualsOnGPU,
     REAL* rhsVec,
     const REAL* matrices,
-    const uint3& globalCenterCoord
+    const uint3& globalCenterCoord,
+    volatile Vertex* vertexToUpdate
 ) {
     const int residualIndex = globalCenterCoord.z * c_residualDimensions.y * c_residualDimensions.x + globalCenterCoord.y * c_residualDimensions.x + globalCenterCoord.x;
 
@@ -102,7 +103,11 @@ __device__ void updateVertexResidual(
         MATRIX_ENTRY(matrices, LHS_MATRIX_INDEX, 1, 2) * rhsVec[1] +
         MATRIX_ENTRY(matrices, LHS_MATRIX_INDEX, 2, 2) * rhsVec[2];
     
-    residualsOnGPU[residualIndex] = abs(dx) + abs(dy) + abs(dz);
+    dx = dx - vertexToUpdate->x;
+    dy = dy - vertexToUpdate->y;
+    dz = dz - vertexToUpdate->z;
+
+    residualsOnGPU[residualIndex] = sqrt(dx*dx + dy*dy + dz*dz);
 }
 
 __global__ void cuda_updateAllVertexResidualsInBlock(
@@ -127,16 +132,11 @@ __global__ void cuda_updateAllVertexResidualsInBlock(
     }
     volatile Vertex* vertexToUpdate = &verticesOnGPU[globalIndex];
 
-    if (vertexToUpdate->materialConfigId == 0) {
-        // "empty" material does not need to be updated
-        return;
-    }
-
     REAL rhsVec[3] = { 0,0,0 };
     const REAL* matrices = getPointerToMatricesForVertexGlobal(vertexToUpdate, matricesOnGPU);
 
     buildRHSVectorForVertex(verticesOnGPU, rhsVec, matrices, globalVertexCoord);
-    updateVertexResidual(residualsOnGPU, rhsVec, matrices, globalResidualCoord);
+    updateVertexResidual(residualsOnGPU, rhsVec, matrices, globalResidualCoord, vertexToUpdate);
 }
 
 __host__
@@ -144,9 +144,9 @@ extern "C" void cudaLaunchFullResidualUpdateKernel(
     Vertex* verticesOnGPU, 
     REAL* residualsLevelZeroOnGPU,
     REAL* matConfigEquationsOnGPU, 
-    const uint3 solutionDims
+    const uint3 solutionDims,
+    const uint3 residualDims
 ) {
-    const uint3 residualDims = { (solutionDims.x + 1) / 2, (solutionDims.y + 1) / 2, (solutionDims.z + 1) / 2 };
     dim3 threadsPerBlock(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
     dim3 blocksPerGrid(residualDims.x / BLOCK_SIZE + 1, residualDims.y / BLOCK_SIZE + 1, residualDims.z / BLOCK_SIZE + 1);
 

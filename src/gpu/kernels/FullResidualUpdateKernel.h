@@ -3,7 +3,7 @@
 #include "gpu/sampling/ResidualVolume.h"
 #include "solution/Solution.h"
 
-extern "C" void cudaLaunchFullResidualUpdateKernel(Vertex* verticesOnGPU, REAL* residualsLevelZeroOnGPU, REAL* matConfigEquationsOnGPU, const uint3 solutionDims);
+extern "C" void cudaLaunchFullResidualUpdateKernel(Vertex* verticesOnGPU, REAL* residualsLevelZeroOnGPU, REAL* matConfigEquationsOnGPU, const uint3 solutionDims, const uint3 residualDims);
 
 class FullResidualUpdateKernel : public CudaKernel {
 public:

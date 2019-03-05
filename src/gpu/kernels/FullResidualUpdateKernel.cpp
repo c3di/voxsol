@@ -34,8 +34,7 @@ void FullResidualUpdateKernel::launch() {
         throw std::exception("Could not execute full residual update kernel");
     }
 
-    cudaLaunchFullResidualUpdateKernel(verticesOnGPU, residualVolume->getPyramidDevicePointer(), matConfigEquationsOnGPU, solutionDimensions);
-
+    cudaLaunchFullResidualUpdateKernel(verticesOnGPU, residualVolume->getPyramidDevicePointer(), matConfigEquationsOnGPU, solutionDimensions, residualLevelZeroDimensions);
 }
 
 bool FullResidualUpdateKernel::canExecute() {
