@@ -148,7 +148,7 @@ extern "C" void cudaLaunchFullResidualUpdateKernel(
 ) {
     const uint3 residualDims = { (solutionDims.x + 1) / 2, (solutionDims.y + 1) / 2, (solutionDims.z + 1) / 2 };
     dim3 threadsPerBlock(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
-    dim3 blocksPerGrid(residualDims.z / BLOCK_SIZE + 1, residualDims.y / BLOCK_SIZE + 1, residualDims.x / BLOCK_SIZE + 1);
+    dim3 blocksPerGrid(residualDims.x / BLOCK_SIZE + 1, residualDims.y / BLOCK_SIZE + 1, residualDims.z / BLOCK_SIZE + 1);
 
     cudaMemcpyToSymbol(c_solutionDimensions, &solutionDims, sizeof(uint3));
     cudaMemcpyToSymbol(c_residualDimensions, &residualDims, sizeof(uint3));
