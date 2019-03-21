@@ -6,7 +6,7 @@
 #include "gpu/CudaCommonFunctions.h"
 #include "gpu/GPUParameters.h"
 
-#define MATRIX_ENTRY(rhsMatricesStartPointer, matrixIndex, row, col) rhsMatricesStartPointer[matrixIndex*9 + col*3 + row]
+#define MATRIX_ENTRY(rhsMatricesStartPointer, matrixIndex, row, col) rhsMatricesStartPointer[matrixIndex*9 + col*3 + row] //matrixIndex*9 + col*3 + row
 #define LHS_MATRIX_INDEX 13
 
 __constant__ uint3 c_solutionDimensions;
@@ -20,7 +20,7 @@ __device__ bool isInsideResidualLeveLZero(const uint3 coord) {
     return coord.x < c_residualDimensions.x && coord.y < c_residualDimensions.y && coord.z < c_residualDimensions.z;
 }
 
-__device__ const REAL* getPointerToMatricesForVertexGlobal(volatile Vertex* vertex, const REAL* matConfigEquations) {
+__device__ const REAL* getPointerToMatricesForVertexGlobalResid(volatile Vertex* vertex, const REAL* matConfigEquations) {
     unsigned int equationIndex = static_cast<unsigned int>(vertex->materialConfigId) * (EQUATION_ENTRY_SIZE);
     return &matConfigEquations[equationIndex];
 }
@@ -63,17 +63,21 @@ __device__ void buildRHSVectorForVertex(
                     neighbor = &verticesOnGPU[globalIndex];
                 }
 
-                rhsVec[0] += MATRIX_ENTRY(matrices, localNeighborIndex, 0, 0) * neighbor->x;
-                rhsVec[0] += MATRIX_ENTRY(matrices, localNeighborIndex, 0, 1) * neighbor->y;
-                rhsVec[0] += MATRIX_ENTRY(matrices, localNeighborIndex, 0, 2) * neighbor->z;
+                const REAL nx = neighbor->x;
+                const REAL ny = neighbor->y;
+                const REAL nz = neighbor->z;
 
-                rhsVec[1] += MATRIX_ENTRY(matrices, localNeighborIndex, 1, 0) * neighbor->x;
-                rhsVec[1] += MATRIX_ENTRY(matrices, localNeighborIndex, 1, 1) * neighbor->y;
-                rhsVec[1] += MATRIX_ENTRY(matrices, localNeighborIndex, 1, 2) * neighbor->z;
+                rhsVec[0] += MATRIX_ENTRY(matrices, localNeighborIndex, 0, 0) * nx;
+                rhsVec[0] += MATRIX_ENTRY(matrices, localNeighborIndex, 0, 1) * ny;
+                rhsVec[0] += MATRIX_ENTRY(matrices, localNeighborIndex, 0, 2) * nz;
 
-                rhsVec[2] += MATRIX_ENTRY(matrices, localNeighborIndex, 2, 0) * neighbor->x;
-                rhsVec[2] += MATRIX_ENTRY(matrices, localNeighborIndex, 2, 1) * neighbor->y;
-                rhsVec[2] += MATRIX_ENTRY(matrices, localNeighborIndex, 2, 2) * neighbor->z;
+                rhsVec[1] += MATRIX_ENTRY(matrices, localNeighborIndex, 1, 0) * nx;
+                rhsVec[1] += MATRIX_ENTRY(matrices, localNeighborIndex, 1, 1) * ny;
+                rhsVec[1] += MATRIX_ENTRY(matrices, localNeighborIndex, 1, 2) * nz;
+
+                rhsVec[2] += MATRIX_ENTRY(matrices, localNeighborIndex, 2, 0) * nx;
+                rhsVec[2] += MATRIX_ENTRY(matrices, localNeighborIndex, 2, 1) * ny;
+                rhsVec[2] += MATRIX_ENTRY(matrices, localNeighborIndex, 2, 2) * nz;
             }
         }
     }
@@ -120,12 +124,7 @@ __global__ void cuda_updateAllVertexResidualsInBlock(
     globalResidualCoord.y = blockIdx.y * blockDim.y + threadIdx.y;
     globalResidualCoord.z = blockIdx.z * blockDim.z + threadIdx.z;
 
-    uint3 globalVertexCoord = {globalResidualCoord.x * 2, globalResidualCoord.y * 2, globalResidualCoord.z * 2};
-
-    if (!isInsideResidualLeveLZero(globalResidualCoord)) {
-        return;
-    }
-
+    uint3 globalVertexCoord = { globalResidualCoord.x * 2, globalResidualCoord.y * 2, globalResidualCoord.z * 2 };
     const int globalIndex = c_solutionDimensions.y*c_solutionDimensions.x*globalVertexCoord.z + c_solutionDimensions.x*globalVertexCoord.y + globalVertexCoord.x;
     if (!isInsideSolutionSpace(globalVertexCoord)) {
         return;
@@ -133,7 +132,7 @@ __global__ void cuda_updateAllVertexResidualsInBlock(
     volatile Vertex* vertexToUpdate = &verticesOnGPU[globalIndex];
 
     REAL rhsVec[3] = { 0,0,0 };
-    const REAL* matrices = getPointerToMatricesForVertexGlobal(vertexToUpdate, matricesOnGPU);
+    const REAL* matrices = getPointerToMatricesForVertexGlobalResid(vertexToUpdate, matricesOnGPU);
 
     buildRHSVectorForVertex(verticesOnGPU, rhsVec, matrices, globalVertexCoord);
     updateVertexResidual(residualsOnGPU, rhsVec, matrices, globalResidualCoord, vertexToUpdate);
