@@ -109,7 +109,7 @@ extern "C" void cudaLaunchImportanceSamplingKernel(
 ) {
     cudaDeviceProp deviceProperties;
     cudaGetDeviceProperties(&deviceProperties, 0);
-    int updatePhaseBatchSize = deviceProperties.multiProcessorCount * 4;
+    int updatePhaseBatchSize = deviceProperties.multiProcessorCount * 5;
     int numBlocks = numCandidatesToFind / THREADS_PER_BLOCK + (numCandidatesToFind % THREADS_PER_BLOCK == 0 ? 0 : 1);
 
     // setup curand

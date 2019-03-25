@@ -11,11 +11,9 @@
 #include "gpu/sampling/ResidualVolume.h"
 #include "solution/samplers/BlockSampler.h"
 #include "FullResidualUpdateKernel.h"
+#include "gpu/GPUParameters.h"
 
-//extern "C" void cudaLaunchSolveDisplacementKernelGlobal(Vertex* verticesOnGPU, REAL* matConfigEquationsOnGPU, Vertex* blockOrigins, const SolutionDim solutionDims);
-extern "C" void cudaLaunchSolveDisplacementKernel(volatile Vertex* verticesOnGPU, REAL* matConfigEquationsOnGPU, REAL* residualVolume, curandState* rngStateOnGPU, uint3* blockOrigins, const int numBlocks, const uint3 solutionDims);
-//extern "C" void cudaLaunchSolveDisplacementKernelShared(Vertex* verticesOnGPU, REAL* matConfigEquationsOnGPU, REAL* importanceVolume, curandState* rngStateOnGPU, uint3* blockOrigins, const int numBlocks, const uint3 solutionDims, const LevelStats* levelStats);
-extern "C" void cudaInitializeRNGStates(curandState** rngState);
+extern "C" void cudaLaunchSolveDisplacementKernel(volatile Vertex* verticesOnGPU, REAL* matConfigEquationsOnGPU, REAL* residualVolume, uint3* blockOrigins, const int numBlocks, const uint3 solutionDims);
 
 class SolveDisplacementKernel : public CudaKernel {
 
@@ -28,6 +26,9 @@ public:
     void solveCPU();
 
     void pullVertices();
+
+    void forceResidualUpdate();
+    void setNumLaunchesBeforeResidualUpdate(unsigned int numLaunches);
 
     //This returns a pointer to managed memory, use only for debug output to avoid unnecessary cpu/gpu memory paging!
     uint3* debugGetImportanceSamplesManaged();
@@ -47,9 +48,9 @@ protected:
     Vertex* serializedVertices;
     REAL* serializedMatConfigEquations;
     uint3* blockOrigins;
-    curandState* rngStateOnGPU;
     int numBlockOriginsPerIteration;
     int numLaunchesSinceLastFullResidualUpdate = 0;
+    int numLaunchesBeforeResidualUpdate = NUM_LAUNCHES_BETWEEN_RESIDUAL_UPDATES;
     FullResidualUpdateKernel fullResidualUpdateKernel;
     REAL maxResidualOnLevelZero = 0;
 
@@ -57,7 +58,6 @@ protected:
 
     void pushMatConfigEquationsManaged();
     void pushVerticesManaged();
-    void initCurandState();
     void allocateBlockOrigins();
 
     void serializeMaterialConfigurationEquations(void* destination);

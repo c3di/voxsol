@@ -12,10 +12,6 @@
 
 #define MATRIX_ENTRY(rhsMatricesStartPointer, matrixIndex, row, col) rhsMatricesStartPointer[matrixIndex*9 + col*3 + row] //row*27*3 + col*27 + matrixIndex
 
-#define NEIGHBOR_INDEX          threadIdx.x
-#define RHS_INDEX               threadIdx.y
-#define WORKER_INDEX            threadIdx.z
-
 //#define DYN_ADJUSTMENT_MAX 0.01f
 
 __constant__ uint3 c_solutionDimensions;
@@ -165,6 +161,7 @@ __device__ void updateVerticesInRegion(
     unsigned char subsetIndex = 0;
     unsigned char vertexOffset = 0;
 
+    // There are 9 workers but 27 vertices in each subset, so each subset needs to be divided into 3 sub-subsets
     for (int i = 0; i < UPDATES_PER_VERTEX * 3 * 8; i++) {
         getUpdateCoordForThread(subsetIndex, blockDim.y * vertexOffset + threadIdx.y, &localCoord);
 
@@ -179,9 +176,7 @@ __device__ void updateVerticesInRegion(
             vertexOffset = 0;
             subsetIndex = (subsetIndex + 1) % 8;
         }
-
     }
-
 }
 
 __device__
@@ -206,22 +201,20 @@ void copyVerticesFromGlobalToShared(
                 localCoordZ = z;
                 const uint3 globalCoord = { blockOriginCoord.x + localCoordX - 1, blockOriginCoord.y + localCoordY - 1, blockOriginCoord.z + z - 1 }; //-1 to account for border at both ends
                 Vertex* local = &localVertices[localCoordZ][localCoordY][localCoordX];
+                local->x = 0;
+                local->y = 0;
+                local->z = 0;
+                local->materialConfigId = 0;
 
                 if (isInsideSolution(globalCoord)) {
                     const int globalIndex = c_solutionDimensions.y*c_solutionDimensions.x*globalCoord.z + c_solutionDimensions.x*globalCoord.y + globalCoord.x;
 
                     //Turns out it's easier to copy the values manually than to get CUDA to play nice with a volatile struct assignment
                     volatile const Vertex* global = &verticesOnGPU[globalIndex];
-                    local->x = global->x;
-                    local->y = global->y;
-                    local->z = global->z;
-                    local->materialConfigId = global->materialConfigId;
-                }
-                else {
-                    local->x = 0;
-                    local->y = 0;
-                    local->z = 0;
-                    local->materialConfigId = 0;
+                    atomicExch((REAL*)&local->x, (REAL)global->x);
+                    atomicExch((REAL*)&local->y, (REAL)global->y);
+                    atomicExch((REAL*)&local->z, (REAL)global->z);
+                    atomicExch((ConfigId*)&local->materialConfigId, (ConfigId)global->materialConfigId);
                 }
             }
         }
@@ -321,13 +314,6 @@ void cuda_SolveDisplacement(
 }
 
 __global__
-void cuda_InitCurandState(curandState* rngState) {
-    int id = blockIdx.x * blockDim.x + threadIdx.x;
-    // seed, sequence number, offset, curandState
-    curand_init(clock64(), id, 0, &rngState[id]);
-}
-
-__global__
 void cuda_invalidateOverlappingBlocks(uint3* candidates, const int numberOfCandidates, const unsigned int updateRegionSize) {
     extern __shared__ uint3 batch[];
     const int globalId = blockIdx.x * blockDim.x + threadIdx.x;
@@ -379,29 +365,11 @@ extern "C" void cudaLaunchInvalidateOverlappingBlocksKernel(
     cudaCheckExecution();
 }
 
-
-__host__
-extern "C" void cudaInitializeRNGStates(curandState** rngStateOnGPU) {
-    cudaDeviceProp deviceProperties;
-    cudaGetDeviceProperties(&deviceProperties, 0);
-
-    // setup execution parameters
-    int threadsPerBlock = NUM_WORKERS;
-    int maxConcurrentBlocks = deviceProperties.multiProcessorCount * 3; //TODO: Calculate this based on GPU max for # blocks
-    int numThreads = maxConcurrentBlocks * threadsPerBlock;
-
-    cudaCheckSuccess(cudaMalloc(rngStateOnGPU, sizeof(curandState) * numThreads));
-    cuda_InitCurandState << < maxConcurrentBlocks, threadsPerBlock >> > (*rngStateOnGPU);
-    cudaDeviceSynchronize();
-    cudaCheckExecution();
-}
-
 __host__
 extern "C" void cudaLaunchSolveDisplacementKernel(
     volatile Vertex* vertices,
     REAL* matConfigEquations,
     REAL* residualVolume,
-    curandState* rngStateOnGPU,
     uint3* blockOrigins,
     const int numBlockOrigins,
     const uint3 solutionDims
@@ -411,7 +379,7 @@ extern "C" void cudaLaunchSolveDisplacementKernel(
 
     // Blocks are divided into warps starting with x, then y, then z
     dim3 threadsPerBlock = { 32, 9, 1 };
-    int maxConcurrentBlocks = deviceProperties.multiProcessorCount * 3; //TODO: Calculate this based on GPU max for # blocks
+    int maxConcurrentBlocks = deviceProperties.multiProcessorCount * 5; //TODO: Calculate this based on GPU max for # blocks
     int numIterations = std::max(numBlockOrigins / maxConcurrentBlocks, 1);
 
     cudaLaunchInvalidateOverlappingBlocksKernel(blockOrigins, numBlockOrigins, maxConcurrentBlocks);
