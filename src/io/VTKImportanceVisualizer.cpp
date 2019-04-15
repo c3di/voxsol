@@ -67,11 +67,12 @@ void VTKImportanceVisualizer::writePositions(unsigned int level, libmmv::Vec3<RE
 void VTKImportanceVisualizer::writeResiduals(unsigned int level, libmmv::Vec3ui& levelSize) {
     unsigned int numVertices = levelSize.x * levelSize.y * levelSize.z;
     outFile << "POINT_DATA " << numVertices << endl;
-    outFile << "VECTORS residual float" << endl;
+    outFile << "SCALARS residual float 1" << endl;
+    outFile << "LOOKUP_TABLE default" << endl;
 
     REAL* residual = importanceVolume->getPointerToLevel(level);
     for (unsigned int i = 0; i < numVertices; i++, residual++) {
-        outFile << *residual << " " << *residual << " " << *residual << endl;
+        outFile << *residual << endl;
     }
 
     outFile << endl;

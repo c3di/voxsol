@@ -44,17 +44,9 @@ __device__ void buildRHSVectorForVertex(
         const REAL ny = localVertices[localNeighborCoordZ][localNeighborCoordY][localNeighborCoordX].y;
         const REAL nz = localVertices[localNeighborCoordZ][localNeighborCoordY][localNeighborCoordX].z;
 
-        rhsEntry[0] = MATRIX_ENTRY(matrices, threadIdx.x, 0, 0) * nx;
-        rhsEntry[0] += MATRIX_ENTRY(matrices, threadIdx.x, 0, 1) * ny;
-        rhsEntry[0] += MATRIX_ENTRY(matrices, threadIdx.x, 0, 2) * nz;
-
-        rhsEntry[1] = MATRIX_ENTRY(matrices, threadIdx.x, 1, 0) * nx;
-        rhsEntry[1] += MATRIX_ENTRY(matrices, threadIdx.x, 1, 1) * ny;
-        rhsEntry[1] += MATRIX_ENTRY(matrices, threadIdx.x, 1, 2) * nz;
-
-        rhsEntry[2] = MATRIX_ENTRY(matrices, threadIdx.x, 2, 0) * nx;
-        rhsEntry[2] += MATRIX_ENTRY(matrices, threadIdx.x, 2, 1) * ny;
-        rhsEntry[2] += MATRIX_ENTRY(matrices, threadIdx.x, 2, 2) * nz;
+        rhsEntry[0] = MATRIX_ENTRY(matrices, threadIdx.x, 0, 0) * nx + MATRIX_ENTRY(matrices, threadIdx.x, 0, 1) * ny + MATRIX_ENTRY(matrices, threadIdx.x, 0, 2) * nz;
+        rhsEntry[1] = MATRIX_ENTRY(matrices, threadIdx.x, 1, 0) * nx + MATRIX_ENTRY(matrices, threadIdx.x, 1, 1) * ny + MATRIX_ENTRY(matrices, threadIdx.x, 1, 2) * nz;
+        rhsEntry[2] = MATRIX_ENTRY(matrices, threadIdx.x, 2, 0) * nx + MATRIX_ENTRY(matrices, threadIdx.x, 2, 1) * ny + MATRIX_ENTRY(matrices, threadIdx.x, 2, 2) * nz;
 
         for (int offset = 16; offset > 0; offset /= 2) {
             rhsEntry[0] += __shfl_down_sync(activeThreadMask, rhsEntry[0], offset);
@@ -379,7 +371,7 @@ extern "C" void cudaLaunchSolveDisplacementKernel(
 
     // Blocks are divided into warps starting with x, then y, then z
     dim3 threadsPerBlock = { 32, 9, 1 };
-    int maxConcurrentBlocks = deviceProperties.multiProcessorCount * 5; //TODO: Calculate this based on GPU max for # blocks
+    int maxConcurrentBlocks = deviceProperties.multiProcessorCount * 8; //TODO: Calculate this based on GPU max for # blocks
     int numIterations = std::max(numBlockOrigins / maxConcurrentBlocks, 1);
 
     cudaLaunchInvalidateOverlappingBlocksKernel(blockOrigins, numBlockOrigins, maxConcurrentBlocks);

@@ -59,6 +59,29 @@ REAL ResidualVolume::getMaxResidualOnLevelZero() const {
     return maxResidual;
 }
 
+REAL ResidualVolume::getAverageResidual(REAL ignoreThreshold) const {
+    LevelStats levelZeroStats = levelStatsManaged[0];
+    REAL* levelStart = &importancePyramidManaged[levelZeroStats.startIndex];
+    REAL averageResidual = 0;
+    int numResidualsGreaterThanEps = 0;
+
+    for (unsigned int z = 0; z <= levelZeroStats.sizeZ; z++)
+        for (unsigned int y = 0; y <= levelZeroStats.sizeY; y++)
+            for (unsigned int x = 0; x <= levelZeroStats.sizeX; x++) {
+                REAL res = getResidualOnLevel(0, x, y, z);
+                if (res > ignoreThreshold) {
+                    averageResidual += res;
+                    numResidualsGreaterThanEps++;
+                }
+            }
+
+    if (numResidualsGreaterThanEps == 0) {
+        return ignoreThreshold;
+    }
+    
+    return averageResidual / numResidualsGreaterThanEps;
+}
+
 REAL ResidualVolume::getResidualOnLevel(unsigned int level, unsigned int x, unsigned int y, unsigned int z) const
 {
     LevelStats statsForLevel = levelStatsManaged[level];

@@ -26,16 +26,22 @@
 #include "io/XMLProblemDeserializer.h"
 
 #define ACTIVE_DEVICE 0
-#define ENABLE_VTK_OUTPUT 1
+//#define ENABLE_VTK_OUTPUT 1
 
 int totalIterations = 0;
 int totalMilliseconds = 0;
 
 void solveGPU(ProblemInstance& problemInstance, int lod) {
-    ImportanceBlockSampler sampler(problemInstance.getResidualVolumeLOD(lod));
+    //ImportanceBlockSampler sampler(problemInstance.getResidualVolumeLOD(lod));
+    libmmv::Vec3ui waveOrigin(0, 0, 0);
+    libmmv::Vec3i waveDirection(0, 0, -1);
+
+    WaveSampler sampler(problemInstance.getSolutionLOD(lod), waveOrigin, waveDirection);
+    //ImportanceBlockSampler sampler(problemInstance.getResidualVolumeLOD(lod));
 
     VTKSolutionVisualizer visualizer(problemInstance.getSolutionLOD(lod));
 	visualizer.filterOutNullVoxels(false);
+    visualizer.setMechanicalValuesOutput(false);
 
     VTKSamplingVisualizer samplingVis(problemInstance.getSolutionLOD(lod));
 
@@ -44,15 +50,19 @@ void solveGPU(ProblemInstance& problemInstance, int lod) {
     SolveDisplacementKernel kernel(problemInstance.getSolutionLOD(lod), &sampler, problemInstance.getResidualVolumeLOD(lod));
     
     std::cout << "Solving LOD " << lod << " with GPU...\n";
-    long targetMilliseconds = 12000 / (lod+1);
+    long targetMilliseconds = 20000;
 
     auto now = std::chrono::high_resolution_clock::now();
     __int64 elapsed = 0;
     int numIterationsDone = 0;
-    int numIterationsTarget = 10 / (lod+1);
+    int numIterationsTarget = 200;
+    REAL maxResidual = 10000000;
+    REAL epsilon = asREAL(5.0e-7);
+    kernel.setNumLaunchesBeforeResidualUpdate(499);
 
     //for (int i = 1; i <= numIterationsTarget; i++) {
-    while (elapsed < targetMilliseconds) {
+    //while (elapsed < targetMilliseconds) {
+    while (maxResidual > epsilon && totalIterations < 500000) {
         auto start = std::chrono::high_resolution_clock::now();
         totalIterations++;
         std::cout << ".";
@@ -62,12 +72,37 @@ void solveGPU(ProblemInstance& problemInstance, int lod) {
         now = std::chrono::high_resolution_clock::now();
         elapsed += std::chrono::duration_cast<std::chrono::milliseconds>(now - start).count();
         numIterationsDone++;
+
+        if (totalIterations % 500 == 0) {
+            maxResidual = problemInstance.getResidualVolumeLOD(lod)->getAverageResidual(epsilon); 
+            std::cout << "Residual: " << maxResidual << " iteration " << totalIterations << std::endl;
+
+            kernel.pullVertices();
+            std::stringstream fp = std::stringstream();
+
+            //fp << "d:\\tmp\\gpu_" << totalIterations << ".vtk";
+            //visualizer.writeToFile(fp.str());
+
+            /*std::stringstream fp = std::stringstream();
+            fp << "d:\\tmp\\step_sampling_" << totalIterations << ".vtk";
+            samplingVis.writeToFile(fp.str(), kernel.debugGetImportanceSamplesManaged(), 256, BLOCK_SIZE);
+
+            fp = std::stringstream();
+            fp << "d:\\tmp\\gpu_" << totalIterations << ".vtk";
+            visualizer.writeToFile(fp.str());
+
+            fp = std::stringstream();
+            fp << "d:\\tmp\\step_residuals_" << totalIterations << ".vtk";
+            impVis.writeToFile(fp.str(), 0);
+            */
+        }
+        
     }
 
     kernel.pullVertices();
 
-    std::cout << "\nFinished simulating for " << targetMilliseconds << "ms. Did " << numIterationsDone << " iterations\n\n";
-    totalMilliseconds += targetMilliseconds;
+    std::cout << "\nFinished simulating for " << elapsed << "ms. Did " << numIterationsDone << " iterations\n\n";
+    totalMilliseconds += (int)elapsed;
 
 #ifdef ENABLE_VTK_OUTPUT
     std::stringstream fp = std::stringstream();
@@ -76,7 +111,11 @@ void solveGPU(ProblemInstance& problemInstance, int lod) {
 
     fp = std::stringstream();
     fp << "d:\\tmp\\step_sampling_" << lod << ".vtk";
-    samplingVis.writeToFile(fp.str(), kernel.debugGetImportanceSamplesManaged(), 64, BLOCK_SIZE);
+    samplingVis.writeToFile(fp.str(), kernel.debugGetImportanceSamplesManaged(), 256, BLOCK_SIZE);
+
+    //fp = std::stringstream();
+    //fp << "d:\\tmp\\step_residuals_" << lod << ".vtk";
+    //impVis.writeAllLevels(fp.str());
 #endif 
     std::cout << " DONE. Total residual: " << problemInstance.getResidualVolumeLOD(lod)->getTotalResidual() << std::endl << std::endl;
 }
@@ -108,7 +147,7 @@ int main(int argc, char* argv[]) {
         std::cout << "Cuda device " << ACTIVE_DEVICE << " initialized!\n\n";
     }
 
-    std::string xmlInputFile("voxel_64.xml");
+    std::string xmlInputFile("voxel_128.xml");
 
     XMLProblemDeserializer xmlDeserializer(xmlInputFile);
     ProblemInstance problemInstance = xmlDeserializer.getProblemInstance();
@@ -121,6 +160,24 @@ int main(int argc, char* argv[]) {
         }
     }
 
+    std::vector<Vertex>* vertices = problemInstance.getSolutionLOD(0)->getVertices();
+    REAL maxDisp = 0;
+    for (auto it = vertices->begin(); it != vertices->end(); it++) {
+        if (it->z > maxDisp) {
+            maxDisp = it->z;
+        }
+    }
+
+    std::cout << std::endl << "Maximum displacement in Z: " << maxDisp << std::endl;
+    
+    VTKSolutionVisualizer visualizer(problemInstance.getSolutionLOD(0));
+    visualizer.filterOutNullVoxels(false);
+    visualizer.setMechanicalValuesOutput(true);
+    std::stringstream fp = std::stringstream();
+    fp << "d:\\tmp\\gpu_end.vtk";
+    visualizer.writeToFile(fp.str());
+   
     std::cout << std::endl << "Total simulation time: " << totalMilliseconds << " ms\n\n";
 
+    return 0;
 }

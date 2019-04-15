@@ -70,8 +70,8 @@ void WaveSampler::setWaveOrientation(libmmv::Vec3ui& origin, libmmv::Vec3i& dire
 
 libmmv::Vec3ui WaveSampler::chooseNextWavefrontOrigin() {
     std::uniform_int_distribution<int> distribution(-1, 1);
-    waveOffset.x = distribution(generator);
-    waveOffset.y = distribution(generator);
+    waveOffset.x = 0;
+    waveOffset.y = 0;
     waveOffset.z = 0;
 
     libmmv::Vec3ui wavefront = currentWavefront + waveOffset;
