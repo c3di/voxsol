@@ -24,7 +24,7 @@ if (MSVC)
 	string(APPEND CMAKE_CXX_FLAGS_RELEASE " /MT")
 	
 	# enable CUDA memory tracking and debug code
-	set(CMAKE_CUDA_FLAGS " -Xptxas=-v -Xptxas -dlcm=ca -gencode arch=compute_61,code=sm_61 -res-usage")
+	set(CMAKE_CUDA_FLAGS " -Xptxas=-v -Xptxas -dlcm=ca -gencode arch=compute_75,code=sm_75 -res-usage")
 	set(CMAKE_CUDA_FLAGS_DEBUG -Xcompiler="-MTd -Zi -Ob0 -Od /RTC1")
 	string(APPEND CMAKE_CUDA_FLAGS_DEBUG "  -G ")
 	set(CMAKE_CUDA_FLAGS_RELWITHDEBINFO -Xcompiler="-MT -Zi -Ob0 -Od /RTC1")

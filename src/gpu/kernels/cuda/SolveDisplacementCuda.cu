@@ -30,7 +30,7 @@ __device__ void buildRHSVectorForVertex(
 ) {
     // We want to keep a full warp dedicated to each worker, but we only need enough threads for the 27 neighbors (minus the center vertex)
     const bool threadIsActive = threadIdx.x < 27 && threadIdx.x != CENTER_VERTEX_INDEX;
-    unsigned activeThreadMask = __ballot_sync(0xffffffff, threadIsActive);
+    unsigned activeThreadMask = __ballot_sync(__activemask(), threadIsActive);
 
     if (threadIsActive) {
         REAL rhsEntry[3] = { 0,0,0 };
@@ -39,7 +39,7 @@ __device__ void buildRHSVectorForVertex(
         const char localNeighborCoordX = (localCenterCoord.x + threadIdx.x % 3) - 1;
         const char localNeighborCoordY = (localCenterCoord.y + (threadIdx.x / 3) % 3) - 1;
         const char localNeighborCoordZ = (localCenterCoord.z + threadIdx.x / 9) - 1;
-
+		
         const REAL nx = localVertices[localNeighborCoordZ][localNeighborCoordY][localNeighborCoordX].x;
         const REAL ny = localVertices[localNeighborCoordZ][localNeighborCoordY][localNeighborCoordX].y;
         const REAL nz = localVertices[localNeighborCoordZ][localNeighborCoordY][localNeighborCoordX].z;
@@ -70,6 +70,7 @@ __device__ const REAL* getPointerToMatricesForVertexGlobal(Vertex* vertex, const
 
 __device__ void updateVertex(Vertex* vertexToUpdate, REAL rhsVec[27][3], const REAL* matrices) {
     // Choose exactly 3 threads in the same warp to sum up the 3 RHS components and solve the system
+	unsigned mask = __ballot_sync(__activemask(), threadIdx.x < 3);
     if (threadIdx.x < 3) {
         const char rhsComponentIndex = threadIdx.x;
         const char workerIndex = threadIdx.y;
@@ -77,7 +78,7 @@ __device__ void updateVertex(Vertex* vertexToUpdate, REAL rhsVec[27][3], const R
         // Move to right side of equation and apply Neumann stress
         rhsVec[workerIndex][rhsComponentIndex] = -rhsVec[workerIndex][rhsComponentIndex] + matrices[NEUMANN_OFFSET + rhsComponentIndex];
 
-        __syncwarp();
+        __syncwarp(mask);
 
         REAL newDisplacement = 0;
         newDisplacement += MATRIX_ENTRY(matrices, CENTER_VERTEX_INDEX, 0, rhsComponentIndex) * rhsVec[workerIndex][0];
