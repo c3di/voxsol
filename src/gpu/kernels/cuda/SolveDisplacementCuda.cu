@@ -203,11 +203,11 @@ void copyVerticesFromGlobalToShared(
                     const int globalIndex = c_solutionDimensions.y*c_solutionDimensions.x*globalCoord.z + c_solutionDimensions.x*globalCoord.y + globalCoord.x;
 
                     //Turns out it's easier to copy the values manually than to get CUDA to play nice with a volatile struct assignment
-                    volatile const Vertex* global = &verticesOnGPU[globalIndex];
-                    atomicExch((REAL*)&local->x, (REAL)global->x);
-                    atomicExch((REAL*)&local->y, (REAL)global->y);
-                    atomicExch((REAL*)&local->z, (REAL)global->z);
-                    atomicExch((ConfigId*)&local->materialConfigId, (ConfigId)global->materialConfigId);
+                    volatile Vertex* global = &verticesOnGPU[globalIndex];
+                    local->x = global->x;
+                    local->y = global->y;
+                    local->z = global->z;
+                    local->materialConfigId = global->materialConfigId;
                 }
             }
         }
@@ -260,9 +260,9 @@ void copyVerticesFromSharedToGlobalAndUpdateResiduals(
                     residualVolume[residualIndex] = residual;
                 }*/
 
-                atomicExch((REAL*)&global->x, (REAL)local->x);
-                atomicExch((REAL*)&global->y, (REAL)local->y);
-                atomicExch((REAL*)&global->z, (REAL)local->z);
+                global->x = local->x;
+                global->y = local->y;
+                global->z = local->z;
 
 #ifdef OUTPUT_NAN_DISPLACEMENTS
                 if (isnan(localVertices[localCoordZ][localCoordY][localCoordX].x)) {
