@@ -10,7 +10,7 @@
 #include "gpu/CudaCommonFunctions.h"
 #include "gpu/GPUParameters.h"
 
-#define MATRIX_ENTRY(rhsMatricesStartPointer, matrixIndex, row, col) rhsMatricesStartPointer[matrixIndex*9 + col*3 + row] //row*27*3 + col*27 + matrixIndex
+#define MATRIX_ENTRY(rhsMatrices, matrixIndex, row, col) __ldg(rhsMatrices + matrixIndex*9 + col*3 + row) //row*27*3 + col*27 + matrixIndex
 
 //#define DYN_ADJUSTMENT_MAX 0.01f
 
@@ -24,8 +24,8 @@ __device__ bool isInsideSolution(const uint3 coord) {
 
 __device__ void buildRHSVectorForVertex(
     REAL rhsVec[27][3],
-    Vertex localVertices[BLOCK_SIZE+2][BLOCK_SIZE+2][BLOCK_SIZE+2],
-    const REAL* matrices,
+    Vertex localVertices[BLOCK_SIZE + 2][BLOCK_SIZE + 2][BLOCK_SIZE + 2],
+    const REAL* __restrict__ matConfigEquations,
     const char3& localCenterCoord
 ) {
     // We want to keep a full warp dedicated to each worker, but we only need enough threads for the 27 neighbors (minus the center vertex)
@@ -44,10 +44,10 @@ __device__ void buildRHSVectorForVertex(
         const REAL ny = localVertices[localNeighborCoordZ][localNeighborCoordY][localNeighborCoordX].y;
         const REAL nz = localVertices[localNeighborCoordZ][localNeighborCoordY][localNeighborCoordX].z;
 
-        rhsEntry[0] = MATRIX_ENTRY(matrices, threadIdx.x, 0, 0) * nx + MATRIX_ENTRY(matrices, threadIdx.x, 0, 1) * ny + MATRIX_ENTRY(matrices, threadIdx.x, 0, 2) * nz;
-        rhsEntry[1] = MATRIX_ENTRY(matrices, threadIdx.x, 1, 0) * nx + MATRIX_ENTRY(matrices, threadIdx.x, 1, 1) * ny + MATRIX_ENTRY(matrices, threadIdx.x, 1, 2) * nz;
-        rhsEntry[2] = MATRIX_ENTRY(matrices, threadIdx.x, 2, 0) * nx + MATRIX_ENTRY(matrices, threadIdx.x, 2, 1) * ny + MATRIX_ENTRY(matrices, threadIdx.x, 2, 2) * nz;
-
+        rhsEntry[0] = MATRIX_ENTRY(matConfigEquations, threadIdx.x, 0, 0) * nx + MATRIX_ENTRY(matConfigEquations, threadIdx.x, 0, 1) * ny + MATRIX_ENTRY(matConfigEquations, threadIdx.x, 0, 2) * nz;
+        rhsEntry[1] = MATRIX_ENTRY(matConfigEquations, threadIdx.x, 1, 0) * nx + MATRIX_ENTRY(matConfigEquations, threadIdx.x, 1, 1) * ny + MATRIX_ENTRY(matConfigEquations, threadIdx.x, 1, 2) * nz;
+        rhsEntry[2] = MATRIX_ENTRY(matConfigEquations, threadIdx.x, 2, 0) * nx + MATRIX_ENTRY(matConfigEquations, threadIdx.x, 2, 1) * ny + MATRIX_ENTRY(matConfigEquations, threadIdx.x, 2, 2) * nz;
+        
         for (int offset = 16; offset > 0; offset /= 2) {
             rhsEntry[0] += __shfl_down_sync(activeThreadMask, rhsEntry[0], offset);
             rhsEntry[1] += __shfl_down_sync(activeThreadMask, rhsEntry[1], offset);
@@ -63,12 +63,11 @@ __device__ void buildRHSVectorForVertex(
     }
 }
 
-__device__ const REAL* getPointerToMatricesForVertexGlobal(Vertex* vertex, const REAL* matConfigEquations) {
-    unsigned int equationIndex = static_cast<unsigned int>(vertex->materialConfigId) * (EQUATION_ENTRY_SIZE);
-    return &matConfigEquations[equationIndex];
-}
-
-__device__ void updateVertex(Vertex* vertexToUpdate, REAL rhsVec[27][3], const REAL* matrices) {
+__device__ void updateVertex(
+    Vertex* vertexToUpdate,
+    REAL rhsVec[27][3], 
+    const REAL* __restrict__ matConfigEquations
+) {
     // Choose exactly 3 threads in the same warp to sum up the 3 RHS components and solve the system
 	unsigned mask = __ballot_sync(__activemask(), threadIdx.x < 3);
     if (threadIdx.x < 3) {
@@ -76,14 +75,14 @@ __device__ void updateVertex(Vertex* vertexToUpdate, REAL rhsVec[27][3], const R
         const char workerIndex = threadIdx.y;
 
         // Move to right side of equation and apply Neumann stress
-        rhsVec[workerIndex][rhsComponentIndex] = -rhsVec[workerIndex][rhsComponentIndex] + matrices[NEUMANN_OFFSET + rhsComponentIndex];
+        rhsVec[workerIndex][rhsComponentIndex] = -rhsVec[workerIndex][rhsComponentIndex] + __ldg(matConfigEquations + NEUMANN_OFFSET + rhsComponentIndex);
 
         __syncwarp(mask);
 
         REAL newDisplacement = 0;
-        newDisplacement += MATRIX_ENTRY(matrices, CENTER_VERTEX_INDEX, 0, rhsComponentIndex) * rhsVec[workerIndex][0];
-        newDisplacement += MATRIX_ENTRY(matrices, CENTER_VERTEX_INDEX, 1, rhsComponentIndex) * rhsVec[workerIndex][1];
-        newDisplacement += MATRIX_ENTRY(matrices, CENTER_VERTEX_INDEX, 2, rhsComponentIndex) * rhsVec[workerIndex][2];
+        newDisplacement += MATRIX_ENTRY(matConfigEquations, CENTER_VERTEX_INDEX, 0, rhsComponentIndex) * rhsVec[workerIndex][0];
+        newDisplacement += MATRIX_ENTRY(matConfigEquations, CENTER_VERTEX_INDEX, 1, rhsComponentIndex) * rhsVec[workerIndex][1];
+        newDisplacement += MATRIX_ENTRY(matConfigEquations, CENTER_VERTEX_INDEX, 2, rhsComponentIndex) * rhsVec[workerIndex][2];
 
         if (rhsComponentIndex == 0) {
 #ifdef DYN_ADJUSTMENT_MAX
@@ -145,7 +144,7 @@ __device__ void getUpdateCoordForThread(unsigned char subsetIndex, unsigned char
 
 __device__ void updateVerticesInRegion(
     Vertex localVertices[BLOCK_SIZE + 2][BLOCK_SIZE + 2][BLOCK_SIZE + 2],
-    const REAL* matConfigEquations
+    const REAL* __restrict__ matConfigEquations
 ) {
     __shared__ REAL rhsVec[27][3];
 
@@ -159,9 +158,9 @@ __device__ void updateVerticesInRegion(
         getUpdateCoordForThread(subsetIndex, blockDim.y * vertexOffset + threadIdx.y, &localCoord);
 
         Vertex* vertexToUpdate = &localVertices[localCoord.z][localCoord.y][localCoord.x];
-        const REAL* matrices = getPointerToMatricesForVertexGlobal(vertexToUpdate, matConfigEquations);
-        buildRHSVectorForVertex(rhsVec, localVertices, matrices, localCoord);
 
+        const REAL* __restrict__ matrices = &matConfigEquations[static_cast<unsigned int>(vertexToUpdate->materialConfigId) * (EQUATION_ENTRY_SIZE)];
+        buildRHSVectorForVertex(rhsVec, localVertices, matrices, localCoord);
         updateVertex(vertexToUpdate, rhsVec, matrices);
 
         vertexOffset = vertexOffset + 1;
@@ -175,7 +174,7 @@ __device__ void updateVerticesInRegion(
 __device__
 void copyVerticesFromGlobalToShared(
     Vertex localVertices[BLOCK_SIZE + 2][BLOCK_SIZE + 2][BLOCK_SIZE + 2],
-    volatile Vertex* verticesOnGPU,
+    Vertex* verticesOnGPU,
     const uint3 blockOriginCoord
 ) {
     const int blockSizeWithBorder = BLOCK_SIZE + 2;
@@ -193,7 +192,7 @@ void copyVerticesFromGlobalToShared(
             for (int z = 0; z < BLOCK_SIZE + 2; z++) {
                 localCoordZ = z;
                 const uint3 globalCoord = { blockOriginCoord.x + localCoordX - 1, blockOriginCoord.y + localCoordY - 1, blockOriginCoord.z + z - 1 }; //-1 to account for border at both ends
-                Vertex* local = &localVertices[localCoordZ][localCoordY][localCoordX];
+                Vertex* __restrict__ local = &localVertices[localCoordZ][localCoordY][localCoordX];
                 local->x = 0;
                 local->y = 0;
                 local->z = 0;
@@ -203,7 +202,7 @@ void copyVerticesFromGlobalToShared(
                     const int globalIndex = c_solutionDimensions.y*c_solutionDimensions.x*globalCoord.z + c_solutionDimensions.x*globalCoord.y + globalCoord.x;
 
                     //Turns out it's easier to copy the values manually than to get CUDA to play nice with a volatile struct assignment
-                    volatile Vertex* global = &verticesOnGPU[globalIndex];
+                    Vertex* __restrict__ global = &verticesOnGPU[globalIndex];
                     local->x = global->x;
                     local->y = global->y;
                     local->z = global->z;
@@ -221,7 +220,7 @@ void copyVerticesFromGlobalToShared(
 __device__
 void copyVerticesFromSharedToGlobalAndUpdateResiduals(
     Vertex localVertices[BLOCK_SIZE + 2][BLOCK_SIZE + 2][BLOCK_SIZE + 2],
-    volatile Vertex* verticesOnGPU,
+    Vertex* verticesOnGPU,
     const uint3 blockOriginCoord,
     REAL* residualVolume
 ) {
@@ -242,8 +241,8 @@ void copyVerticesFromSharedToGlobalAndUpdateResiduals(
 
             if (isInsideSolution(globalCoord)) {
                 int globalIndex = c_solutionDimensions.y*c_solutionDimensions.x*globalCoord.z + c_solutionDimensions.x*globalCoord.y + globalCoord.x;
-                const Vertex* local = &localVertices[localCoordZ][localCoordY][localCoordX];
-                volatile Vertex* global = &verticesOnGPU[globalIndex];
+                const Vertex* __restrict__ local = &localVertices[localCoordZ][localCoordY][localCoordX];
+                Vertex* __restrict__ global = &verticesOnGPU[globalIndex];
 
                 // First set residual to 0 for all updated vertices, then set the outer edge of vertices to the actual residual so future update blocks will
                 // be placed near the edges of the current block, where the vertices are no longer in equilibrium.
@@ -280,8 +279,8 @@ void copyVerticesFromSharedToGlobalAndUpdateResiduals(
 
 __global__
 void cuda_SolveDisplacement(
-    volatile Vertex* verticesOnGPU,
-    REAL* matConfigEquations,
+    Vertex* verticesOnGPU,
+    const REAL* matConfigEquations,
     const uint3* blockOrigins,
     REAL* residualVolume
 ) {
@@ -292,7 +291,7 @@ void cuda_SolveDisplacement(
         return;
     }
 
-    __shared__ Vertex localVertices[BLOCK_SIZE+2][BLOCK_SIZE+2][BLOCK_SIZE+2];
+    __shared__ Vertex localVertices[BLOCK_SIZE + 2][BLOCK_SIZE + 2][BLOCK_SIZE + 2];
     
     copyVerticesFromGlobalToShared(localVertices, verticesOnGPU, blockOriginCoord);
 
@@ -360,8 +359,8 @@ extern "C" void cudaLaunchInvalidateOverlappingBlocksKernel(
 
 __host__
 extern "C" void cudaLaunchSolveDisplacementKernel(
-    volatile Vertex* vertices,
-    REAL* matConfigEquations,
+    Vertex* vertices,
+    const REAL* matConfigEquations,
     REAL* residualVolume,
     uint3* blockOrigins,
     const int numBlockOrigins,
@@ -375,7 +374,11 @@ extern "C" void cudaLaunchSolveDisplacementKernel(
     int maxConcurrentBlocks = deviceProperties.multiProcessorCount * 8; //TODO: Calculate this based on GPU max for # blocks
     int numIterations = std::max(numBlockOrigins / maxConcurrentBlocks, 1);
 
-    cudaLaunchInvalidateOverlappingBlocksKernel(blockOrigins, numBlockOrigins, maxConcurrentBlocks);
+    // Instruct the driver to prefer a larger L1 cache size in hardware where L1 and Shared Memory share the same resource
+    // Commented out because it made no difference in performance, but might do in certain situations (eg. bigger block sizes?)
+    //cudaCheckSuccess(cudaFuncSetAttribute(cuda_SolveDisplacement, cudaFuncAttributePreferredSharedMemoryCarveout, 33));
+
+    //cudaLaunchInvalidateOverlappingBlocksKernel(blockOrigins, numBlockOrigins, maxConcurrentBlocks);
 
 #ifdef OUTPUT_NUM_FAILED_BLOCKS
     int numFailedBlocks = 0;

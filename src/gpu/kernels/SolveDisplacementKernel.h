@@ -13,7 +13,7 @@
 #include "FullResidualUpdateKernel.h"
 #include "gpu/GPUParameters.h"
 
-extern "C" void cudaLaunchSolveDisplacementKernel(volatile Vertex* verticesOnGPU, REAL* matConfigEquationsOnGPU, REAL* residualVolume, uint3* blockOrigins, const int numBlocks, const uint3 solutionDims);
+extern "C" void cudaLaunchSolveDisplacementKernel(Vertex* verticesOnGPU, REAL* matConfigEquationsOnGPU, REAL* residualVolume, uint3* blockOrigins, const int numBlocks, const uint3 solutionDims);
 
 class SolveDisplacementKernel : public CudaKernel {
 
@@ -47,6 +47,7 @@ protected:
 
     Vertex* serializedVertices;
     REAL* serializedMatConfigEquations;
+
     uint3* blockOrigins;
     int numBlockOriginsPerIteration;
     int numLaunchesSinceLastFullResidualUpdate = 0;
