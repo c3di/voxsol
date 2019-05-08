@@ -2,8 +2,8 @@
 
 // Solve Displacement Kernel parameters
 #define CENTER_VERTEX_INDEX         13          // 1D index of the center vertex in the local subproblem
-#define NEUMANN_OFFSET              9 * 27      // Offset to the start of the Neumann stress vector inside an equation block
-#define EQUATION_ENTRY_SIZE         9 * 27 + 3  // 27 3x3 matrices and one 1x3 vector for Neumann stress
+#define NEUMANN_OFFSET              (9 * 27)      // Offset to the start of the Neumann stress vector inside an equation block
+#define EQUATION_ENTRY_SIZE         (9 * 27 + 3)  // 27 3x3 matrices and one 1x3 vector for Neumann stress
 
 // Configurable parameters, experimentally determined optimum is given in the comment
 #define UPDATES_PER_VERTEX          3           // 3    Number of vertices that should be updated stochastically per worker 
