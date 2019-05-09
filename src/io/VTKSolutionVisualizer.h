@@ -13,6 +13,7 @@ public:
     ~VTKSolutionVisualizer();
 
     void writeToFile(const std::string& filename);
+    void writeOnlyDisplacements(const std::string& filename);
     void filterOutNullVoxels(bool doFilter);
     void setMechanicalValuesOutput(bool flag);
 

@@ -1,4 +1,5 @@
 #include "stdafx.h"
+#include <iomanip>
 #include "VTKSolutionVisualizer.h"
 #include "solution/SolutionAnalyzer.h"
 
@@ -65,6 +66,17 @@ void VTKSolutionVisualizer::writeToFile(const string& filename) {
     std::cout << "Wrote point data\n";
 
     outFile.close();
+}
+
+void VTKSolutionVisualizer::writeOnlyDisplacements(const string& filename) {
+	outFile.open(filename, ios::out);
+	std::vector<Vertex>* vertices = solution->getVertices();
+	for (unsigned int i = 0; i < numberOfVertices; i++) {
+		unsigned int index = filterNullVoxels ? vertexFilteredToOrigIndex[i] : i;
+		Vertex v = vertices->at(index);
+		outFile << v.x << "\n" << v.y << "\n" << v.z << endl;
+	}
+	outFile.close();
 }
 
 void VTKSolutionVisualizer::writeHeader() {
