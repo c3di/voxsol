@@ -2,7 +2,7 @@
 #include <algorithm>
 #include <random>
 #include <curand_kernel.h>
-#include <device_functions.h>
+#include <cuda_runtime.h>
 #include <device_launch_parameters.h>
 #include "solution/Vertex.h"
 #include "solution/samplers/BlockSampler.h"
@@ -12,13 +12,11 @@
 
 #define MATRIX_ENTRY(rhsMatrices, matrixIndex, row, col) __ldg(rhsMatrices + matrixIndex*9 + col*3 + row) //row*27*3 + col*27 + matrixIndex
 
-//#define DYN_ADJUSTMENT_MAX 0.01f
-
 __constant__ uint3 c_solutionDimensions;
 __constant__ uint3 c_residualDimensions;
 
 
-__device__ bool isInsideSolution(const uint3 coord) {
+__device__ __forceinline__ bool isInsideSolution(const uint3 coord) {
     return coord.x < c_solutionDimensions.x && coord.y < c_solutionDimensions.y && coord.z < c_solutionDimensions.z;
 }
 
@@ -85,45 +83,12 @@ __device__ void updateVertex(
         newDisplacement += MATRIX_ENTRY(matConfigEquations, CENTER_VERTEX_INDEX, 2, rhsComponentIndex) * rhsVec[workerIndex][2];
 
         if (rhsComponentIndex == 0) {
-#ifdef DYN_ADJUSTMENT_MAX
-            if (abs(vertexToUpdate->x - newDisplacement) > DYN_ADJUSTMENT_MAX) {
-                // Perform dynamical adjustment, discarding any displacement deltas that are larger than the epsilon defined in DYN_ADJUSTMENT_MAX
-                // this is to prevent occasional large errors caused by race conditions. Smaller errors are corrected over time by the stochastic updates
-                // of surrounding vertices
-#ifdef OUTPUT_BAD_DISPLACEMENTS
-                printf("Bad adjustment: %f diff for thread %i in block %i and bucket %i\n", newDisplacement, threadIdx.x, blockIdx.x, threadIdx.x / (blockDim.x / 2));
-#endif
-                return;
-            }
-#endif
             vertexToUpdate->x = newDisplacement;
         }
         if (rhsComponentIndex == 1) {
-#ifdef DYN_ADJUSTMENT_MAX
-            if (abs(vertexToUpdate->y - newDisplacement) > DYN_ADJUSTMENT_MAX) {
-                // Perform dynamical adjustment, discarding any displacement deltas that are larger than the epsilon defined in DYN_ADJUSTMENT_MAX
-                // this is to prevent occasional large errors caused by race conditions. Smaller errors are corrected over time by the stochastic updates
-                // of surrounding vertices
-#ifdef OUTPUT_BAD_DISPLACEMENTS
-                printf("Bad adjustment: %f diff for thread %i in block %i and bucket %i\n", newDisplacement, threadIdx.x, blockIdx.x, threadIdx.x / (blockDim.x / 2));
-#endif
-                return;
-            }
-#endif
             vertexToUpdate->y = newDisplacement;
         }
         if (rhsComponentIndex == 2) {
-#ifdef DYN_ADJUSTMENT_MAX
-            if (abs(vertexToUpdate->z - newDisplacement) > DYN_ADJUSTMENT_MAX) {
-                // Perform dynamical adjustment, discarding any displacement deltas that are larger than the epsilon defined in DYN_ADJUSTMENT_MAX
-                // this is to prevent occasional large errors caused by race conditions. Smaller errors are corrected over time by the stochastic updates
-                // of surrounding vertices
-#ifdef OUTPUT_BAD_DISPLACEMENTS
-                printf("Bad adjustment: %f diff for thread %i in block %i and bucket %i\n", newDisplacement, threadIdx.x, blockIdx.x, threadIdx.x / (blockDim.x / 2));
-#endif
-                return;
-            }
-#endif
             vertexToUpdate->z = newDisplacement;
         }
 
@@ -157,9 +122,9 @@ __device__ void updateVerticesInRegion(
     for (int i = 0; i < UPDATES_PER_VERTEX * 3 * 8; i++) {
         getUpdateCoordForThread(subsetIndex, blockDim.y * vertexOffset + threadIdx.y, &localCoord);
 
-        Vertex* vertexToUpdate = &localVertices[localCoord.z][localCoord.y][localCoord.x];
+        Vertex* __restrict__ vertexToUpdate = &localVertices[localCoord.z][localCoord.y][localCoord.x];
 
-        const REAL* __restrict__ matrices = &matConfigEquations[static_cast<unsigned int>(vertexToUpdate->materialConfigId) * (EQUATION_ENTRY_SIZE)];
+        const REAL* __restrict__ matrices = &matConfigEquations[static_cast<unsigned int>(vertexToUpdate->materialConfigId) * EQUATION_ENTRY_SIZE];
         buildRHSVectorForVertex(rhsVec, localVertices, matrices, localCoord);
         updateVertex(vertexToUpdate, rhsVec, matrices);
 
@@ -200,13 +165,7 @@ void copyVerticesFromGlobalToShared(
 
                 if (isInsideSolution(globalCoord)) {
                     const int globalIndex = c_solutionDimensions.y*c_solutionDimensions.x*globalCoord.z + c_solutionDimensions.x*globalCoord.y + globalCoord.x;
-
-                    //Turns out it's easier to copy the values manually than to get CUDA to play nice with a volatile struct assignment
-                    Vertex* __restrict__ global = &verticesOnGPU[globalIndex];
-                    local->x = global->x;
-                    local->y = global->y;
-                    local->z = global->z;
-                    local->materialConfigId = global->materialConfigId;
+                    *local = verticesOnGPU[globalIndex];
                 }
             }
         }
@@ -259,9 +218,7 @@ void copyVerticesFromSharedToGlobalAndUpdateResiduals(
                     residualVolume[residualIndex] = residual;
                 }*/
 
-                global->x = local->x;
-                global->y = local->y;
-                global->z = local->z;
+                *global = *local;
 
 #ifdef OUTPUT_NAN_DISPLACEMENTS
                 if (isnan(localVertices[localCoordZ][localCoordY][localCoordX].x)) {

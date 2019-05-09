@@ -37,7 +37,7 @@ int getGlobalIdx_3D_3D() {
 __device__ void buildRHSVectorForVertex(
     Vertex* verticesOnGPU,
     REAL* rhsVec,
-    const REAL* matrices,
+    const REAL* __restrict__ matrices,
     const uint3& globalCenterCoord
 ) {   
     uint3 neighborCoord = {globalCenterCoord.x, globalCenterCoord.y, globalCenterCoord.z};
