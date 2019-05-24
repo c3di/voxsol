@@ -49,6 +49,12 @@ void LODGenerator::projectDisplacementsToFinerLevel(Solution* coarseSolution, So
         unsigned int coarseIndex = coarseSolution->mapToIndex(coarseCoord);
 
         Vertex* fineVertex = &fineVertices->at(fineIndex);
+
+        if (fineVertex->materialConfigId == 0) {
+            // Don't project displacements onto void vertices (empty materials surrounding)
+            continue;
+        }
+
         if (isEvenCoord(fineCoord)) {
             Vertex* coarseVertex = &coarseVertices->at(coarseIndex);
             fineVertex->x = coarseVertex->x;
