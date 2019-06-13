@@ -58,11 +58,11 @@ void VTKSolutionVisualizer::writeToFile(const string& filename) {
     writeHeader();
     writePositions();
     std::cout << "Wrote positions\n";
-    writeCells();
-    writeCellTypes();
+    //writeCells();
+    //writeCellTypes();
     writeCellData();
     std::cout << "Wrote cells\n";
-    writePointData();
+    //writePointData();
     std::cout << "Wrote point data\n";
 
     outFile.close();
@@ -80,15 +80,20 @@ void VTKSolutionVisualizer::writeOnlyDisplacements(const string& filename) {
 }
 
 void VTKSolutionVisualizer::writeHeader() {
+	const DiscreteProblem* problem = solution->getProblem();
     outFile << "# vtk DataFile Version 2.0" << endl;
     outFile << "Stochastic Mechanical Solver Debug Output" << endl;
     outFile << "ASCII" << endl;
-    outFile << "DATASET UNSTRUCTURED_GRID" << endl << endl;
+    outFile << "DATASET STRUCTURED_GRID" << endl;
+	//outFile << "DIMENSIONS 65 65 65" << endl << endl;
+	//VTK format for structured grids requires an offset of 1
+	outFile << "DIMENSIONS" << " " << problem->getSize().x +1 << " " << problem->getSize().y +1 << " " << problem->getSize().z +1 << endl << endl;
 }
 
 void VTKSolutionVisualizer::writePositions() {
     outFile << "POINTS " << numberOfVertices << " double" << endl;
     std::vector<Vertex>* vertices = solution->getVertices();
+	
     for (unsigned int i = 0; i < numberOfVertices; i++) {
         unsigned int index = filterNullVoxels ? vertexFilteredToOrigIndex[i] : i;
         if (filterNullVoxels && vertices->at(index).materialConfigId == 0) {

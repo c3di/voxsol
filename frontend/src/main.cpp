@@ -174,7 +174,7 @@ int main(int argc, char* argv[]) {
     visualizer.filterOutNullVoxels(false);
     visualizer.setMechanicalValuesOutput(true);
     std::stringstream fp = std::stringstream();
-    fp << "d:\\tmp\\gpu_end.vtk";
+    fp << "d:\\tmp\\gpu_end_onlyCelldata.vtk";
     visualizer.writeToFile(fp.str());
    
     std::cout << std::endl << "Total simulation time: " << totalMilliseconds << " ms\n\n";
