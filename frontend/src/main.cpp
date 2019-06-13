@@ -57,7 +57,7 @@ void solveGPU(ProblemInstance& problemInstance, int lod) {
     int numIterationsDone = 0;
     int numIterationsTarget = 200;
     REAL maxResidual = 10000000;
-    REAL epsilon = asREAL(5.0e-7);
+    REAL epsilon = asREAL(1.0e-8);
     kernel.setNumLaunchesBeforeResidualUpdate(499);
 
     //for (int i = 1; i <= numIterationsTarget; i++) {
@@ -77,8 +77,8 @@ void solveGPU(ProblemInstance& problemInstance, int lod) {
             maxResidual = problemInstance.getResidualVolumeLOD(lod)->getAverageResidual(epsilon); 
             std::cout << "Residual: " << maxResidual << " iteration " << totalIterations << std::endl;
 
-            kernel.pullVertices();
-            std::stringstream fp = std::stringstream();
+//            kernel.pullVertices();
+//            std::stringstream fp = std::stringstream();
 
             //fp << "d:\\tmp\\gpu_" << totalIterations << ".vtk";
             //visualizer.writeToFile(fp.str());
@@ -147,7 +147,7 @@ int main(int argc, char* argv[]) {
         std::cout << "Cuda device " << ACTIVE_DEVICE << " initialized!\n\n";
     }
 
-    std::string xmlInputFile("voxel_128.xml");
+    std::string xmlInputFile("voxel_64.xml");
 
     XMLProblemDeserializer xmlDeserializer(xmlInputFile);
     ProblemInstance problemInstance = xmlDeserializer.getProblemInstance();
