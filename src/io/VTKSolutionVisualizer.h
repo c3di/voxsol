@@ -24,8 +24,8 @@ private:
     Solution* solution;
     ResidualVolume* impVol;
     std::ofstream outFile;
-    bool enableResidualOutput = true;
-    bool enableMatConfigIdOutput = true;
+    bool enableResidualOutput = false;
+    bool enableMatConfigIdOutput = false;
     bool enableMechanicalValuesOutput = false;
     
 

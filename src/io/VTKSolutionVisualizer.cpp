@@ -53,6 +53,7 @@ void VTKSolutionVisualizer::setMechanicalValuesOutput(bool flag) {
 }
 
 void VTKSolutionVisualizer::writeToFile(const string& filename) {
+	//excluding writeCells, writeCellTypes and mechanicalData for unreal export to save time.
     outFile.open(filename, ios::out);
     std::cout << "Starting VTK output\n";
     writeHeader();
@@ -62,7 +63,7 @@ void VTKSolutionVisualizer::writeToFile(const string& filename) {
     //writeCellTypes();
     writeCellData();
     std::cout << "Wrote cells\n";
-    //writePointData();
+    writePointData();
     std::cout << "Wrote point data\n";
 
     outFile.close();
@@ -85,7 +86,6 @@ void VTKSolutionVisualizer::writeHeader() {
     outFile << "Stochastic Mechanical Solver Debug Output" << endl;
     outFile << "ASCII" << endl;
     outFile << "DATASET STRUCTURED_GRID" << endl;
-	//outFile << "DIMENSIONS 65 65 65" << endl << endl;
 	//VTK format for structured grids requires an offset of 1
 	outFile << "DIMENSIONS" << " " << problem->getSize().x +1 << " " << problem->getSize().y +1 << " " << problem->getSize().z +1 << endl << endl;
 }
@@ -339,7 +339,7 @@ void VTKSolutionVisualizer::writePointData() {
     outFile << "POINT_DATA " << numberOfVertices << endl;
 
     writeDisplacements();
-    writeBoundaries();
+    //writeBoundaries();
 
     if (enableResidualOutput && impVol != nullptr) {
         writeResiduals();

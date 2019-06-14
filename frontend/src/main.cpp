@@ -171,8 +171,8 @@ int main(int argc, char* argv[]) {
     std::cout << std::endl << "Maximum displacement in Z: " << maxDisp << std::endl;
     
     VTKSolutionVisualizer visualizer(problemInstance.getSolutionLOD(0));
-    visualizer.filterOutNullVoxels(false);
-    visualizer.setMechanicalValuesOutput(true);
+    visualizer.filterOutNullVoxels(true);
+    visualizer.setMechanicalValuesOutput(false);
     std::stringstream fp = std::stringstream();
     fp << "d:\\tmp\\gpu_end_onlyCelldata.vtk";
     visualizer.writeToFile(fp.str());
