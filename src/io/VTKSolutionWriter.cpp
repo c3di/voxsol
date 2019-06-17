@@ -1,109 +1,125 @@
 #include "stdafx.h"
+
+#include "VTKSolutionWriter.h"
+
 #include <iomanip>
-#include "VTKSolutionVisualizer.h"
+
 #include "solution/SolutionAnalyzer.h"
 
-using namespace std;
-
-VTKSolutionVisualizer::VTKSolutionVisualizer(Solution* sol, ResidualVolume* impVol) :
-    solution(sol),
-    numberOfCells(sol->getProblem()->getNumberOfVoxels()),
-    numberOfVertices(static_cast<unsigned int>(sol->getVertices()->size())),
-    impVol(impVol)
+VTKSolutionVisualizer::VTKSolutionVisualizer(Solution* solution, ResidualVolume* importanceVolume) :
+    solution(solution),
+    numberOfCells(solution->getProblem()->getNumberOfVoxels()),
+    numberOfPoints(static_cast<unsigned int>(solution->getVertices()->size())),
+    importanceVolume(importanceVolume)
 {
-
 }
 
-VTKSolutionVisualizer::~VTKSolutionVisualizer() {
-
+VTKSolutionVisualizer::~VTKSolutionVisualizer() 
+{
 }
 
-void VTKSolutionVisualizer::filterOutNullVoxels(bool doFilter) {
-    filterNullVoxels = doFilter;
-    if (doFilter) {
-        std::vector<Vertex>* vertices = solution->getVertices();
-        unsigned int numRemainingVertices = 0;
-        for (unsigned int i = 0; i < solution->getVertices()->size(); i++) {
-            if (vertices->at(i).materialConfigId != 0) {
-                vertexOrigToFilteredIndex[i] = numRemainingVertices;
-                vertexFilteredToOrigIndex[numRemainingVertices] = i;
-                numRemainingVertices++;
-            }
-        }
-
-        unsigned int numRemainingCells = 0;
-        DiscreteProblem* problem = solution->getProblem();
-        for (unsigned int i = 0; i < problem->getNumberOfVoxels(); i++) {
-            if (problem->getMaterial(i)->id != Material::EMPTY.id) {
-                cellOrigToFilteredIndex[i] = numRemainingCells;
-                cellFilteredToOrigIndex[numRemainingCells] = i;
-                numRemainingCells++;
-            }
-        }
-        numberOfVertices = numRemainingVertices;
-        numberOfCells = numRemainingCells;
-    }
-    else {
-        numberOfVertices = static_cast<unsigned int>(solution->getVertices()->size());
-    }
+void VTKSolutionVisualizer::filterOutNullVoxels() 
+{
+	fillFilteredPointMap();
+	fillFilteredCellMap();
+    nullVoxelsWereFiltered = true;
 }
 
-void VTKSolutionVisualizer::setMechanicalValuesOutput(bool flag) {
+void VTKSolutionVisualizer::setMechanicalValuesOutput(bool flag) 
+{
     enableMechanicalValuesOutput = flag;
 }
+	
+void VTKSolutionVisualizer::fillFilteredPointMap()
+{
+	numberOfPoints = 0;
+	auto vertices = solution->getVertices();
+	for (unsigned int i = 0; i < vertices->size(); i++) 
+	{
+		if (vertices->at(i).materialConfigId == 0)
+			continue;			
+		
+		pointMapOriginalToFiltered[i] = numberOfPoints;
+		pointMapFilteredToOriginal[numberOfPoints] = i;
+		numberOfPoints++;
+	}
+}
 
-void VTKSolutionVisualizer::writeToFile(const string& filename) {
-	//excluding writeCells, writeCellTypes and mechanicalData for unreal export to save time.
-    outFile.open(filename, ios::out);
-    std::cout << "Starting VTK output\n";
-    writeHeader();
-    writePositions();
-    std::cout << "Wrote positions\n";
-    //writeCells();
-    //writeCellTypes();
-    writeCellData();
-    std::cout << "Wrote cells\n";
-    writePointData();
-    std::cout << "Wrote point data\n";
+void VTKSolutionVisualizer::fillFilteredCellMap()
+{
+	numberOfCells = 0;
+	DiscreteProblem* problem = solution->getProblem();
+	for (unsigned int i = 0; i < problem->getNumberOfVoxels(); i++) 
+	{
+		if (problem->getMaterial(i)->id == Material::EMPTY.id) 
+			continue;
+		
+		cellMapOriginalToFiltered[i] = numberOfCells;
+		cellMapFilteredToOriginal[numberOfCells] = i;
+		numberOfCells++;
+	}	
+}
 
+unsigned int VTKSolutionVisualizer::getMappedIndex( unsigned int originalIndex )
+{
+	if ( !nullVoxelsWereFiltered ) 
+		return originalIndex;
+	
+	return pointMapOriginalToFiltered[originalIndex];
+}
+
+void VTKSolutionVisualizer::writeToFile(const string& filename) 
+{
+    std::ofstream outFile(filename, ios::out);
+	try
+	{
+		writeEntireStructureToStream(outFile);
+	} 
+	catch (std::ioexception exception)
+	{
+		outFile.close();
+		throw exception;
+	}
     outFile.close();
 }
 
-void VTKSolutionVisualizer::writeOnlyDisplacements(const string& filename) {
-	outFile.open(filename, ios::out);
-	std::vector<Vertex>* vertices = solution->getVertices();
-	for (unsigned int i = 0; i < numberOfVertices; i++) {
-		unsigned int index = filterNullVoxels ? vertexFilteredToOrigIndex[i] : i;
-		Vertex v = vertices->at(index);
-		outFile << v.x << "\n" << v.y << "\n" << v.z << endl;
-	}
-	outFile.close();
+void VTKSolutionVisualizer::writeEntireStructureToStream(std::ostream& stream)
+{
+    writeHeader(stream);
+    writePoints(stream);
+    writeCells(stream);
+    writeCellTypes(stream);
+    writeCellData(stream);
+    writePointData(stream);
 }
 
-void VTKSolutionVisualizer::writeHeader() {
-	const DiscreteProblem* problem = solution->getProblem();
-    outFile << "# vtk DataFile Version 2.0" << endl;
-    outFile << "Stochastic Mechanical Solver Debug Output" << endl;
-    outFile << "ASCII" << endl;
-    outFile << "DATASET STRUCTURED_GRID" << endl;
-	//VTK format for structured grids requires an offset of 1
-	outFile << "DIMENSIONS" << " " << problem->getSize().x +1 << " " << problem->getSize().y +1 << " " << problem->getSize().z +1 << endl << endl;
+void VTKSolutionVisualizer::writeHeader(std::ostream& stream) 
+{
+    stream << "# vtk DataFile Version 2.0" << std::endl;
+    stream << "Stochastic Mechanical Solver Debug Output" << std::endl;
+    stream << "ASCII" << std::endl;
+    stream << "DATASET UNSTRUCTURED_GRID" << std::endl;
 }
 
-void VTKSolutionVisualizer::writePositions() {
-    outFile << "POINTS " << numberOfVertices << " double" << endl;
-    std::vector<Vertex>* vertices = solution->getVertices();
+void VTKSolutionVisualizer::writePoints(std::ostream& stream)
+{
+    stream << "POINTS " << numberOfPoints << " double" << std::endl;
+    for (unsigned int i = 0; i < numberOfPoints; i++) 
+	{
+		writeOnePoint( stream, i );
+    }  
+    stream << std::endl;
+}
+
+void VTKSolutionVisualizer::writeOnePoint(std::ostream& stream, unsigned int originalIndex )
+{
+	unsigned int mappedIndex = getMappedIndex(originalIndex);
+
+	if ( nullVoxelsWereFiltered && solution->getVertices()->at(mappedIndex).materialConfigId == 0 )
+		return;
 	
-    for (unsigned int i = 0; i < numberOfVertices; i++) {
-        unsigned int index = filterNullVoxels ? vertexFilteredToOrigIndex[i] : i;
-        if (filterNullVoxels && vertices->at(index).materialConfigId == 0) {
-            continue;
-        }
-        libmmv::Vec3<REAL> pos = solution->getProblem()->getVertexPosition(index);
-        outFile << pos.x << " " << pos.y << " " << pos.z << " " << endl;
-    }
-    
-    outFile << endl;
+	libmmv::Vec3<REAL> position = solution->getProblem()->getVertexPosition(mappedIndex);
+	stream << position.x << " " << position.y << " " << position.z << " " << std::endl;	
 }
 
 void VTKSolutionVisualizer::writeCells() {
@@ -115,7 +131,7 @@ void VTKSolutionVisualizer::writeCells() {
             for (unsigned int xi = 0; xi < problem->getSize().x; xi++) {
                 VoxelCoordinate coord(xi, yi, zi);
                 unsigned int flatIndex = problem->mapToVoxelIndex(coord);
-                if (filterNullVoxels && cellOrigToFilteredIndex.count(flatIndex) <= 0) {
+                if (nullVoxelsWereFiltered && cellOrigToFilteredIndex.count(flatIndex) <= 0) {
                     // There is no mapping for this voxel index, so it must have been filtered out due to null material
                     continue;
                 }
@@ -142,7 +158,7 @@ void VTKSolutionVisualizer::writeCell(VoxelCoordinate& coord) {
 void VTKSolutionVisualizer::writeVertexToCell(unsigned int xi, unsigned int yi, unsigned int zi, VoxelCoordinate& coord) {
     VertexCoordinate corner = coord + VoxelCoordinate(xi, yi, zi);
     int flatIndexOfCorner = solution->getProblem()->mapToVertexIndex(corner);
-    if (filterNullVoxels) {
+    if (nullVoxelsWereFiltered) {
         if (vertexOrigToFilteredIndex.count(flatIndexOfCorner) <= 0) {
             throw std::exception("Could not find mapping for vertex");
         }
@@ -180,7 +196,7 @@ void VTKSolutionVisualizer::writeMaterials() {
     
     DiscreteProblem* problem = solution->getProblem();
     for (unsigned int i = 0; i < numberOfCells; i++) {
-        unsigned int index = filterNullVoxels ? cellFilteredToOrigIndex[i] : i;
+        unsigned int index = nullVoxelsWereFiltered ? cellFilteredToOrigIndex[i] : i;
         int matId = static_cast<int>(problem->getMaterial(index)->id);
         outFile << matId << endl;
     }
@@ -192,7 +208,7 @@ void VTKSolutionVisualizer::writeVonMisesStresses(SolutionAnalyzer* solutionAnal
     outFile << "LOOKUP_TABLE default" << endl;
 
     for (unsigned int i = 0; i < numberOfCells; i++) {
-        unsigned int index = filterNullVoxels ? cellFilteredToOrigIndex[i] : i;
+        unsigned int index = nullVoxelsWereFiltered ? cellFilteredToOrigIndex[i] : i;
         REAL stress = static_cast<REAL>(solutionAnalyzer->getVonMisesStressAt(index));
         outFile << stress << endl;
     }
@@ -204,7 +220,7 @@ void VTKSolutionVisualizer::writeVonMisesStrains(SolutionAnalyzer* solutionAnaly
     outFile << "LOOKUP_TABLE default" << endl;
 
     for (unsigned int i = 0; i < numberOfCells; i++) {
-        unsigned int index = filterNullVoxels ? cellFilteredToOrigIndex[i] : i;
+        unsigned int index = nullVoxelsWereFiltered ? cellFilteredToOrigIndex[i] : i;
         REAL stress = static_cast<REAL>(solutionAnalyzer->getVonMisesStrainAt(index));
         outFile << stress << endl;
     }
@@ -216,7 +232,7 @@ void VTKSolutionVisualizer::writeStressTensors(SolutionAnalyzer* solutionAnalyze
     outFile << "LOOKUP_TABLE default" << endl;
 
     for (unsigned int i = 0; i < numberOfCells; i++) {
-        unsigned int index = filterNullVoxels ? cellFilteredToOrigIndex[i] : i;
+        unsigned int index = nullVoxelsWereFiltered ? cellFilteredToOrigIndex[i] : i;
         REAL* stressTensor = solutionAnalyzer->getStressTensorAt(index);
         outFile << stressTensor[0] << endl;
     }
@@ -226,7 +242,7 @@ void VTKSolutionVisualizer::writeStressTensors(SolutionAnalyzer* solutionAnalyze
     outFile << "LOOKUP_TABLE default" << endl;
 
     for (unsigned int i = 0; i < numberOfCells; i++) {
-        unsigned int index = filterNullVoxels ? cellFilteredToOrigIndex[i] : i;
+        unsigned int index = nullVoxelsWereFiltered ? cellFilteredToOrigIndex[i] : i;
         REAL* stressTensor = solutionAnalyzer->getStressTensorAt(index);
         outFile << stressTensor[1] << endl;
     }
@@ -236,7 +252,7 @@ void VTKSolutionVisualizer::writeStressTensors(SolutionAnalyzer* solutionAnalyze
     outFile << "LOOKUP_TABLE default" << endl;
 
     for (unsigned int i = 0; i < numberOfCells; i++) {
-        unsigned int index = filterNullVoxels ? cellFilteredToOrigIndex[i] : i;
+        unsigned int index = nullVoxelsWereFiltered ? cellFilteredToOrigIndex[i] : i;
         REAL* stressTensor = solutionAnalyzer->getStressTensorAt(index);
         outFile << stressTensor[2] << endl;
     }
@@ -246,7 +262,7 @@ void VTKSolutionVisualizer::writeStressTensors(SolutionAnalyzer* solutionAnalyze
     outFile << "LOOKUP_TABLE default" << endl;
 
     for (unsigned int i = 0; i < numberOfCells; i++) {
-        unsigned int index = filterNullVoxels ? cellFilteredToOrigIndex[i] : i;
+        unsigned int index = nullVoxelsWereFiltered ? cellFilteredToOrigIndex[i] : i;
         REAL* stressTensor = solutionAnalyzer->getStressTensorAt(index);
         outFile << stressTensor[3] << endl;
     }
@@ -256,7 +272,7 @@ void VTKSolutionVisualizer::writeStressTensors(SolutionAnalyzer* solutionAnalyze
     outFile << "LOOKUP_TABLE default" << endl;
 
     for (unsigned int i = 0; i < numberOfCells; i++) {
-        unsigned int index = filterNullVoxels ? cellFilteredToOrigIndex[i] : i;
+        unsigned int index = nullVoxelsWereFiltered ? cellFilteredToOrigIndex[i] : i;
         REAL* stressTensor = solutionAnalyzer->getStressTensorAt(index);
         outFile << stressTensor[4] << endl;
     }
@@ -266,7 +282,7 @@ void VTKSolutionVisualizer::writeStressTensors(SolutionAnalyzer* solutionAnalyze
     outFile << "LOOKUP_TABLE default" << endl;
 
     for (unsigned int i = 0; i < numberOfCells; i++) {
-        unsigned int index = filterNullVoxels ? cellFilteredToOrigIndex[i] : i;
+        unsigned int index = nullVoxelsWereFiltered ? cellFilteredToOrigIndex[i] : i;
         REAL* stressTensor = solutionAnalyzer->getStressTensorAt(index);
         outFile << stressTensor[5] << endl;
     }
@@ -278,7 +294,7 @@ void VTKSolutionVisualizer::writeStrainTensors(SolutionAnalyzer* solutionAnalyze
     outFile << "LOOKUP_TABLE default" << endl;
 
     for (unsigned int i = 0; i < numberOfCells; i++) {
-        unsigned int index = filterNullVoxels ? cellFilteredToOrigIndex[i] : i;
+        unsigned int index = nullVoxelsWereFiltered ? cellFilteredToOrigIndex[i] : i;
         REAL* strainTensor = solutionAnalyzer->getStrainTensorAt(index);
         outFile << strainTensor[0] << endl;
     }
@@ -288,7 +304,7 @@ void VTKSolutionVisualizer::writeStrainTensors(SolutionAnalyzer* solutionAnalyze
     outFile << "LOOKUP_TABLE default" << endl;
 
     for (unsigned int i = 0; i < numberOfCells; i++) {
-        unsigned int index = filterNullVoxels ? cellFilteredToOrigIndex[i] : i;
+        unsigned int index = nullVoxelsWereFiltered ? cellFilteredToOrigIndex[i] : i;
         REAL* strainTensor = solutionAnalyzer->getStrainTensorAt(index);
         outFile << strainTensor[1] << endl;
     }
@@ -298,7 +314,7 @@ void VTKSolutionVisualizer::writeStrainTensors(SolutionAnalyzer* solutionAnalyze
     outFile << "LOOKUP_TABLE default" << endl;
 
     for (unsigned int i = 0; i < numberOfCells; i++) {
-        unsigned int index = filterNullVoxels ? cellFilteredToOrigIndex[i] : i;
+        unsigned int index = nullVoxelsWereFiltered ? cellFilteredToOrigIndex[i] : i;
         REAL* strainTensor = solutionAnalyzer->getStrainTensorAt(index);
         outFile << strainTensor[2] << endl;
     }
@@ -308,7 +324,7 @@ void VTKSolutionVisualizer::writeStrainTensors(SolutionAnalyzer* solutionAnalyze
     outFile << "LOOKUP_TABLE default" << endl;
 
     for (unsigned int i = 0; i < numberOfCells; i++) {
-        unsigned int index = filterNullVoxels ? cellFilteredToOrigIndex[i] : i;
+        unsigned int index = nullVoxelsWereFiltered ? cellFilteredToOrigIndex[i] : i;
         REAL* strainTensor = solutionAnalyzer->getStrainTensorAt(index);
         outFile << strainTensor[3] << endl;
     }
@@ -318,7 +334,7 @@ void VTKSolutionVisualizer::writeStrainTensors(SolutionAnalyzer* solutionAnalyze
     outFile << "LOOKUP_TABLE default" << endl;
 
     for (unsigned int i = 0; i < numberOfCells; i++) {
-        unsigned int index = filterNullVoxels ? cellFilteredToOrigIndex[i] : i;
+        unsigned int index = nullVoxelsWereFiltered ? cellFilteredToOrigIndex[i] : i;
         REAL* strainTensor = solutionAnalyzer->getStrainTensorAt(index);
         outFile << strainTensor[4] << endl;
     }
@@ -328,7 +344,7 @@ void VTKSolutionVisualizer::writeStrainTensors(SolutionAnalyzer* solutionAnalyze
     outFile << "LOOKUP_TABLE default" << endl;
 
     for (unsigned int i = 0; i < numberOfCells; i++) {
-        unsigned int index = filterNullVoxels ? cellFilteredToOrigIndex[i] : i;
+        unsigned int index = nullVoxelsWereFiltered ? cellFilteredToOrigIndex[i] : i;
         REAL* strainTensor = solutionAnalyzer->getStrainTensorAt(index);
         outFile << strainTensor[5] << endl;
     }
@@ -336,7 +352,7 @@ void VTKSolutionVisualizer::writeStrainTensors(SolutionAnalyzer* solutionAnalyze
 }
 
 void VTKSolutionVisualizer::writePointData() {
-    outFile << "POINT_DATA " << numberOfVertices << endl;
+    outFile << "POINT_DATA " << numberOfPoints << endl;
 
     writeDisplacements();
     //writeBoundaries();
@@ -353,8 +369,8 @@ void VTKSolutionVisualizer::writeDisplacements() {
     outFile << "VECTORS displacement double" << endl;
 
     std::vector<Vertex>* vertices = solution->getVertices();
-    for (unsigned int i = 0; i < numberOfVertices; i++) {
-        unsigned int index = filterNullVoxels ? vertexFilteredToOrigIndex[i] : i;
+    for (unsigned int i = 0; i < numberOfPoints; i++) {
+        unsigned int index = nullVoxelsWereFiltered ? vertexFilteredToOrigIndex[i] : i;
         Vertex v = vertices->at(index);
         outFile << v.x << " " << v.y << " " << v.z << endl;
     }
@@ -366,16 +382,16 @@ void VTKSolutionVisualizer::writeBoundaries() {
     std::vector<Vertex>* vertices = solution->getVertices();
     
     outFile << "VECTORS dirichlet_border float" << endl;
-    for (unsigned int i = 0; i < numberOfVertices; i++) {
-        unsigned int index = filterNullVoxels ? vertexFilteredToOrigIndex[i] : i;
+    for (unsigned int i = 0; i < numberOfPoints; i++) {
+        unsigned int index = nullVoxelsWereFiltered ? vertexFilteredToOrigIndex[i] : i;
         DirichletBoundary boundary = problem->getDirichletBoundaryAtVertex(index);
         outFile << (boundary.isXFixed() ? 1 : 0) << " " << (boundary.isYFixed() ? 1 : 0) << " " << (boundary.isZFixed() ? 1 : 0) << endl;
     }
     outFile << endl;
 
     outFile << "VECTORS neumann_border float" << endl;
-    for (unsigned int i = 0; i < numberOfVertices; i++) {
-        unsigned int index = filterNullVoxels ? vertexFilteredToOrigIndex[i] : i;
+    for (unsigned int i = 0; i < numberOfPoints; i++) {
+        unsigned int index = nullVoxelsWereFiltered ? vertexFilteredToOrigIndex[i] : i;
         NeumannBoundary boundary = problem->getNeumannBoundaryAtVertex(index);
         outFile << boundary.stress.x << " " << boundary.stress.y << " " << boundary.stress.z << endl;
     }
@@ -386,10 +402,10 @@ void VTKSolutionVisualizer::writeResiduals() {
     outFile << "VECTORS residual double" << endl;
 
     std::vector<Vertex>* vertices = solution->getVertices();
-    for (unsigned int i = 0; i < numberOfVertices; i++) {
-        unsigned int index = filterNullVoxels ? vertexFilteredToOrigIndex[i] : i;
+    for (unsigned int i = 0; i < numberOfPoints; i++) {
+        unsigned int index = nullVoxelsWereFiltered ? vertexFilteredToOrigIndex[i] : i;
         Vertex v = vertices->at(index);
-        if (filterNullVoxels && v.materialConfigId == 0) {
+        if (nullVoxelsWereFiltered && v.materialConfigId == 0) {
             continue;
         }
         VertexCoordinate fullresCoord = solution->mapToCoordinate(index);
@@ -404,10 +420,10 @@ void VTKSolutionVisualizer::writeMaterialConfigIds() {
     outFile << "LOOKUP_TABLE default" << endl;
 
     std::vector<Vertex>* vertices = solution->getVertices();
-    for (unsigned int i = 0; i < numberOfVertices; i++) {
-        unsigned int index = filterNullVoxels ? vertexFilteredToOrigIndex[i] : i;
+    for (unsigned int i = 0; i < numberOfPoints; i++) {
+        unsigned int index = nullVoxelsWereFiltered ? vertexFilteredToOrigIndex[i] : i;
         Vertex v = vertices->at(index);
-        if (filterNullVoxels && v.materialConfigId == 0) {
+        if (nullVoxelsWereFiltered && v.materialConfigId == 0) {
             continue;
         }
         VertexCoordinate fullresCoord = solution->mapToCoordinate(index);
