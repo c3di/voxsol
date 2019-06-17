@@ -13,7 +13,7 @@
 #include "material/MaterialDictionary.h"
 #include "problem/boundaryconditions/DirichletBoundary.h"
 #include "problem/boundaryconditions/NeumannBoundary.h"
-#include "io/VTKSolutionVisualizer.h"
+#include "io/VTKSolutionWriter.h"
 #include "io/VTKImportanceVisualizer.h"
 #include "io/VTKSamplingVisualizer.h"
 #include "io/MRCVoxelImporter.h"
@@ -39,9 +39,9 @@ void solveGPU(ProblemInstance& problemInstance, int lod) {
     WaveSampler sampler(problemInstance.getSolutionLOD(lod), waveOrigin, waveDirection);
     //ImportanceBlockSampler sampler(problemInstance.getResidualVolumeLOD(lod));
 
-    VTKSolutionVisualizer visualizer(problemInstance.getSolutionLOD(lod));
-	visualizer.filterOutNullVoxels(false);
-    visualizer.setMechanicalValuesOutput(false);
+    VTKSolutionWriter visualizationWriter(problemInstance.getSolutionLOD(lod));
+	visualizationWriter.filterOutNullVoxels();
+    visualizationWriter.setMechanicalValuesOutput(false);
 
     VTKSamplingVisualizer samplingVis(problemInstance.getSolutionLOD(lod));
 
@@ -81,7 +81,7 @@ void solveGPU(ProblemInstance& problemInstance, int lod) {
 //            std::stringstream fp = std::stringstream();
 
             //fp << "d:\\tmp\\gpu_" << totalIterations << ".vtk";
-            //visualizer.writeToFile(fp.str());
+            //visualizationWriter.writeToFile(fp.str());
 
             /*std::stringstream fp = std::stringstream();
             fp << "d:\\tmp\\step_sampling_" << totalIterations << ".vtk";
@@ -89,7 +89,7 @@ void solveGPU(ProblemInstance& problemInstance, int lod) {
 
             fp = std::stringstream();
             fp << "d:\\tmp\\gpu_" << totalIterations << ".vtk";
-            visualizer.writeToFile(fp.str());
+            visualizationWriter.writeToFile(fp.str());
 
             fp = std::stringstream();
             fp << "d:\\tmp\\step_residuals_" << totalIterations << ".vtk";
@@ -170,12 +170,12 @@ int main(int argc, char* argv[]) {
 
     std::cout << std::endl << "Maximum displacement in Z: " << maxDisp << std::endl;
     
-    VTKSolutionVisualizer visualizer(problemInstance.getSolutionLOD(0));
-    visualizer.filterOutNullVoxels(true);
-    visualizer.setMechanicalValuesOutput(false);
+    VTKSolutionWriter writer(problemInstance.getSolutionLOD(0));
+    writer.filterOutNullVoxels();
+    writer.setMechanicalValuesOutput(false);
     std::stringstream fp = std::stringstream();
     fp << "d:\\tmp\\gpu_end_onlyCelldata.vtk";
-    visualizer.writeToFile(fp.str());
+    writer.writeEntireStructureToFile(fp.str());
    
     std::cout << std::endl << "Total simulation time: " << totalMilliseconds << " ms\n\n";
 

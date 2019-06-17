@@ -7,7 +7,7 @@
 #include "gpu/sampling/ImportanceBlockSampler.h"
 #include "solution/samplers/SequentialBlockSampler.h"
 #include "io/VTKSamplingVisualizer.h"
-#include "io/VTKSolutionVisualizer.h"
+#include "io/VTKSolutionWriter.h"
 
 ProblemInstance::ProblemInstance() 
 {
@@ -202,7 +202,7 @@ int ProblemInstance::solveLOD(int lod) {
     SolveDisplacementKernel kernel(getSolutionLOD(lod), &sampler, residualVolume);
 
     VTKSamplingVisualizer samplingVis(getSolutionLOD(lod));
-    VTKSolutionVisualizer vis(getSolutionLOD(lod));
+    VTKSolutionWriter vis(getSolutionLOD(lod));
     
     REAL totalResidual = 0;
     REAL lastTotalResidual = 0;
@@ -222,7 +222,7 @@ int ProblemInstance::solveLOD(int lod) {
             kernel.pullVertices();
             std::stringstream fp;
             fp << "c:\\tmp\\lod_" << lod << "_bend_" << totalSteps << ".vtk";
-            vis.writeToFile(fp.str());
+            vis.writeEntireStructureToFile(fp.str());
             std::cout << "Step " << totalSteps << " with total residual " << totalResidual << std::endl;
 
             fp = std::stringstream();

@@ -4,6 +4,8 @@
 #include <iostream>
 #include <string>
 
+#include "gpu/sampling/ResidualVolume.h"
+
 class ResidualVolume;
 class Solution;
 class SolutionAnalyzer;
@@ -14,8 +16,8 @@ public:
     VTKSolutionWriter(Solution* solution, ResidualVolume* importanceVolume = nullptr);
     ~VTKSolutionWriter();
 
-    void writeEntireStructureToFile(const std::string& filename);
-	void writeEntireStructureToStream(std::ostream& stream);
+	void writeEntireStructureToFile(const std::string& filename);
+	
 	
     void filterOutNullVoxels();
     void setMechanicalValuesOutput(bool flag);
@@ -23,12 +25,11 @@ public:
     unsigned int numberOfCells;
     unsigned int numberOfPoints;
 
-private:
+protected:
 	void fillFilteredPointMap();
 	void fillFilteredCellMap();
 	unsigned int getMappedIndex( unsigned int originalIndex );
 	
-private:
     Solution* solution;
     ResidualVolume* importanceVolume;
     bool enableResidualOutput = false;
@@ -43,6 +44,7 @@ private:
     std::unordered_map<unsigned int, unsigned int> cellMapOriginalToFiltered;
 	std::unordered_map<unsigned int, unsigned int> cellMapFilteredToOriginal;
 
+	void writeEntireStructureToStream(std::ostream& stream);
     void writeHeader(std::ostream& stream);
     void writePoints(std::ostream& stream);
 	void writeOnePoint(std::ostream& stream, unsigned int originalIndex);
@@ -54,15 +56,15 @@ private:
     void writePointData(std::ostream& stream);
 
     // Cell data
-    void writeMaterials();
-    void writeVonMisesStresses(SolutionAnalyzer* solutionAnalyzer);
-    void writeVonMisesStrains(SolutionAnalyzer* solutionAnalyzer);
-    void writeStressTensors(SolutionAnalyzer* solutionAnalyzer);
-    void writeStrainTensors(SolutionAnalyzer* solutionAnalyzer);
+    void writeMaterials(std::ostream& stream);
+    void writeVonMisesStresses(std::ostream& stream, SolutionAnalyzer* solutionAnalyzer);
+    void writeVonMisesStrains(std::ostream& stream, SolutionAnalyzer* solutionAnalyzer);
+    void writeStressTensors(std::ostream& stream, SolutionAnalyzer* solutionAnalyzer);
+    void writeStrainTensors(std::ostream& stream, SolutionAnalyzer* solutionAnalyzer);
 
     // Point data
-    void writeDisplacements();
-    void writeResiduals();
-    void writeBoundaries();
-    void writeMaterialConfigIds();
+    void writeDisplacements(std::ostream& stream);
+    void writeResiduals(std::ostream& stream);
+    void writeBoundaries(std::ostream& stream);
+    void writeMaterialConfigIds(std::ostream& stream);
 };
