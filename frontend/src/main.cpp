@@ -14,6 +14,7 @@
 #include "problem/boundaryconditions/DirichletBoundary.h"
 #include "problem/boundaryconditions/NeumannBoundary.h"
 #include "io/VTKSolutionWriter.h"
+#include "io/VTKSolutionStructuredWriter.h"
 #include "io/VTKImportanceVisualizer.h"
 #include "io/VTKSamplingVisualizer.h"
 #include "io/MRCVoxelImporter.h"
@@ -147,7 +148,7 @@ int main(int argc, char* argv[]) {
         std::cout << "Cuda device " << ACTIVE_DEVICE << " initialized!\n\n";
     }
 
-    std::string xmlInputFile("voxel_64.xml");
+    std::string xmlInputFile("label_CT4b_voxel_size.xml");
 
     XMLProblemDeserializer xmlDeserializer(xmlInputFile);
     ProblemInstance problemInstance = xmlDeserializer.getProblemInstance();
@@ -170,11 +171,10 @@ int main(int argc, char* argv[]) {
 
     std::cout << std::endl << "Maximum displacement in Z: " << maxDisp << std::endl;
     
-    VTKSolutionWriter writer(problemInstance.getSolutionLOD(0));
-    writer.filterOutNullVoxels();
+    VTKSolutionStructuredWriter writer(problemInstance.getSolutionLOD(0));
     writer.setMechanicalValuesOutput(false);
     std::stringstream fp = std::stringstream();
-    fp << "d:\\tmp\\gpu_end_onlyCelldata.vtk";
+    fp << "d:\\tmp\\gpu_end_structuredRefacTest_CT.vtk";
     writer.writeEntireStructureToFile(fp.str());
    
     std::cout << std::endl << "Total simulation time: " << totalMilliseconds << " ms\n\n";

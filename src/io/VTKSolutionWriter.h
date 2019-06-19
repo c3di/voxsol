@@ -5,9 +5,9 @@
 #include <string>
 
 #include "gpu/sampling/ResidualVolume.h"
+#include "solution/Solution.h"
 
 class ResidualVolume;
-class Solution;
 class SolutionAnalyzer;
 
 class VTKSolutionWriter 
@@ -16,7 +16,7 @@ public:
     VTKSolutionWriter(Solution* solution, ResidualVolume* importanceVolume = nullptr);
     ~VTKSolutionWriter();
 
-	void writeEntireStructureToFile(const std::string& filename);
+	void virtual writeEntireStructureToFile(const std::string& filename);
 	
 	
     void filterOutNullVoxels();
@@ -44,8 +44,8 @@ protected:
     std::unordered_map<unsigned int, unsigned int> cellMapOriginalToFiltered;
 	std::unordered_map<unsigned int, unsigned int> cellMapFilteredToOriginal;
 
-	void writeEntireStructureToStream(std::ostream& stream);
-    void writeHeader(std::ostream& stream);
+	void virtual writeEntireStructureToStream(std::ostream& stream);
+    void virtual writeHeader(std::ostream& stream);
     void writePoints(std::ostream& stream);
 	void writeOnePoint(std::ostream& stream, unsigned int originalIndex);
     void writeCells(std::ostream& stream);
