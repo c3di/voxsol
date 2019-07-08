@@ -115,10 +115,10 @@ void BoundaryProjector::projectNeumannStressAlongNegZ(REAL totalNeumannForce, un
             return a.z > zLayerCutoff;
         });
 
-        // Scale the total stress in sqm to stress per vertex, depends on total surface area hit by the ray casting above
-        REAL surfaceAreaPerVoxelInSqMeters = asREAL(problem->getVoxelSize().x * problem->getVoxelSize().y);
-        REAL neumannStressPerVoxel = totalNeumannForce / asREAL(filteredSurface.size());
-        neumannStressPerVoxel /= surfaceAreaPerVoxelInSqMeters;
+        // Scale the total stress to stress per vertex, depends on total surface area hit by the ray casting above
+        REAL totalSurfaceArea = asREAL(problem->getVoxelSize().x * problem->getVoxelSize().y) * filteredSurface.size();
+        REAL neumannStressOnSurface = totalNeumannForce / totalSurfaceArea;
+        REAL neumannStressPerVoxel = neumannStressOnSurface / filteredSurface.size();
         REAL neumannStressPerVertex = neumannStressPerVoxel * asREAL(0.25); // exposed surface of each voxel has 4 vertices
 
         // For each relevant voxel, add the stress to each of its 4 vertices lying on the exposed surface
@@ -137,6 +137,7 @@ void BoundaryProjector::projectNeumannStressAlongNegZ(REAL totalNeumannForce, un
             numBoundaryVoxels++;
         }
         std::cout << "Projected Neumann boundary onto " << filteredSurface.size() << " voxels along -Z\n";
+        std::cout << "Total Stress per voxel: " << neumannStressPerVoxel <<  std::endl;
     }
 
 }
@@ -330,10 +331,10 @@ void BoundaryProjector::projectNeumannStressAlongPosZ(REAL totalNeumannForce, un
             return a.z < zLayerCutoff;
         });
 
-        // Scale the total stress in sqm to stress per vertex, depends on total surface area hit by the ray casting above
-        REAL surfaceAreaPerVoxelInSqMeters = asREAL(problem->getVoxelSize().x * problem->getVoxelSize().y);
-        REAL neumannStressPerVoxel = totalNeumannForce / asREAL(filteredSurface.size());
-        neumannStressPerVoxel /= surfaceAreaPerVoxelInSqMeters;
+        // Scale the total stress to stress per vertex, depends on total surface area hit by the ray casting above
+        REAL totalSurfaceArea = asREAL(problem->getVoxelSize().x * problem->getVoxelSize().y) * filteredSurface.size();
+        REAL neumannStressOnSurface = totalNeumannForce / totalSurfaceArea;
+        REAL neumannStressPerVoxel = neumannStressOnSurface / filteredSurface.size();
         REAL neumannStressPerVertex = neumannStressPerVoxel * asREAL(0.25); // exposed surface of each voxel has 4 vertices
 
         // For each relevant voxel, add the stress to each of its 4 vertices lying on the exposed surface
@@ -351,6 +352,7 @@ void BoundaryProjector::projectNeumannStressAlongPosZ(REAL totalNeumannForce, un
             numBoundaryVoxels++;
         }
         std::cout << "Projected Neumann boundary onto " << filteredSurface.size() << " voxels along +Z\n";
+        std::cout << "Total Stress per voxel: " << neumannStressPerVoxel << std::endl;
     }
 	
 }
