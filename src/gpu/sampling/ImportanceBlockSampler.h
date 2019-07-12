@@ -11,7 +11,7 @@ public:
     ImportanceBlockSampler(ResidualVolume* resVol);
     ~ImportanceBlockSampler();
 
-    int generateNextBlockOrigins(uint3* blockOrigins, int numOriginsToGenerate) override;
+    int generateNextBlockOrigins(int3* blockOrigins, int numOriginsToGenerate) override;
 
 protected:
     ImportanceSamplingKernel samplingKernel;

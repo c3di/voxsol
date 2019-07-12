@@ -2,7 +2,7 @@
 #include "WaveSampler.h"
 #include "gpu/GPUParameters.h"
 
-WaveSampler::WaveSampler(Solution * solution, libmmv::Vec3ui& origin, libmmv::Vec3i& direction) :
+WaveSampler::WaveSampler(Solution * solution, libmmv::Vec3i& origin, libmmv::Vec3i& direction) :
     solutionSize(solution->getSize())
 {
     setWaveOrientation(origin, direction);
@@ -13,10 +13,10 @@ WaveSampler::~WaveSampler()
 {
 }
 
-int WaveSampler::generateNextBlockOrigins(uint3 * blockOrigins, int numOriginsToGenerate)
+int WaveSampler::generateNextBlockOrigins(int3 * blockOrigins, int numOriginsToGenerate)
 {
     for (int i = 0; i < numOriginsToGenerate; i++) {
-        blockOrigins[i] = make_uint3(currentWavefrontOrigin.x, currentWavefrontOrigin.y, currentWavefrontOrigin.z);
+        blockOrigins[i] = make_int3(currentWavefrontOrigin.x, currentWavefrontOrigin.y, currentWavefrontOrigin.z);
         nextBlockOrigin(&currentWavefrontOrigin);
     }
 
@@ -31,7 +31,7 @@ void WaveSampler::progressWavefront() {
 }
 
 void WaveSampler::moveWavefrontToOrigin() {
-    currentWavefront = libmmv::Vec3ui(waveOrigin);
+    currentWavefront = libmmv::Vec3i(waveOrigin);
 
     // In any of these cases the wave is moving in the negative direction through the problem, so the block should start at Edge - BLOCK_SIZE
     if (waveDirection.x < 0) {
@@ -45,7 +45,7 @@ void WaveSampler::moveWavefrontToOrigin() {
     }
 }
 
-void WaveSampler::nextBlockOrigin(libmmv::Vec3ui* currentWavefrontOrigin) {
+void WaveSampler::nextBlockOrigin(libmmv::Vec3i* currentWavefrontOrigin) {
     currentWavefrontOrigin->x += BLOCK_SIZE;
     if (currentWavefrontOrigin->x >= solutionSize.x) {
         currentWavefrontOrigin->x = waveOffset.x;
@@ -61,20 +61,20 @@ void WaveSampler::nextBlockOrigin(libmmv::Vec3ui* currentWavefrontOrigin) {
     }
 }
 
-void WaveSampler::setWaveOrientation(libmmv::Vec3ui& origin, libmmv::Vec3i& direction)
+void WaveSampler::setWaveOrientation(libmmv::Vec3i& origin, libmmv::Vec3i& direction)
 {
     waveOrigin = libmmv::Vec3ui(origin);
     waveDirection = libmmv::Vec3i(direction);
     moveWavefrontToOrigin();
 }
 
-libmmv::Vec3ui WaveSampler::chooseNextWavefrontOrigin() {
+libmmv::Vec3i WaveSampler::chooseNextWavefrontOrigin() {
     std::uniform_int_distribution<int> distribution(-1, 1);
     waveOffset.x = distribution(generator);
     waveOffset.y = distribution(generator);
-    waveOffset.z = distribution(generator);
+    waveOffset.z = 0;// distribution(generator);
 
-    libmmv::Vec3ui wavefront = currentWavefront + waveOffset;
+    libmmv::Vec3i wavefront = currentWavefront + waveOffset;
     if (wavefront.x > solutionSize.x) {
         wavefront.x = waveOrigin.x;
     }

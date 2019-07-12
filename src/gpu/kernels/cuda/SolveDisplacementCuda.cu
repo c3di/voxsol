@@ -16,8 +16,9 @@ __constant__ uint3 c_solutionDimensions;
 __constant__ uint3 c_residualDimensions;
 
 
-__device__ __forceinline__ bool isInsideSolution(const uint3 coord) {
-    return coord.x < c_solutionDimensions.x && coord.y < c_solutionDimensions.y && coord.z < c_solutionDimensions.z;
+__device__ __forceinline__ bool isInsideSolution(const int3 coord) {
+    return coord.x < c_solutionDimensions.x && coord.y < c_solutionDimensions.y && coord.z < c_solutionDimensions.z &&
+           coord.x >= 0 && coord.y >= 0 && coord.z >= 0;
 }
 
 __device__ void buildRHSVectorForVertex(
@@ -143,7 +144,7 @@ __device__
 void copyVerticesFromGlobalToShared(
     Vertex localVertices[BLOCK_SIZE + 2][BLOCK_SIZE + 2][BLOCK_SIZE + 2],
     Vertex* verticesOnGPU,
-    const uint3 blockOriginCoord
+    const int3 blockOriginCoord
 ) {
     const int blockSizeWithBorder = BLOCK_SIZE + 2;
     const int numThreadsNeeded = blockSizeWithBorder * blockSizeWithBorder; //each thread will copy over a given x,y for all z ("top down")
@@ -159,7 +160,7 @@ void copyVerticesFromGlobalToShared(
 
             for (int z = 0; z < BLOCK_SIZE + 2; z++) {
                 localCoordZ = z;
-                const uint3 globalCoord = { blockOriginCoord.x + localCoordX - 1, blockOriginCoord.y + localCoordY - 1, blockOriginCoord.z + z - 1 }; //-1 to account for border at both ends
+                const int3 globalCoord = { blockOriginCoord.x + localCoordX - 1, blockOriginCoord.y + localCoordY - 1, blockOriginCoord.z + z - 1 }; //-1 to account for border at both ends
                 Vertex* __restrict__ local = &localVertices[localCoordZ][localCoordY][localCoordX];
                 local->x = 0;
                 local->y = 0;
@@ -183,7 +184,7 @@ __device__
 void copyVerticesFromSharedToGlobalAndUpdateResiduals(
     Vertex localVertices[BLOCK_SIZE + 2][BLOCK_SIZE + 2][BLOCK_SIZE + 2],
     Vertex* verticesOnGPU,
-    const uint3 blockOriginCoord,
+    const int3 blockOriginCoord,
     REAL* residualVolume
 ) {
     const int numThreadsNeeded = BLOCK_SIZE * BLOCK_SIZE * BLOCK_SIZE; //each thread will copy over one vertex in the inner block (without the border)
@@ -196,7 +197,7 @@ void copyVerticesFromSharedToGlobalAndUpdateResiduals(
             const char localCoordY = 1 + (threadIdx_1D / BLOCK_SIZE) % BLOCK_SIZE;
             const char localCoordX = 1 + threadIdx_1D % BLOCK_SIZE;
 
-            uint3 globalCoord = { 0,0,0 };
+            int3 globalCoord = { 0,0,0 };
             globalCoord.z += localCoordZ + blockOriginCoord.z - 1;
             globalCoord.y += localCoordY + blockOriginCoord.y - 1;
             globalCoord.x += localCoordX + blockOriginCoord.x - 1;
@@ -241,10 +242,10 @@ __global__
 void cuda_SolveDisplacement(
     Vertex* verticesOnGPU,
     const REAL* matConfigEquations,
-    const uint3* blockOrigins,
+    const int3* blockOrigins,
     REAL* residualVolume
 ) {
-    const uint3 blockOriginCoord = blockOrigins[blockIdx.x];
+    const int3 blockOriginCoord = blockOrigins[blockIdx.x];
     if (blockOriginCoord.x >= c_solutionDimensions.x || blockOriginCoord.y >= c_solutionDimensions.y || blockOriginCoord.z >= c_solutionDimensions.z) {
         // Some blocks may have been set to an invalid value during the importance sampling phase if they overlap with some other block, these
         // should not be processed
@@ -266,14 +267,14 @@ void cuda_SolveDisplacement(
 }
 
 __global__
-void cuda_invalidateOverlappingBlocks(uint3* candidates, const int numberOfCandidates, const unsigned int updateRegionSize) {
-    extern __shared__ uint3 batch[];
+void cuda_invalidateOverlappingBlocks(int3* candidates, const int numberOfCandidates, const unsigned int updateRegionSize) {
+    extern __shared__ int3 batch[];
     const int globalId = blockIdx.x * blockDim.x + threadIdx.x;
     if (globalId >= numberOfCandidates) {
         return;
     }
     int localId = threadIdx.x;
-    uint3 myCandidate = candidates[globalId];
+    int3 myCandidate = candidates[globalId];
     batch[localId] = myCandidate;
 
     __syncthreads();
@@ -281,7 +282,7 @@ void cuda_invalidateOverlappingBlocks(uint3* candidates, const int numberOfCandi
     // Walk through the candidates toward the left
     while (localId > 0) {
         localId -= 1;
-        const uint3 leftNeighbor = batch[localId];
+        const int3 leftNeighbor = batch[localId];
         // Check for cube intersection, if any condition is true the two rectangular regions cannot intersect
         bool doesNotIntersect = false;
         doesNotIntersect = doesNotIntersect || leftNeighbor.x >= myCandidate.x + updateRegionSize;
@@ -292,9 +293,9 @@ void cuda_invalidateOverlappingBlocks(uint3* candidates, const int numberOfCandi
         doesNotIntersect = doesNotIntersect || leftNeighbor.y + updateRegionSize <= myCandidate.y;
         if (!doesNotIntersect) {
             // Invalidate this block, it will later be skipped in the update phase since it lies outside the solution by definition of max_uint
-            myCandidate.x = UINT_MAX;
-            myCandidate.y = UINT_MAX;
-            myCandidate.z = UINT_MAX;
+            myCandidate.x = INT_MAX;
+            myCandidate.y = INT_MAX;
+            myCandidate.z = INT_MAX;
             break;
         }
     }
@@ -304,7 +305,7 @@ void cuda_invalidateOverlappingBlocks(uint3* candidates, const int numberOfCandi
 
 __host__
 extern "C" void cudaLaunchInvalidateOverlappingBlocksKernel(
-    uint3* candidates,
+    int3* candidates,
     const int numCandidatesToFind,
     const int updatePhaseBatchSize
 ) {
@@ -322,7 +323,7 @@ extern "C" void cudaLaunchSolveDisplacementKernel(
     Vertex* vertices,
     const REAL* matConfigEquations,
     REAL* residualVolume,
-    uint3* blockOrigins,
+    int3* blockOrigins,
     const int numBlockOrigins,
     const uint3 solutionDims
 ) {
@@ -356,10 +357,10 @@ extern "C" void cudaLaunchSolveDisplacementKernel(
 
     // process all blocks in batches of maxConcurrentBlocks
     for (int i = 0; i < numIterations; i++) {
-        uint3* currentBlockOrigins = &blockOrigins[i * maxConcurrentBlocks];
+        int3* currentBlockOrigins = &blockOrigins[i * maxConcurrentBlocks];
         int numBlocks = std::min(numBlockOrigins - i*maxConcurrentBlocks, maxConcurrentBlocks);
 
-        cuda_SolveDisplacement << < numBlocks, threadsPerBlock >> >(vertices, matConfigEquations, currentBlockOrigins, residualVolume);
+        cuda_SolveDisplacement <<< numBlocks, threadsPerBlock >>>(vertices, matConfigEquations, currentBlockOrigins, residualVolume);
         cudaDeviceSynchronize();
         cudaCheckExecution();
     }

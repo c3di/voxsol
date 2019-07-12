@@ -13,7 +13,7 @@
 #include "FullResidualUpdateKernel.h"
 #include "gpu/GPUParameters.h"
 
-extern "C" void cudaLaunchSolveDisplacementKernel(Vertex* verticesOnGPU, REAL* matConfigEquationsOnGPU, REAL* residualVolume, uint3* blockOrigins, const int numBlocks, const uint3 solutionDims);
+extern "C" void cudaLaunchSolveDisplacementKernel(Vertex* verticesOnGPU, REAL* matConfigEquationsOnGPU, REAL* residualVolume, int3* blockOrigins, const int numBlocks, const uint3 solutionDims);
 
 class SolveDisplacementKernel : public CudaKernel {
 
@@ -31,7 +31,7 @@ public:
     void setNumLaunchesBeforeResidualUpdate(unsigned int numLaunches);
 
     //This returns a pointer to managed memory, use only for debug output to avoid unnecessary cpu/gpu memory paging!
-    uint3* debugGetImportanceSamplesManaged();
+    int3* debugGetImportanceSamplesManaged();
     void debugOutputEquationsCPU();
     void debugOutputEquationsGPU();
 
@@ -48,7 +48,7 @@ protected:
     Vertex* serializedVertices;
     REAL* serializedMatConfigEquations;
 
-    uint3* blockOrigins;
+    int3* blockOrigins;
     int numBlockOriginsPerIteration;
     int numLaunchesSinceLastFullResidualUpdate = 0;
     int numLaunchesBeforeResidualUpdate = NUM_LAUNCHES_BETWEEN_RESIDUAL_UPDATES;

@@ -6,7 +6,7 @@ public:
     BlockSampler();
     ~BlockSampler();
 
-    virtual int generateNextBlockOrigins(uint3* blockOrigins, int numOriginsToGenerate) = 0;
+    virtual int generateNextBlockOrigins(int3* blockOrigins, int numOriginsToGenerate) = 0;
 
 protected:
     

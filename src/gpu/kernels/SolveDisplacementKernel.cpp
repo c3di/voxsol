@@ -98,7 +98,7 @@ void SolveDisplacementKernel::prepareInputs() {
 }
 
 void SolveDisplacementKernel::allocateBlockOrigins() {
-    size_t size = numBlockOriginsPerIteration * sizeof(uint3);
+    size_t size = numBlockOriginsPerIteration * sizeof(int3);
     cudaCheckSuccess(cudaMallocManaged(&blockOrigins, size));
 }
 
@@ -296,6 +296,6 @@ void SolveDisplacementKernel::debugOutputEquationsGPU() {
 
 }
 
-uint3* SolveDisplacementKernel::debugGetImportanceSamplesManaged() {
+int3* SolveDisplacementKernel::debugGetImportanceSamplesManaged() {
     return blockOrigins;
 }

@@ -45,7 +45,7 @@ void cuda_traversePyramid(const REAL* importancePyramid, const LevelStats* level
 
 __global__ 
 void cuda_selectImportanceSamplingCandidates(
-    uint3* candidates, 
+    int3* candidates, 
     const int numCandidates,
     const REAL* importancePyramid, 
     const LevelStats* levelStats, 
@@ -76,7 +76,7 @@ void cuda_selectImportanceSamplingCandidates(
     position.z -= max(position.z + (int)updateRegionSize - (int)levelStats[0].sizeZ*2, 0);
 
     // convert to unsigned int, clip negative coordinates to 0
-    uint3 pos = make_uint3(max(position.x, 0), max(position.y, 0), max(position.z, 0));
+    int3 pos = make_int3(max(position.x, 0), max(position.y, 0), max(position.z, 0));
     candidates[id] = pos;
     rngState[id] = localRNGState;
 }
@@ -85,7 +85,7 @@ __global__
 void cuda_init_curand_statePyramid(curandState* rngState) {
     int id = blockIdx.x * blockDim.x + threadIdx.x;
     // seed, sequence number, offset, curandState
-    curand_init(43, id, 0, &rngState[id]);
+    curand_init(48, id, 0, &rngState[id]);
 }
 
 __host__
@@ -100,7 +100,7 @@ extern "C" void cudaInitializePyramidRNGStates(curandState** rngStateOnGPU, cons
 
 __host__
 extern "C" void cudaLaunchImportanceSamplingKernel(
-    uint3* candidates,
+    int3* candidates,
     const int numCandidatesToFind,
     const REAL* importancePyramid,
     const LevelStats* levelStats,
@@ -109,7 +109,7 @@ extern "C" void cudaLaunchImportanceSamplingKernel(
 ) {
     cudaDeviceProp deviceProperties;
     cudaGetDeviceProperties(&deviceProperties, 0);
-    int updatePhaseBatchSize = deviceProperties.multiProcessorCount * 5;
+    int updatePhaseBatchSize = deviceProperties.multiProcessorCount * 8;
     int numBlocks = numCandidatesToFind / THREADS_PER_BLOCK + (numCandidatesToFind % THREADS_PER_BLOCK == 0 ? 0 : 1);
 
     // setup curand
