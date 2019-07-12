@@ -1,4 +1,5 @@
 #include "stdafx.h"
+#include <iomanip>
 #include "ProblemInstance.h"
 #include "io/MRCVoxelImporter.h"
 #include "io/MRCImporter.h"
@@ -194,48 +195,34 @@ void ProblemInstance::projectCoarseSolutionToFinerSolution(int coarseLod, int fi
     lodGen.projectDisplacementsToFinerLevel(solutionLODs[coarseLod], solutionLODs[fineLod]);
 }
 
-int ProblemInstance::solveLOD(int lod) {
-    std::cout << "Solving LOD " << lod << " with target residual " << targetResidualDeltaForConvergence << std::endl;
+int ProblemInstance::solveLOD(int lod, REAL convergenceCriteria, BlockSampler* sampler) {
+    std::cout << "Solving LOD " << lod << " with target residual " << convergenceCriteria << "..." << std::endl;
 
     ResidualVolume* residualVolume = getResidualVolumeLOD(lod);
-    SequentialBlockSampler sampler(getSolutionLOD(lod), 8);
-    SolveDisplacementKernel kernel(getSolutionLOD(lod), &sampler, residualVolume);
+    SolveDisplacementKernel kernel(getSolutionLOD(lod), sampler, residualVolume);
 
     VTKSamplingVisualizer samplingVis(getSolutionLOD(lod));
     VTKSolutionVisualizer vis(getSolutionLOD(lod));
     
-    REAL totalResidual = 0;
-    REAL lastTotalResidual = 0;
-    REAL diff = 0;
+    REAL currentResidualError = 1000000;
     int totalSteps = 0;
     do {
-
-        lastTotalResidual = totalResidual;
-        totalSteps++;
-
         kernel.launch();
 
-        totalResidual = residualVolume->getTotalResidual();
-        diff = std::fabs(totalResidual - lastTotalResidual);
+        totalSteps++;
 
-        if (totalSteps % 5000 == 0) {
-            kernel.pullVertices();
-            std::stringstream fp;
-            fp << "c:\\tmp\\lod_" << lod << "_bend_" << totalSteps << ".vtk";
-            vis.writeToFile(fp.str());
-            std::cout << "Step " << totalSteps << " with total residual " << totalResidual << std::endl;
+        currentResidualError = residualVolume->getAverageResidual(convergenceCriteria);
 
-            fp = std::stringstream();
-            fp << "c:\\tmp\\lod_" << lod << "_sampling_" << totalSteps << ".vtk";
-            samplingVis.writeToFile(fp.str(), kernel.debugGetImportanceSamplesManaged(), 512, 8);
+        if (totalSteps % 500 == 0 || currentResidualError <= convergenceCriteria) {
+            std::cout << "\rCurrent residual: " << currentResidualError << "                                         ";
         }
 
-    } while (totalSteps < 20001);
+    } while (currentResidualError > convergenceCriteria);
 
     // Copy solved vertices from GPU into the solution
     kernel.pullVertices();
 
-    std::cout << "LOD " << lod << " convereged after " << totalSteps << " steps with residual " << totalResidual << std::endl;
+    std::cout << "\nLOD " << lod << " convereged after " << totalSteps << " steps with residual " << currentResidualError << std::endl;
 
     return totalSteps;
 }
