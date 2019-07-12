@@ -18,8 +18,8 @@ SolveDisplacementKernel::SolveDisplacementKernel(Solution* sol, BlockSampler* sa
     solutionDimensions.y = sol->getSize().y;
     solutionDimensions.z = sol->getSize().z;
 
-    numBlockOriginsPerIteration = std::min((solutionDimensions.x / BLOCK_SIZE) * (solutionDimensions.y / BLOCK_SIZE) * (solutionDimensions.z / BLOCK_SIZE), (unsigned int)MAX_BLOCKS_PER_ITERATION);
-    numBlockOriginsPerIteration = std::max(1, numBlockOriginsPerIteration); // Always allocate at least 1 block, 0 can happen if solutionDimensions < BLOCK_SIZE
+    // Need enough blocks to cover the problem (with room to spare) but not more than the max
+    numBlockOriginsPerIteration = std::min( 2 * (1 + solutionDimensions.x / BLOCK_SIZE) * (1 + solutionDimensions.y / BLOCK_SIZE) * (1 + solutionDimensions.z / BLOCK_SIZE), (unsigned int)MAX_BLOCKS_PER_ITERATION);
 }
 
 SolveDisplacementKernel::~SolveDisplacementKernel() {
