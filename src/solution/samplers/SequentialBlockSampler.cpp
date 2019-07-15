@@ -60,9 +60,9 @@ int SequentialBlockSampler::generateNextBlockOrigins(int3* blockOrigins, int max
 
     // Invalidate remaining blocks so they aren't processed during the displacement update phase
     for (int j = i; j < maxNumBlocks; j++) {
-        blockOrigins[j].x = UINT_MAX;
-        blockOrigins[j].y = UINT_MAX;
-        blockOrigins[j].z = UINT_MAX;
+        blockOrigins[j].x = INT_MAX;
+        blockOrigins[j].y = INT_MAX;
+        blockOrigins[j].z = INT_MAX;
     }
 
    // writeDebugOutput(iteration, blockOrigins, i);
