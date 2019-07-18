@@ -8,7 +8,7 @@
 #include "gpu/sampling/ImportanceBlockSampler.h"
 #include "solution/samplers/SequentialBlockSampler.h"
 #include "io/VTKSamplingVisualizer.h"
-#include "io/VTKSolutionVisualizer.h"
+#include "io/VTKSolutionWriter.h"
 
 ProblemInstance::ProblemInstance() 
 {
@@ -202,7 +202,7 @@ int ProblemInstance::solveLOD(int lod, REAL convergenceCriteria, BlockSampler* s
     SolveDisplacementKernel kernel(getSolutionLOD(lod), sampler, residualVolume);
 
     VTKSamplingVisualizer samplingVis(getSolutionLOD(lod));
-    VTKSolutionVisualizer vis(getSolutionLOD(lod));
+    VTKSolutionWriter vis(getSolutionLOD(lod));
     
     REAL currentResidualError = 1000000;
     int totalSteps = 0;

@@ -13,7 +13,8 @@
 #include "material/MaterialDictionary.h"
 #include "problem/boundaryconditions/DirichletBoundary.h"
 #include "problem/boundaryconditions/NeumannBoundary.h"
-#include "io/VTKSolutionVisualizer.h"
+#include "io/VTKSolutionWriter.h"
+#include "io/VTKSolutionStructuredWriter.h"
 #include "io/VTKImportanceVisualizer.h"
 #include "io/VTKSamplingVisualizer.h"
 #include "io/MRCVoxelImporter.h"
@@ -39,9 +40,9 @@ void solveGPU(ProblemInstance& problemInstance, int lod) {
     WaveSampler sampler(problemInstance.getSolutionLOD(lod), waveOrigin, waveDirection);
     //ImportanceBlockSampler sampler(problemInstance.getResidualVolumeLOD(lod));
 
-    VTKSolutionVisualizer visualizer(problemInstance.getSolutionLOD(lod));
-	visualizer.filterOutNullVoxels(false);
-    visualizer.setMechanicalValuesOutput(false);
+    VTKSolutionWriter visualizationWriter(problemInstance.getSolutionLOD(lod));
+	visualizationWriter.filterOutNullVoxels();
+    visualizationWriter.setMechanicalValuesOutput(false);
 
     VTKSamplingVisualizer samplingVis(problemInstance.getSolutionLOD(lod));
 
@@ -57,7 +58,7 @@ void solveGPU(ProblemInstance& problemInstance, int lod) {
     int numIterationsDone = 0;
     int numIterationsTarget = 200;
     REAL maxResidual = 10000000;
-    REAL epsilon = asREAL(5.0e-7);
+    REAL epsilon = asREAL(1.0e-8);
     kernel.setNumLaunchesBeforeResidualUpdate(499);
 
     //for (int i = 1; i <= numIterationsTarget; i++) {
@@ -77,11 +78,11 @@ void solveGPU(ProblemInstance& problemInstance, int lod) {
             maxResidual = problemInstance.getResidualVolumeLOD(lod)->getAverageResidual(epsilon); 
             std::cout << "Residual: " << maxResidual << " iteration " << totalIterations << std::endl;
 
-            kernel.pullVertices();
-            std::stringstream fp = std::stringstream();
+//            kernel.pullVertices();
+//            std::stringstream fp = std::stringstream();
 
             //fp << "d:\\tmp\\gpu_" << totalIterations << ".vtk";
-            //visualizer.writeToFile(fp.str());
+            //visualizationWriter.writeToFile(fp.str());
 
             /*std::stringstream fp = std::stringstream();
             fp << "d:\\tmp\\step_sampling_" << totalIterations << ".vtk";
@@ -89,7 +90,7 @@ void solveGPU(ProblemInstance& problemInstance, int lod) {
 
             fp = std::stringstream();
             fp << "d:\\tmp\\gpu_" << totalIterations << ".vtk";
-            visualizer.writeToFile(fp.str());
+            visualizationWriter.writeToFile(fp.str());
 
             fp = std::stringstream();
             fp << "d:\\tmp\\step_residuals_" << totalIterations << ".vtk";
@@ -147,7 +148,7 @@ int main(int argc, char* argv[]) {
         std::cout << "Cuda device " << ACTIVE_DEVICE << " initialized!\n\n";
     }
 
-    std::string xmlInputFile("voxel_128.xml");
+    std::string xmlInputFile("label_CT4b_voxel_size.xml");
 
     XMLProblemDeserializer xmlDeserializer(xmlInputFile);
     ProblemInstance problemInstance = xmlDeserializer.getProblemInstance();
@@ -170,12 +171,11 @@ int main(int argc, char* argv[]) {
 
     std::cout << std::endl << "Maximum displacement in Z: " << maxDisp << std::endl;
     
-    VTKSolutionVisualizer visualizer(problemInstance.getSolutionLOD(0));
-    visualizer.filterOutNullVoxels(false);
-    visualizer.setMechanicalValuesOutput(true);
+    VTKSolutionStructuredWriter writer(problemInstance.getSolutionLOD(0));
+    writer.setMechanicalValuesOutput(false);
     std::stringstream fp = std::stringstream();
-    fp << "d:\\tmp\\gpu_end.vtk";
-    visualizer.writeToFile(fp.str());
+    fp << "d:\\tmp\\gpu_end_structuredRefacTest_CT.vtk";
+    writer.writeEntireStructureToFile(fp.str());
    
     std::cout << std::endl << "Total simulation time: " << totalMilliseconds << " ms\n\n";
 
