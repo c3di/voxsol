@@ -74,8 +74,8 @@ void Solution::gatherUniqueMaterialConfigurations() {
 
     createVoidMaterialConfiguration(matConfigToEquation);
     scanSolutionForUniqueConfigurations(matConfigToEquation);
-    //sortUniqueConfigurationsByFrequency(matConfigToEquation);
-    //assignConfigurationIdsToVertices(matConfigToEquation);
+    sortUniqueConfigurationsByFrequency(matConfigToEquation);
+    assignConfigurationIdsToVertices(matConfigToEquation);
     
     matConfigEquations.resize(matConfigToEquation.size());
 
@@ -97,8 +97,9 @@ void Solution::scanSolutionForUniqueConfigurations(std::unordered_map<MaterialCo
                     equationIdCounter++;
                 }
 
-                Vertex* vertex = &vertices[mapToIndex(centerCoord)];
-                vertex->materialConfigId = matConfigToEquation[materialConfiguration].equationId;
+                // Necessary if sorting is disabled
+                //Vertex* vertex = &vertices[mapToIndex(centerCoord)];
+                //vertex->materialConfigId = matConfigToEquation[materialConfiguration].equationId;
 
                 matConfigToEquation[materialConfiguration].numInstancesInProblem++;
             }
@@ -134,9 +135,10 @@ void Solution::sortUniqueConfigurationsByFrequency(std::unordered_map<MaterialCo
         return a->numInstancesInProblem > b->numInstancesInProblem;
     });
 
-    //The sorted position in the array becomes the configuration's ID. This way ID 0 will be the most common config, 1 the second most common etc.
+    //The sorted position in the array becomes the configuration's ID. This way ID 1 will be the most common config, 2 the second most common etc.
+    // ID 0 is reserved for the void material configuration
     for (int i = 0; i < sortedByFrequency.size(); i++) {
-        sortedByFrequency[i]->equationId = i;
+        sortedByFrequency[i]->equationId = i+1;
     }
 }
 

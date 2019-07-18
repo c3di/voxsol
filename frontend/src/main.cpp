@@ -3,6 +3,7 @@
 #include <chrono>
 #include <iostream>
 #include <algorithm>
+#include <Windows.h>
 #include "gpu/CudaDebugHelper.h"
 #include "gpu/GPUParameters.h"
 #include "problem/DiscreteProblem.h"
@@ -25,6 +26,7 @@
 #include "problem/ProblemInstance.h"
 #include "material/MaterialConfiguration.h"
 #include "io/XMLProblemDeserializer.h"
+#include "solution/samplers/SequentialBlockSampler.h"
 
 #define ACTIVE_DEVICE 0
 //#define ENABLE_VTK_OUTPUT 1
@@ -32,17 +34,20 @@
 int totalIterations = 0;
 int totalMilliseconds = 0;
 
+HWND myConsoleWindow = GetConsoleWindow();
+
 void solveGPU(ProblemInstance& problemInstance, int lod) {
     //ImportanceBlockSampler sampler(problemInstance.getResidualVolumeLOD(lod));
-    libmmv::Vec3ui waveOrigin(0, 0, 0);
+    libmmv::Vec3i waveOrigin(0, 0, problemInstance.getSolutionLOD(lod)->getSize().z);
     libmmv::Vec3i waveDirection(0, 0, -1);
 
-    WaveSampler sampler(problemInstance.getSolutionLOD(lod), waveOrigin, waveDirection);
+    //WaveSampler sampler(problemInstance.getSolutionLOD(lod), waveOrigin, waveDirection);
     //ImportanceBlockSampler sampler(problemInstance.getResidualVolumeLOD(lod));
+    SequentialBlockSampler sampler(problemInstance.getSolutionLOD(lod), 6);
 
-    VTKSolutionWriter visualizationWriter(problemInstance.getSolutionLOD(lod));
-	visualizationWriter.filterOutNullVoxels();
-    visualizationWriter.setMechanicalValuesOutput(false);
+    VTKSolutionWriter vtkWriter(problemInstance.getSolutionLOD(lod));
+    vtkWriter.filterOutNullVoxels();
+    vtkWriter.setMechanicalValuesOutput(false);
 
     VTKSamplingVisualizer samplingVis(problemInstance.getSolutionLOD(lod));
 
@@ -58,67 +63,84 @@ void solveGPU(ProblemInstance& problemInstance, int lod) {
     int numIterationsDone = 0;
     int numIterationsTarget = 200;
     REAL maxResidual = 10000000;
-    REAL epsilon = asREAL(1.0e-8);
-    kernel.setNumLaunchesBeforeResidualUpdate(499);
+    REAL epsilon = asREAL(1.0e-6);
+    kernel.setNumLaunchesBeforeResidualUpdate(1999);
+    int numVerticesNotConverged = 0;
+    int numVerticesInSolution = (int)problemInstance.getSolutionLOD(lod)->getVertices()->size();
+
+    //std::stringstream fp = std::stringstream();
+
+    //fp << "d:\\tmp\\gpu_start_lod" << lod << ".vtk";
+    //visualizer.filterOutNullVoxels(true);
+    //visualizer.writeToFile(fp.str());
 
     //for (int i = 1; i <= numIterationsTarget; i++) {
     //while (elapsed < targetMilliseconds) {
-    while (maxResidual > epsilon && totalIterations < 500000) {
+    while (maxResidual > epsilon) {
         auto start = std::chrono::high_resolution_clock::now();
         totalIterations++;
-        std::cout << ".";
-
+        
         kernel.launch();
 
-        now = std::chrono::high_resolution_clock::now();
-        elapsed += std::chrono::duration_cast<std::chrono::milliseconds>(now - start).count();
-        numIterationsDone++;
+		now = std::chrono::high_resolution_clock::now();
+		elapsed += std::chrono::duration_cast<std::chrono::milliseconds>(now - start).count();
+		numIterationsDone++;
 
-        if (totalIterations % 500 == 0) {
-            maxResidual = problemInstance.getResidualVolumeLOD(lod)->getAverageResidual(epsilon); 
-            std::cout << "Residual: " << maxResidual << " iteration " << totalIterations << std::endl;
-
-//            kernel.pullVertices();
-//            std::stringstream fp = std::stringstream();
-
-            //fp << "d:\\tmp\\gpu_" << totalIterations << ".vtk";
-            //visualizationWriter.writeToFile(fp.str());
-
-            /*std::stringstream fp = std::stringstream();
-            fp << "d:\\tmp\\step_sampling_" << totalIterations << ".vtk";
-            samplingVis.writeToFile(fp.str(), kernel.debugGetImportanceSamplesManaged(), 256, BLOCK_SIZE);
+        if (false) {
+            kernel.pullVertices();
+            std::stringstream fp = std::stringstream();
 
             fp = std::stringstream();
             fp << "d:\\tmp\\gpu_" << totalIterations << ".vtk";
-            visualizationWriter.writeToFile(fp.str());
+            vtkWriter.writeEntireStructureToFile(fp.str());
 
             fp = std::stringstream();
             fp << "d:\\tmp\\step_residuals_" << totalIterations << ".vtk";
             impVis.writeToFile(fp.str(), 0);
-            */
+
+            fp = std::stringstream();
+            fp << "d:\\tmp\\step_sampling_" << totalIterations << ".vtk";
+            samplingVis.writeToFile(fp.str(), kernel.debugGetImportanceSamplesManaged(), kernel.numBlockOriginsPerIteration, BLOCK_SIZE);
         }
-        
+
+        if (totalIterations % 2000 == 0) {
+            maxResidual = problemInstance.getResidualVolumeLOD(lod)->getAverageResidual(epsilon, &numVerticesNotConverged);
+
+            if (numVerticesNotConverged < numVerticesInSolution * 0.0001) {
+                maxResidual = epsilon;
+            }  
+        }
+
+        if (totalIterations % 100 == 0) {
+            std::cout << "\rResidual: " << maxResidual << " [" << numVerticesNotConverged << "/" << numVerticesInSolution << "] iteration " << totalIterations << "                 ";
+        }
+
+        if (GetKeyState('Q') & 0x8000/*Check if high-order bit is set (1 << 15)*/ && GetForegroundWindow() == myConsoleWindow)
+        {
+            std::cout << "\nStopping here..." << std::endl;
+            break;
+        }
     }
 
+    totalMilliseconds += (int)elapsed;
     kernel.pullVertices();
 
     std::cout << "\nFinished simulating for " << elapsed << "ms. Did " << numIterationsDone << " iterations\n\n";
-    totalMilliseconds += (int)elapsed;
+    
 
 #ifdef ENABLE_VTK_OUTPUT
     std::stringstream fp = std::stringstream();
 	fp << "d:\\tmp\\lod_" << lod << "_gpu_end.vtk";
 	visualizer.writeToFile(fp.str());
 
-    fp = std::stringstream();
-    fp << "d:\\tmp\\step_sampling_" << lod << ".vtk";
-    samplingVis.writeToFile(fp.str(), kernel.debugGetImportanceSamplesManaged(), 256, BLOCK_SIZE);
+    //fp = std::stringstream();
+    //fp << "d:\\tmp\\step_sampling_" << lod << ".vtk";
+    //samplingVis.writeToFile(fp.str(), kernel.debugGetImportanceSamplesManaged(), 768, BLOCK_SIZE);
 
     //fp = std::stringstream();
     //fp << "d:\\tmp\\step_residuals_" << lod << ".vtk";
     //impVis.writeAllLevels(fp.str());
 #endif 
-    std::cout << " DONE. Total residual: " << problemInstance.getResidualVolumeLOD(lod)->getTotalResidual() << std::endl << std::endl;
 }
 
 int main(int argc, char* argv[]) {
@@ -148,7 +170,7 @@ int main(int argc, char* argv[]) {
         std::cout << "Cuda device " << ACTIVE_DEVICE << " initialized!\n\n";
     }
 
-    std::string xmlInputFile("label_CT4b_voxel_size.xml");
+    std::string xmlInputFile("demonstrator_bone.xml");
 
     XMLProblemDeserializer xmlDeserializer(xmlInputFile);
     ProblemInstance problemInstance = xmlDeserializer.getProblemInstance();
@@ -170,12 +192,14 @@ int main(int argc, char* argv[]) {
     }
 
     std::cout << std::endl << "Maximum displacement in Z: " << maxDisp << std::endl;
-    
-    VTKSolutionStructuredWriter writer(problemInstance.getSolutionLOD(0));
-    writer.setMechanicalValuesOutput(false);
+
+    VTKSolutionWriter vtkWriter(problemInstance.getSolutionLOD(0));
+    vtkWriter.filterOutNullVoxels();
+    vtkWriter.setMechanicalValuesOutput(true);
+
     std::stringstream fp = std::stringstream();
-    fp << "d:\\tmp\\gpu_end_structuredRefacTest_CT.vtk";
-    writer.writeEntireStructureToFile(fp.str());
+    fp << "d:\\tmp\\gpu_end.vtk";
+    vtkWriter.writeEntireStructureToFile(fp.str());
    
     std::cout << std::endl << "Total simulation time: " << totalMilliseconds << " ms\n\n";
 

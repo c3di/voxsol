@@ -59,7 +59,7 @@ REAL ResidualVolume::getMaxResidualOnLevelZero() const {
     return maxResidual;
 }
 
-REAL ResidualVolume::getAverageResidual(REAL ignoreThreshold) const {
+REAL ResidualVolume::getAverageResidual(REAL ignoreThreshold, int* numVerticesNotConverged) const {
     LevelStats levelZeroStats = levelStatsManaged[0];
     REAL* levelStart = &importancePyramidManaged[levelZeroStats.startIndex];
     REAL averageResidual = 0;
@@ -74,6 +74,9 @@ REAL ResidualVolume::getAverageResidual(REAL ignoreThreshold) const {
                     numResidualsGreaterThanEps++;
                 }
             }
+    if (numVerticesNotConverged != NULL) {
+        *numVerticesNotConverged = numResidualsGreaterThanEps;
+    }
 
     if (numResidualsGreaterThanEps == 0) {
         return ignoreThreshold;

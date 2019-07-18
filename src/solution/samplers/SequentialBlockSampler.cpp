@@ -46,7 +46,6 @@ int SequentialBlockSampler::generateNextBlockOrigins(int3* blockOrigins, int max
             lastOrigin.x = currentOffset.x;
             lastOrigin.y = currentOffset.y;
             lastOrigin.z = currentOffset.z;
-            break; //Don't generate any more blocks to ensure no blocks overlap (can cause divergence)
         }
 
         // -1 to account for the 1-vertex border of fixed vertices. We want to choose origins for the working area but
@@ -91,7 +90,7 @@ void SequentialBlockSampler::shiftOffsetStochastically() {
 
     currentOffset.x = rngOffset(rng) - 1;
     currentOffset.y = rngOffset(rng) - 1;
-    currentOffset.z = rngOffset(rng) - 1;
+    //currentOffset.z = rngOffset(rng) - 1;
 }
 
 void SequentialBlockSampler::writeDebugOutput(int samplingIteration, int3* blockOrigins, int numBlocks) {

@@ -35,6 +35,8 @@ public:
     void debugOutputEquationsCPU();
     void debugOutputEquationsGPU();
 
+    int numBlockOriginsPerIteration;
+
 protected:
 
     bool canExecute() override;
@@ -49,8 +51,8 @@ protected:
     REAL* serializedMatConfigEquations;
 
     int3* blockOrigins;
-    int numBlockOriginsPerIteration;
-    int numLaunchesSinceLastFullResidualUpdate = 0;
+    
+    int numLaunchesSinceLastFullResidualUpdate = INT_MAX; //Trigger a residual update at first iteration
     int numLaunchesBeforeResidualUpdate = NUM_LAUNCHES_BETWEEN_RESIDUAL_UPDATES;
     FullResidualUpdateKernel fullResidualUpdateKernel;
     REAL maxResidualOnLevelZero = 0;
