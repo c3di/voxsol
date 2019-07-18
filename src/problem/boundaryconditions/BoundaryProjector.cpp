@@ -5,6 +5,12 @@
 #include "problem/boundaryconditions/NeumannBoundary.h"
 #include <iostream>
 
+/**
+    Projects boundary conditions onto the problem by tracing rays through the volume from the given direction. 
+    The first non-null voxel each ray hits is given the boundary condition, assuming it is within the maximum 
+    depth.
+*/
+
 BoundaryProjector::BoundaryProjector(DiscreteProblem* p) :
     problem(p),
     problemSize(p->getSize())
