@@ -39,7 +39,7 @@ void ImportanceSamplingKernel::launch() {
     }
 }
 
-void ImportanceSamplingKernel::setBlockOriginsDestination(uint3* dest) {
+void ImportanceSamplingKernel::setBlockOriginsDestination(int3* dest) {
     blockOrigins = dest;
 }
 

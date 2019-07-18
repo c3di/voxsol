@@ -10,7 +10,6 @@ SolveDisplacementKernel::SolveDisplacementKernel(Solution* sol, BlockSampler* sa
     sampler(sampler),
     serializedMatConfigEquations(nullptr),
     serializedVertices(nullptr),
-    rngStateOnGPU(nullptr),
     blockOrigins(nullptr),
     residualVolume(resVol),
     fullResidualUpdateKernel(sol, resVol, nullptr, nullptr)
@@ -19,15 +18,14 @@ SolveDisplacementKernel::SolveDisplacementKernel(Solution* sol, BlockSampler* sa
     solutionDimensions.y = sol->getSize().y;
     solutionDimensions.z = sol->getSize().z;
 
-    numBlockOriginsPerIteration = std::min((solutionDimensions.x / BLOCK_SIZE) * (solutionDimensions.y / BLOCK_SIZE) * (solutionDimensions.z / BLOCK_SIZE), (unsigned int)MAX_BLOCKS_PER_ITERATION);
-    numBlockOriginsPerIteration = std::max(1, numBlockOriginsPerIteration); // Always allocate at least 1 block, 0 can happen if solutionDimensions < BLOCK_SIZE
+    // Need enough blocks to cover the problem (with room to spare) but not more than the max
+    numBlockOriginsPerIteration = std::min( 2 * (1 + solutionDimensions.x / BLOCK_SIZE) * (1 + solutionDimensions.y / BLOCK_SIZE) * (1 + solutionDimensions.z / BLOCK_SIZE), (unsigned int)MAX_BLOCKS_PER_ITERATION);
 }
 
 SolveDisplacementKernel::~SolveDisplacementKernel() {
     freeCudaResources();
     assert(serializedMatConfigEquations == nullptr);
     assert(serializedVertices == nullptr);
-    assert(rngStateOnGPU == nullptr);
     assert(blockOrigins == nullptr);
 }
 
@@ -42,17 +40,17 @@ void SolveDisplacementKernel::launch() {
         sampler->generateNextBlockOrigins(blockOrigins, numBlockOriginsPerIteration);
 
         cudaLaunchSolveDisplacementKernel(
-            serializedVertices, 
-            serializedMatConfigEquations, 
+            serializedVertices,
+            serializedMatConfigEquations,
             residualVolume->getPyramidDevicePointer(),
-            rngStateOnGPU,
             blockOrigins,
             numBlockOriginsPerIteration,
             solutionDimensions
         );
 
         numLaunchesSinceLastFullResidualUpdate++;
-        if (numLaunchesSinceLastFullResidualUpdate > NUM_LAUNCHES_BETWEEN_RESIDUAL_UPDATES) {
+
+        if (numLaunchesSinceLastFullResidualUpdate >= numLaunchesBeforeResidualUpdate) {
             fullResidualUpdateKernel.launch();
             numLaunchesSinceLastFullResidualUpdate = 0;
             maxResidualOnLevelZero = residualVolume->getMaxResidualOnLevelZero();
@@ -60,8 +58,16 @@ void SolveDisplacementKernel::launch() {
     }
 }
 
+void SolveDisplacementKernel::forceResidualUpdate() {
+    fullResidualUpdateKernel.launch();
+}
+
+void SolveDisplacementKernel::setNumLaunchesBeforeResidualUpdate(unsigned int numLaunches) {
+    numLaunchesBeforeResidualUpdate = numLaunches;
+}
+
 bool SolveDisplacementKernel::canExecute() {
-    if (serializedMatConfigEquations == nullptr || serializedVertices == nullptr || rngStateOnGPU == nullptr || blockOrigins == nullptr) {
+    if (serializedMatConfigEquations == nullptr || serializedVertices == nullptr || blockOrigins == nullptr) {
         return false;
     }
 
@@ -79,10 +85,6 @@ void SolveDisplacementKernel::freeCudaResources() {
         serializedVertices = nullptr;
         fullResidualUpdateKernel.setVerticesOnGPU(nullptr);
     }
-    if (rngStateOnGPU != nullptr) {
-        cudaCheckSuccess(cudaFree(rngStateOnGPU));
-        rngStateOnGPU = nullptr;
-    }
     if (blockOrigins != nullptr) {
         cudaCheckSuccess(cudaFree(blockOrigins));
         blockOrigins = nullptr;
@@ -92,17 +94,12 @@ void SolveDisplacementKernel::freeCudaResources() {
 void SolveDisplacementKernel::prepareInputs() {
     pushMatConfigEquationsManaged();
     pushVerticesManaged();
-    initCurandState();
     allocateBlockOrigins();
 }
 
 void SolveDisplacementKernel::allocateBlockOrigins() {
-    size_t size = numBlockOriginsPerIteration * sizeof(uint3);
+    size_t size = numBlockOriginsPerIteration * sizeof(int3);
     cudaCheckSuccess(cudaMallocManaged(&blockOrigins, size));
-}
-
-void SolveDisplacementKernel::initCurandState() {
-    cudaInitializeRNGStates(&rngStateOnGPU);
 }
 
 void SolveDisplacementKernel::pushMatConfigEquationsManaged() {
@@ -299,6 +296,6 @@ void SolveDisplacementKernel::debugOutputEquationsGPU() {
 
 }
 
-uint3* SolveDisplacementKernel::debugGetImportanceSamplesManaged() {
+int3* SolveDisplacementKernel::debugGetImportanceSamplesManaged() {
     return blockOrigins;
 }

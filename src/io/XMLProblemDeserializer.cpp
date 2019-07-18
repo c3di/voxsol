@@ -228,9 +228,9 @@ void XMLProblemDeserializer::parseNeumannBoundaryProjection() {
 
     for (tinyxml2::XMLElement* child = boundariesElement->FirstChildElement("NeumannBoundary"); child != NULL; child = child->NextSiblingElement("NeumannBoundary")) {
         
-        REAL totalStressInNewtons = child->FloatAttribute("totalStressInNewtons", asREAL(0.0));
+        REAL totalStressInNewtons = child->FloatAttribute("totalForceInNewtons", asREAL(0.0));
         if (totalStressInNewtons == 0) {
-            throw std::ios_base::failure("invalid or missing totalStressInNewtons attribute in NeumannBoundary");
+            throw std::ios_base::failure("invalid or missing totalForceInNewtons attribute in NeumannBoundary");
         }
 
         const char* direction = child->Attribute("projectionDirection");

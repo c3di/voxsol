@@ -24,6 +24,7 @@ public:
     void updateEntirePyramid();
     REAL getTotalResidual() const;
     REAL getMaxResidualOnLevelZero() const;
+    REAL getAverageResidual(REAL epsilon) const;
 
     REAL* getPyramidDevicePointer();
     LevelStats* getLevelStatsDevicePointer();
@@ -36,7 +37,8 @@ public:
 protected:
     // This is GPU managed memory, any read/write operations on it may trigger a costly CPU<->GPU memory sync!
     REAL* importancePyramidManaged = nullptr;
-    LevelStats* levelStatsManaged = nullptr; 
+    LevelStats* levelStatsManaged = nullptr;
+
     DiscreteProblem* problem;
 
     libmmv::Vec3ui levelZeroSize;

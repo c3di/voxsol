@@ -24,7 +24,7 @@ public:
     void projectCoarseSolutionToFinerSolution(int coarseLod, int fineLod);
 
     int getNumberOfLODs();
-    int solveLOD(int lod);
+    int solveLOD(int lod, REAL convergenceCriteria, BlockSampler* sampler);
 
     DiscreteProblem* getProblemLOD(int lod);
     Solution* getSolutionLOD(int lod);

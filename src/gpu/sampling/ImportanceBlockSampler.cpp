@@ -10,7 +10,7 @@ ImportanceBlockSampler::~ImportanceBlockSampler()
 {
 }
 
-int ImportanceBlockSampler::generateNextBlockOrigins(uint3* blockOrigins, int numBlocks)
+int ImportanceBlockSampler::generateNextBlockOrigins(int3* blockOrigins, int numBlocks)
 {
     samplingKernel.setBlockOriginsDestination(blockOrigins);
     samplingKernel.setNumBlocksToFind(numBlocks);

@@ -23,7 +23,7 @@ RandomBlockSampler::~RandomBlockSampler() {
 
 }
 
-int RandomBlockSampler::generateNextBlockOrigins(uint3* blockOrigins, int maxNumBlocks) {
+int RandomBlockSampler::generateNextBlockOrigins(int3* blockOrigins, int maxNumBlocks) {
     const libmmv::Vec3ui solutionDims = solution->getSize();
     std::uniform_int_distribution<int> rx(0, solutionDims.x - blockWorkingSize);
     std::uniform_int_distribution<int> ry(0, solutionDims.y - blockWorkingSize);
@@ -42,7 +42,7 @@ int RandomBlockSampler::generateNextBlockOrigins(uint3* blockOrigins, int maxNum
     return maxNumBlocks;
 }
 
-void RandomBlockSampler::writeDebugOutput(int samplingIteration, uint3* blockOrigins, int numBlocks) {
+void RandomBlockSampler::writeDebugOutput(int samplingIteration, int3* blockOrigins, int numBlocks) {
     std::stringstream fp;
     fp << "c:\\tmp\\step_samp_" << samplingIteration << ".vtk";
     VTKSamplingVisualizer vis(solution);

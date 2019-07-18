@@ -25,24 +25,24 @@ SequentialBlockSampler::~SequentialBlockSampler() {
 
 }
 
-int SequentialBlockSampler::generateNextBlockOrigins(uint3* blockOrigins, int maxNumBlocks) {
+int SequentialBlockSampler::generateNextBlockOrigins(int3* blockOrigins, int maxNumBlocks) {
     const libmmv::Vec3ui solutionDims = solution->getSize();
     int i;
     int halfBlockSize = (blockStride - 1) / 2;
+
     for (i = 0; i < maxNumBlocks; i++) {
-#pragma warning(suppress: 4018) //Suppress signed/unsigned mismatch in conditional
-        if (lastOrigin.x >= solutionDims.x) {
+        if (lastOrigin.x > (int)solutionDims.x) {
             lastOrigin.x = currentOffset.x;
             lastOrigin.y += blockStride;
         }
-#pragma warning(suppress: 4018)
-        if (lastOrigin.y >= solutionDims.y) {
+
+        if (lastOrigin.y > (int)solutionDims.y) {
             lastOrigin.y = currentOffset.y;
             lastOrigin.z += blockStride;
         }
-#pragma warning(suppress: 4018)
-        if (lastOrigin.z >= solutionDims.z) {
-            //shiftOffsetDeterministically();
+
+        if (lastOrigin.z > (int)solutionDims.z) {
+            shiftOffsetStochastically();
             lastOrigin.x = currentOffset.x;
             lastOrigin.y = currentOffset.y;
             lastOrigin.z = currentOffset.z;
@@ -60,9 +60,9 @@ int SequentialBlockSampler::generateNextBlockOrigins(uint3* blockOrigins, int ma
 
     // Invalidate remaining blocks so they aren't processed during the displacement update phase
     for (int j = i; j < maxNumBlocks; j++) {
-        blockOrigins[j].x = UINT_MAX;
-        blockOrigins[j].y = UINT_MAX;
-        blockOrigins[j].z = UINT_MAX;
+        blockOrigins[j].x = INT_MAX;
+        blockOrigins[j].y = INT_MAX;
+        blockOrigins[j].z = INT_MAX;
     }
 
    // writeDebugOutput(iteration, blockOrigins, i);
@@ -73,28 +73,28 @@ int SequentialBlockSampler::generateNextBlockOrigins(uint3* blockOrigins, int ma
 
 void SequentialBlockSampler::shiftOffsetDeterministically() {
     if (iteration % 2 == 0) {
-        currentOffset.x += 1;
-        currentOffset.y += 1;
-        currentOffset.z += 1;
+        currentOffset.x = 0;
+        currentOffset.y = 0;
+        //currentOffset.z += 1;
     }
     else {
-        currentOffset.x -= 1;
-        currentOffset.y -= 1;
-        currentOffset.z -= 1;
+        currentOffset.x = -1;
+        currentOffset.y = -1;
+        //currentOffset.z -= 1;
     }
     
 }
 
 void SequentialBlockSampler::shiftOffsetStochastically() {
     std::random_device rd;
-    std::uniform_int_distribution<int> rngOffset(0, blockStride / 2);
+    std::uniform_int_distribution<int> rngOffset(0, 1);
 
-    currentOffset.x = rngOffset(rng);
-    currentOffset.y = rngOffset(rng);
-    currentOffset.z = rngOffset(rng);
+    currentOffset.x = rngOffset(rng) - 1;
+    currentOffset.y = rngOffset(rng) - 1;
+    currentOffset.z = rngOffset(rng) - 1;
 }
 
-void SequentialBlockSampler::writeDebugOutput(int samplingIteration, uint3* blockOrigins, int numBlocks) {
+void SequentialBlockSampler::writeDebugOutput(int samplingIteration, int3* blockOrigins, int numBlocks) {
     std::stringstream fp;
     fp << "c:\\tmp\\step_samp_" << samplingIteration << ".vtk";
     VTKSamplingVisualizer vis(solution);

@@ -9,7 +9,7 @@
 #include "gpu/sampling/ResidualVolume.h"
 #include "solution/Vertex.h"
 
-extern "C" void cudaLaunchImportanceSamplingKernel(uint3* candidates, const int numCandidatesToFind, const REAL* importancePyramid, const LevelStats* levelStats, curandState* rngStateOnGPU, const int topLevel);
+extern "C" void cudaLaunchImportanceSamplingKernel(int3* candidates, const int numCandidatesToFind, const REAL* importancePyramid, const LevelStats* levelStats, curandState* rngStateOnGPU, const int topLevel);
 extern "C" void cudaInitializePyramidRNGStates(curandState** rngStateOnGPU, const int numCandidatesToFind);
 extern "C" void cudaLaunchPyramidUpdateKernel(REAL* importancePyramid, const int numLevels, const LevelStats* levelStats);
 
@@ -21,7 +21,7 @@ public:
     ~ImportanceSamplingKernel();
 
     void launch() override;
-    void setBlockOriginsDestination(uint3* blockOrigins);
+    void setBlockOriginsDestination(int3* blockOrigins);
     void setNumBlocksToFind(int numBlocks);
 
     REAL getTotalResidual();
@@ -33,7 +33,7 @@ protected:
 
     ResidualVolume* residualVolume;
     curandState* rngStateOnGPU;
-    uint3* blockOrigins;
+    int3* blockOrigins;
     int numBlocksToGenerate;
 
     void initCurandState();

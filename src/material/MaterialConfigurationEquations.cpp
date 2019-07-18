@@ -46,15 +46,37 @@ bool MaterialConfigurationEquations::isInitialized() {
     return id != std::numeric_limits<ConfigId>::max();
 }
 
-void MaterialConfigurationEquations::serialize(void* destination) const {
-    unsigned char* serializationPointer = (unsigned char*)destination;
+//#define optimized_mem
 
+void MaterialConfigurationEquations::serialize(void* destination) const {
+#ifdef optimized_mem
+    REAL* serializationPointer = (REAL*)destination;
+
+    // Matrices are serialized for optimal memory access in CUDA:
+    // Neighbor 0 row 0 col 0, Neighbor 1 row 0 col 0... Neighbor 26 row 0 col 0, Neighbor 0 row 0 col 1, Neighbor 1 row 0 col 1 ... Neighbor 26 row 0 col 1, Neighbor 0 row 0 col 2...
+    // See buildRHSVectorForVertex in SolveDisplacementCuda.cu
+
+    for (unsigned char row = 0; row < 3; row++) {
+        for (unsigned char col = 0; col < 3; col++) {
+
+            for (unsigned char neighbor = 0; neighbor < 27; neighbor++) {
+                *serializationPointer = matrices[neighbor].at(col, row);
+                serializationPointer += 1;
+            }
+        }
+    }
+
+    memcpy(serializationPointer, &neumannBoundaryCondition.stress.dim, sizeof(REAL)*3);
+
+#else
+    unsigned char* serializationPointer = (unsigned char*)destination;
     for (unsigned char i = 0; i < 27; i++) {
         matrices[i].serialize(serializationPointer);
         serializationPointer += Matrix3x3::SizeInBytes;
     }
+    memcpy(serializationPointer, &neumannBoundaryCondition.stress.dim, sizeof(REAL) * 3);
 
-    memcpy(serializationPointer, &neumannBoundaryCondition.stress.dim, sizeof(REAL)*3);
+#endif
 }
 
 void MaterialConfigurationEquations::setId(ConfigId id) {

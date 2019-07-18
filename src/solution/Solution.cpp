@@ -6,6 +6,7 @@
 #include "material/MaterialConfigurationEquationsFactory.h"
 #include "material/MaterialConfiguration.h"
 
+
 Solution::Solution(DiscreteProblem* problem) :
     size(problem->getSize() + libmmv::Vec3ui(1,1,1)),
     voxelSize(problem->getVoxelSize()),
@@ -62,12 +63,19 @@ void Solution::computeMaterialConfigurationEquations() {
     computeEquationsForUniqueMaterialConfigurations();
 }
 
+void Solution::createVoidMaterialConfiguration(std::unordered_map<MaterialConfiguration, UniqueConfig>& matConfigToEquation) {
+    std::vector<Material*> emptyMats = {&Material::EMPTY,&Material::EMPTY, &Material::EMPTY, &Material::EMPTY, &Material::EMPTY, &Material::EMPTY, &Material::EMPTY, &Material::EMPTY};
+    MaterialConfiguration voidConfig(&emptyMats);
+    matConfigToEquation[voidConfig].equationId = 0;
+}
+
 void Solution::gatherUniqueMaterialConfigurations() {
     std::unordered_map < MaterialConfiguration, UniqueConfig> matConfigToEquation;
 
+    createVoidMaterialConfiguration(matConfigToEquation);
     scanSolutionForUniqueConfigurations(matConfigToEquation);
-    sortUniqueConfigurationsByFrequency(matConfigToEquation);
-    assignConfigurationIdsToVertices(matConfigToEquation);
+    //sortUniqueConfigurationsByFrequency(matConfigToEquation);
+    //assignConfigurationIdsToVertices(matConfigToEquation);
     
     matConfigEquations.resize(matConfigToEquation.size());
 
@@ -75,7 +83,7 @@ void Solution::gatherUniqueMaterialConfigurations() {
 }
 
 void Solution::scanSolutionForUniqueConfigurations(std::unordered_map<MaterialConfiguration, UniqueConfig>& matConfigToEquation) {
-    ConfigId equationIdCounter = 0;
+    ConfigId equationIdCounter = 1; // 0 is reserved for the void material configuration (all empty materials)
 
     for (unsigned int z = 0; z < size.z; z++) {
         for (unsigned int y = 0; y < size.y; y++) {
@@ -88,6 +96,9 @@ void Solution::scanSolutionForUniqueConfigurations(std::unordered_map<MaterialCo
                     matConfigToEquation[materialConfiguration].equationId = equationIdCounter;
                     equationIdCounter++;
                 }
+
+                Vertex* vertex = &vertices[mapToIndex(centerCoord)];
+                vertex->materialConfigId = matConfigToEquation[materialConfiguration].equationId;
 
                 matConfigToEquation[materialConfiguration].numInstancesInProblem++;
             }
@@ -126,9 +137,7 @@ void Solution::sortUniqueConfigurationsByFrequency(std::unordered_map<MaterialCo
     //The sorted position in the array becomes the configuration's ID. This way ID 0 will be the most common config, 1 the second most common etc.
     for (int i = 0; i < sortedByFrequency.size(); i++) {
         sortedByFrequency[i]->equationId = i;
-        
     }
-
 }
 
 void Solution::assignConfigurationIdsToVertices(std::unordered_map<MaterialConfiguration, UniqueConfig>& matConfigToEquation) {
@@ -161,3 +170,4 @@ void Solution::computeEquationsForUniqueMaterialConfigurations() {
         }
     }
 }
+
