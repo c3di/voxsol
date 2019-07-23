@@ -46,7 +46,7 @@ void BoundaryProjector::projectDirichletBoundaryAlongNegZ(DirichletBoundary* con
         unsigned int numBoundaryVoxels = 0;
         for (auto it = surfaceVoxels.begin(); it != surfaceVoxels.end(); it++) {
             // We only want to fix the voxels near the outer edge of the space
-            if (abs((int)topZ - (int)it->z) < (int)maxDepthFromTopmostHit) { //
+            if (abs((int)topZ - (int)it->z) <= (int)maxDepthFromTopmostHit) { //
                 libmmv::Vec3ui vertexCoord(*it);
                 vertexCoord.z++; //go to the top layer of vertices for this voxel   //
                 problem->setDirichletBoundaryAtVertex(vertexCoord, *condition);
@@ -82,7 +82,7 @@ void BoundaryProjector::projectDirichletBoundaryAlongPosZ(DirichletBoundary* con
         unsigned int numBoundaryVoxels = 0;
         for (auto it = surfaceVoxels.begin(); it != surfaceVoxels.end(); it++) {
             // We only want to fix the voxels near the outer edge of the space
-            if (abs((int)topZ - (int)it->z) < (int)maxDepthFromTopmostHit) {
+            if (abs((int)topZ - (int)it->z) <= (int)maxDepthFromTopmostHit) {
                 libmmv::Vec3ui vertexCoord(*it);
                 problem->setDirichletBoundaryAtVertex(vertexCoord, *condition);
                 vertexCoord.x++;
@@ -208,7 +208,7 @@ void BoundaryProjector::projectDirichletBoundaryAlongPosX(DirichletBoundary * co
         unsigned int numBoundaryVoxels = 0;
         for (auto it = surfaceVoxels.begin(); it != surfaceVoxels.end(); it++) {
             // We only want to fix the voxels near the outer edge of the space
-            if (abs((int)firstX - (int)it->x) < (int)maxDepthFromTopmostHit) {
+            if (abs((int)firstX - (int)it->x) <= (int)maxDepthFromTopmostHit) {
                 libmmv::Vec3ui vertexCoord(*it);
                 //Set boundary conditions for vertices at coord, coord.y+1, coord.z+1 and coord.y+1 & coord.z+1
                 problem->setDirichletBoundaryAtVertex(vertexCoord, *condition);
@@ -287,7 +287,7 @@ void BoundaryProjector::projectDirichletBoundaryAlongNegX(DirichletBoundary * co
         unsigned int numBoundaryVoxels = 0;
         for (auto it = surfaceVoxels.begin(); it != surfaceVoxels.end(); it++) {
             // We only want to fix the voxels near the outer edge of the space
-            if (abs((int)firstX - (int)it->x) < (int)maxDepthFromTopmostHit) {
+            if (abs((int)firstX - (int)it->x) <= (int)maxDepthFromTopmostHit) {
                 libmmv::Vec3ui vertexCoord(*it);
                 //Set boundary conditions for vertices at coord, coord.y+1, coord.z+1 and coord.y+1 & coord.z+1
                 vertexCoord.x++;
@@ -369,7 +369,7 @@ void BoundaryProjector::projectDirichletBoundaryAlongPosY(DirichletBoundary * co
         unsigned int numBoundaryVoxels = 0;
         for (auto it = surfaceVoxels.begin(); it != surfaceVoxels.end(); it++) {
             // We only want to fix the voxels near the outer edge of the space
-            if (abs((int)firstY - (int)it->y) < (int)maxDepthFromTopmostHit) {
+            if (abs((int)firstY - (int)it->y) <= (int)maxDepthFromTopmostHit) {
                 libmmv::Vec3ui vertexCoord(*it);
                 //Set boundary conditions for vertices at coord, coord.x+1, coord.z+1 and coord.x-1 & coord.z-1
                 problem->setDirichletBoundaryAtVertex(vertexCoord, *condition);
@@ -410,7 +410,7 @@ void BoundaryProjector::projectDirichletBoundaryAlongNegY(DirichletBoundary * co
         unsigned int numBoundaryVoxels = 0;
         for (auto it = surfaceVoxels.begin(); it != surfaceVoxels.end(); it++) {
             // We only want to fix the voxels near the outer edge of the space
-            if (abs((int)firstY - (int)it->y) < (int)maxDepthFromTopmostHit) {
+            if (abs((int)firstY - (int)it->y) <= (int)maxDepthFromTopmostHit) {
                 libmmv::Vec3ui vertexCoord(*it);
                 //Set boundary conditions for vertices at coord, coord.x+1, coord.z+1 and coord.x-1 & coord.z-1
                 vertexCoord.y++;
