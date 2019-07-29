@@ -186,22 +186,22 @@ void XMLProblemDeserializer::parseDirichletBoundaryProjection() {
         std::string directionVal(direction);
 
         if (directionVal == "+x" || directionVal == "+X") {
-            bProjector.projectDirichletBoundaryAlongPosX(&boundary);
+            bProjector.projectDirichletBoundary(&boundary, ProblemSide::POSITIVE_X);
         }
         else if (directionVal == "-x" || directionVal == "-X") {
-            bProjector.projectDirichletBoundaryAlongNegX(&boundary);
+            bProjector.projectDirichletBoundary(&boundary, ProblemSide::NEGATIVE_X);
         }
         else if (directionVal == "+y" || directionVal == "+Y") {
-            bProjector.projectDirichletBoundaryAlongPosY(&boundary);
+            bProjector.projectDirichletBoundary(&boundary, ProblemSide::POSITIVE_Y);
         }
         else if (directionVal == "-y" || directionVal == "-Y") {
-            bProjector.projectDirichletBoundaryAlongNegY(&boundary);
+            bProjector.projectDirichletBoundary(&boundary, ProblemSide::NEGATIVE_Y);
         }
         else if (directionVal == "+z" || directionVal == "+Z") {
-            bProjector.projectDirichletBoundaryAlongPosZ(&boundary);
+            bProjector.projectDirichletBoundary(&boundary, ProblemSide::POSITIVE_Z);
         }
         else if (directionVal == "-z" || directionVal == "-Z") {
-            bProjector.projectDirichletBoundaryAlongNegZ(&boundary);
+            bProjector.projectDirichletBoundary(&boundary, ProblemSide::NEGATIVE_Z);
         }
     }
 
@@ -241,22 +241,22 @@ void XMLProblemDeserializer::parseNeumannBoundaryProjection() {
         std::string directionVal(direction);
 
         if (directionVal == "+x" || directionVal == "+X") {
-           bProjector.projectNeumannStressAlongPosX(totalStressInNewtons, materialFilter);
+           bProjector.projectNeumannBoundary(totalStressInNewtons, ProblemSide::POSITIVE_X, materialFilter);
         }
         else if (directionVal == "-x" || directionVal == "-X") {
-            bProjector.projectNeumannStressAlongNegX(totalStressInNewtons, materialFilter);
+			bProjector.projectNeumannBoundary(totalStressInNewtons, ProblemSide::NEGATIVE_X, materialFilter);
         }
         else if (directionVal == "+y" || directionVal == "+Y") {
-            bProjector.projectNeumannStressAlongPosY(totalStressInNewtons, materialFilter);
+			bProjector.projectNeumannBoundary(totalStressInNewtons, ProblemSide::POSITIVE_Y, materialFilter);
         }
         else if (directionVal == "-y" || directionVal == "-Y") {
-            bProjector.projectNeumannStressAlongNegY(totalStressInNewtons, materialFilter);
+			bProjector.projectNeumannBoundary(totalStressInNewtons, ProblemSide::NEGATIVE_Y, materialFilter);
         }
         else if (directionVal == "+z" || directionVal == "+Z") {
-            bProjector.projectNeumannStressAlongPosZ(totalStressInNewtons, materialFilter);
+			bProjector.projectNeumannBoundary(totalStressInNewtons, ProblemSide::POSITIVE_Z, materialFilter);
         }
         else if (directionVal == "-z" || directionVal == "-Z") {
-            bProjector.projectNeumannStressAlongNegZ(totalStressInNewtons, materialFilter);
+			bProjector.projectNeumannBoundary(totalStressInNewtons, ProblemSide::NEGATIVE_Z, materialFilter);
         }
     }
 

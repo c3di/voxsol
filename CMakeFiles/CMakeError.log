@@ -1,0 +1,176 @@
+Compiling the CUDA compiler identification source file "CMakeCUDACompilerId.cu" failed.
+Compiler:  
+Build flags: 
+Id flags:  -v;--keep;--keep-dir;tmp
+
+The output was:
+1
+Microsoft (R) Build Engine version 15.9.21+g9802d43bc3 for .NET Framework
+Copyright (C) Microsoft Corporation. All rights reserved.
+
+Build started 17/05/2019 14:52:51.
+Project "D:\Solver src\stomech-solver\CMakeFiles\3.14.4\CompilerIdCUDA\CompilerIdCUDA.vcxproj" on node 1 (default targets).
+PrepareForBuild:
+  Creating directory "Debug\".
+  Creating directory "Debug\CompilerIdCUDA.tlog\".
+InitializeBuildStatus:
+  Creating "Debug\CompilerIdCUDA.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
+AddCudaCompileDeps:
+  C:\Program Files (x86)\Microsoft Visual Studio\2017\Professional\VC\Tools\MSVC\14.16.27023\bin\HostX64\x86\cl.exe /E /nologo /showIncludes /TP /D__CUDACC__ /D_MBCS /I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.1\include" /I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.1\bin" /I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.1\include" /I. /FIcuda_runtime.h /c "D:\Solver src\stomech-solver\CMakeFiles\3.14.4\CompilerIdCUDA\CMakeCUDACompilerId.cu" 
+Project "D:\Solver src\stomech-solver\CMakeFiles\3.14.4\CompilerIdCUDA\CompilerIdCUDA.vcxproj" (1) is building "D:\Solver src\stomech-solver\CMakeFiles\3.14.4\CompilerIdCUDA\CompilerIdCUDA.vcxproj" (1:2) on node 1 (CudaBuildCore target(s)).
+CudaBuildCore:
+  Compiling CUDA source file CMakeCUDACompilerId.cu...
+  cmd.exe /C "C:\Users\chwo02\AppData\Local\Temp\tmp108dc43c5131437c83d96cba1622b0dd.cmd"
+  "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.1\bin\nvcc.exe" -gencode=arch=compute_35,code=\"sm_35,compute_35\" --use-local-env -ccbin "C:\Program Files (x86)\Microsoft Visual Studio\2017\Professional\VC\Tools\MSVC\14.16.27023\bin\HostX64\x86" -x cu  -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.1\include" -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.1\include"  -G   --keep-dir Debug -maxrregcount=0  --machine 32 --compile -cudart static  -g   -D_MBCS -Xcompiler "/EHsc /W0 /nologo /Od /FdDebug\vc141.pdb /FS /Zi /RTC1 /MDd " -o Debug\CMakeCUDACompilerId.cu.obj "D:\Solver src\stomech-solver\CMakeFiles\3.14.4\CompilerIdCUDA\CMakeCUDACompilerId.cu"
+  
+  D:\Solver src\stomech-solver\CMakeFiles\3.14.4\CompilerIdCUDA>"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.1\bin\nvcc.exe" -gencode=arch=compute_35,code=\"sm_35,compute_35\" --use-local-env -ccbin "C:\Program Files (x86)\Microsoft Visual Studio\2017\Professional\VC\Tools\MSVC\14.16.27023\bin\HostX64\x86" -x cu  -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.1\include" -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.1\include"  -G   --keep-dir Debug -maxrregcount=0  --machine 32 --compile -cudart static  -g   -D_MBCS -Xcompiler "/EHsc /W0 /nologo /Od /FdDebug\vc141.pdb /FS /Zi /RTC1 /MDd " -o Debug\CMakeCUDACompilerId.cu.obj "D:\Solver src\stomech-solver\CMakeFiles\3.14.4\CompilerIdCUDA\CMakeCUDACompilerId.cu" 
+  nvcc fatal   : 32 bit compilation is only supported for Microsoft Visual Studio 2013 and earlier
+C:\Program Files (x86)\Microsoft Visual Studio\2017\Professional\Common7\IDE\VC\VCTargets\BuildCustomizations\CUDA 10.1.targets(762,9): error MSB3721: The command ""C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.1\bin\nvcc.exe" -gencode=arch=compute_35,code=\"sm_35,compute_35\" --use-local-env -ccbin "C:\Program Files (x86)\Microsoft Visual Studio\2017\Professional\VC\Tools\MSVC\14.16.27023\bin\HostX64\x86" -x cu  -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.1\include" -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.1\include"  -G   --keep-dir Debug -maxrregcount=0  --machine 32 --compile -cudart static  -g   -D_MBCS -Xcompiler "/EHsc /W0 /nologo /Od /FdDebug\vc141.pdb /FS /Zi /RTC1 /MDd " -o Debug\CMakeCUDACompilerId.cu.obj "D:\Solver src\stomech-solver\CMakeFiles\3.14.4\CompilerIdCUDA\CMakeCUDACompilerId.cu"" exited with code 1. [D:\Solver src\stomech-solver\CMakeFiles\3.14.4\CompilerIdCUDA\CompilerIdCUDA.vcxproj]
+Done Building Project "D:\Solver src\stomech-solver\CMakeFiles\3.14.4\CompilerIdCUDA\CompilerIdCUDA.vcxproj" (CudaBuildCore target(s)) -- FAILED.
+Done Building Project "D:\Solver src\stomech-solver\CMakeFiles\3.14.4\CompilerIdCUDA\CompilerIdCUDA.vcxproj" (default targets) -- FAILED.
+
+Build FAILED.
+
+"D:\Solver src\stomech-solver\CMakeFiles\3.14.4\CompilerIdCUDA\CompilerIdCUDA.vcxproj" (default target) (1) ->
+"D:\Solver src\stomech-solver\CMakeFiles\3.14.4\CompilerIdCUDA\CompilerIdCUDA.vcxproj" (CudaBuildCore target) (1:2) ->
+(CudaBuildCore target) -> 
+  C:\Program Files (x86)\Microsoft Visual Studio\2017\Professional\Common7\IDE\VC\VCTargets\BuildCustomizations\CUDA 10.1.targets(762,9): error MSB3721: The command ""C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.1\bin\nvcc.exe" -gencode=arch=compute_35,code=\"sm_35,compute_35\" --use-local-env -ccbin "C:\Program Files (x86)\Microsoft Visual Studio\2017\Professional\VC\Tools\MSVC\14.16.27023\bin\HostX64\x86" -x cu  -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.1\include" -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.1\include"  -G   --keep-dir Debug -maxrregcount=0  --machine 32 --compile -cudart static  -g   -D_MBCS -Xcompiler "/EHsc /W0 /nologo /Od /FdDebug\vc141.pdb /FS /Zi /RTC1 /MDd " -o Debug\CMakeCUDACompilerId.cu.obj "D:\Solver src\stomech-solver\CMakeFiles\3.14.4\CompilerIdCUDA\CMakeCUDACompilerId.cu"" exited with code 1. [D:\Solver src\stomech-solver\CMakeFiles\3.14.4\CompilerIdCUDA\CompilerIdCUDA.vcxproj]
+
+    0 Warning(s)
+    1 Error(s)
+
+Time Elapsed 00:00:01.37
+
+
+Compiling the CUDA compiler identification source file "CMakeCUDACompilerId.cu" failed.
+Compiler:  
+Build flags: 
+Id flags:  -v;--keep;--keep-dir;tmp
+
+The output was:
+1
+Microsoft (R) Build Engine version 15.9.21+g9802d43bc3 for .NET Framework
+Copyright (C) Microsoft Corporation. All rights reserved.
+
+Build started 17/05/2019 14:52:53.
+Project "D:\Solver src\stomech-solver\CMakeFiles\3.14.4\CompilerIdCUDA\CompilerIdCUDA.vcxproj" on node 1 (default targets).
+PrepareForBuild:
+  Creating directory "Debug\".
+  Creating directory "Debug\CompilerIdCUDA.tlog\".
+InitializeBuildStatus:
+  Creating "Debug\CompilerIdCUDA.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
+AddCudaCompileDeps:
+  C:\Program Files (x86)\Microsoft Visual Studio\2017\Professional\VC\Tools\MSVC\14.16.27023\bin\HostX64\x86\cl.exe /E /nologo /showIncludes /TP /D__CUDACC__ /D_MBCS /I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.1\include" /I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.1\bin" /I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.1\include" /I. /FIcuda_runtime.h /c "D:\Solver src\stomech-solver\CMakeFiles\3.14.4\CompilerIdCUDA\CMakeCUDACompilerId.cu" 
+Project "D:\Solver src\stomech-solver\CMakeFiles\3.14.4\CompilerIdCUDA\CompilerIdCUDA.vcxproj" (1) is building "D:\Solver src\stomech-solver\CMakeFiles\3.14.4\CompilerIdCUDA\CompilerIdCUDA.vcxproj" (1:2) on node 1 (CudaBuildCore target(s)).
+CudaBuildCore:
+  Compiling CUDA source file CMakeCUDACompilerId.cu...
+  cmd.exe /C "C:\Users\chwo02\AppData\Local\Temp\tmpcde0a8811da749bb889df72a95cef533.cmd"
+  "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.1\bin\nvcc.exe" -gencode=arch=compute_35,code=\"sm_35,compute_35\" --use-local-env -ccbin "C:\Program Files (x86)\Microsoft Visual Studio\2017\Professional\VC\Tools\MSVC\14.16.27023\bin\HostX64\x86" -x cu  -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.1\include" -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.1\include"  -G   --keep-dir Debug -maxrregcount=0  --machine 32 --compile -cudart static  -g   -D_MBCS -Xcompiler "/EHsc /W0 /nologo /Od /FdDebug\vc141.pdb /FS /Zi /RTC1 /MDd " -o Debug\CMakeCUDACompilerId.cu.obj "D:\Solver src\stomech-solver\CMakeFiles\3.14.4\CompilerIdCUDA\CMakeCUDACompilerId.cu"
+  
+  D:\Solver src\stomech-solver\CMakeFiles\3.14.4\CompilerIdCUDA>"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.1\bin\nvcc.exe" -gencode=arch=compute_35,code=\"sm_35,compute_35\" --use-local-env -ccbin "C:\Program Files (x86)\Microsoft Visual Studio\2017\Professional\VC\Tools\MSVC\14.16.27023\bin\HostX64\x86" -x cu  -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.1\include" -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.1\include"  -G   --keep-dir Debug -maxrregcount=0  --machine 32 --compile -cudart static  -g   -D_MBCS -Xcompiler "/EHsc /W0 /nologo /Od /FdDebug\vc141.pdb /FS /Zi /RTC1 /MDd " -o Debug\CMakeCUDACompilerId.cu.obj "D:\Solver src\stomech-solver\CMakeFiles\3.14.4\CompilerIdCUDA\CMakeCUDACompilerId.cu" 
+  nvcc fatal   : 32 bit compilation is only supported for Microsoft Visual Studio 2013 and earlier
+C:\Program Files (x86)\Microsoft Visual Studio\2017\Professional\Common7\IDE\VC\VCTargets\BuildCustomizations\CUDA 10.1.targets(762,9): error MSB3721: The command ""C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.1\bin\nvcc.exe" -gencode=arch=compute_35,code=\"sm_35,compute_35\" --use-local-env -ccbin "C:\Program Files (x86)\Microsoft Visual Studio\2017\Professional\VC\Tools\MSVC\14.16.27023\bin\HostX64\x86" -x cu  -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.1\include" -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.1\include"  -G   --keep-dir Debug -maxrregcount=0  --machine 32 --compile -cudart static  -g   -D_MBCS -Xcompiler "/EHsc /W0 /nologo /Od /FdDebug\vc141.pdb /FS /Zi /RTC1 /MDd " -o Debug\CMakeCUDACompilerId.cu.obj "D:\Solver src\stomech-solver\CMakeFiles\3.14.4\CompilerIdCUDA\CMakeCUDACompilerId.cu"" exited with code 1. [D:\Solver src\stomech-solver\CMakeFiles\3.14.4\CompilerIdCUDA\CompilerIdCUDA.vcxproj]
+Done Building Project "D:\Solver src\stomech-solver\CMakeFiles\3.14.4\CompilerIdCUDA\CompilerIdCUDA.vcxproj" (CudaBuildCore target(s)) -- FAILED.
+Done Building Project "D:\Solver src\stomech-solver\CMakeFiles\3.14.4\CompilerIdCUDA\CompilerIdCUDA.vcxproj" (default targets) -- FAILED.
+
+Build FAILED.
+
+"D:\Solver src\stomech-solver\CMakeFiles\3.14.4\CompilerIdCUDA\CompilerIdCUDA.vcxproj" (default target) (1) ->
+"D:\Solver src\stomech-solver\CMakeFiles\3.14.4\CompilerIdCUDA\CompilerIdCUDA.vcxproj" (CudaBuildCore target) (1:2) ->
+(CudaBuildCore target) -> 
+  C:\Program Files (x86)\Microsoft Visual Studio\2017\Professional\Common7\IDE\VC\VCTargets\BuildCustomizations\CUDA 10.1.targets(762,9): error MSB3721: The command ""C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.1\bin\nvcc.exe" -gencode=arch=compute_35,code=\"sm_35,compute_35\" --use-local-env -ccbin "C:\Program Files (x86)\Microsoft Visual Studio\2017\Professional\VC\Tools\MSVC\14.16.27023\bin\HostX64\x86" -x cu  -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.1\include" -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.1\include"  -G   --keep-dir Debug -maxrregcount=0  --machine 32 --compile -cudart static  -g   -D_MBCS -Xcompiler "/EHsc /W0 /nologo /Od /FdDebug\vc141.pdb /FS /Zi /RTC1 /MDd " -o Debug\CMakeCUDACompilerId.cu.obj "D:\Solver src\stomech-solver\CMakeFiles\3.14.4\CompilerIdCUDA\CMakeCUDACompilerId.cu"" exited with code 1. [D:\Solver src\stomech-solver\CMakeFiles\3.14.4\CompilerIdCUDA\CompilerIdCUDA.vcxproj]
+
+    0 Warning(s)
+    1 Error(s)
+
+Time Elapsed 00:00:01.38
+
+
+Compiling the CUDA compiler identification source file "CMakeCUDACompilerId.cu" failed.
+Compiler:  
+Build flags: 
+Id flags:  -v;--keep;--keep-dir;tmp
+
+The output was:
+1
+Microsoft (R) Build Engine version 15.9.21+g9802d43bc3 for .NET Framework
+Copyright (C) Microsoft Corporation. All rights reserved.
+
+Build started 17/05/2019 14:59:33.
+Project "D:\Solver src\stomech-solver\CMakeFiles\3.14.4\CompilerIdCUDA\CompilerIdCUDA.vcxproj" on node 1 (default targets).
+PrepareForBuild:
+  Creating directory "Debug\".
+  Creating directory "Debug\CompilerIdCUDA.tlog\".
+InitializeBuildStatus:
+  Creating "Debug\CompilerIdCUDA.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
+AddCudaCompileDeps:
+  C:\Program Files (x86)\Microsoft Visual Studio\2017\Professional\VC\Tools\MSVC\14.16.27023\bin\HostX64\x86\cl.exe /E /nologo /showIncludes /TP /D__CUDACC__ /D_MBCS /I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.1\include" /I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.1\bin" /I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.1\include" /I. /FIcuda_runtime.h /c "D:\Solver src\stomech-solver\CMakeFiles\3.14.4\CompilerIdCUDA\CMakeCUDACompilerId.cu" 
+Project "D:\Solver src\stomech-solver\CMakeFiles\3.14.4\CompilerIdCUDA\CompilerIdCUDA.vcxproj" (1) is building "D:\Solver src\stomech-solver\CMakeFiles\3.14.4\CompilerIdCUDA\CompilerIdCUDA.vcxproj" (1:2) on node 1 (CudaBuildCore target(s)).
+CudaBuildCore:
+  Compiling CUDA source file CMakeCUDACompilerId.cu...
+  cmd.exe /C "C:\Users\chwo02\AppData\Local\Temp\tmp43e53c2eccc94b6c89b6485b7d2b1dcf.cmd"
+  "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.1\bin\nvcc.exe" -gencode=arch=compute_35,code=\"sm_35,compute_35\" --use-local-env -ccbin "C:\Program Files (x86)\Microsoft Visual Studio\2017\Professional\VC\Tools\MSVC\14.16.27023\bin\HostX64\x86" -x cu  -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.1\include" -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.1\include"  -G   --keep-dir Debug -maxrregcount=0  --machine 32 --compile -cudart static  -g   -D_MBCS -Xcompiler "/EHsc /W0 /nologo /Od /FdDebug\vc141.pdb /FS /Zi /RTC1 /MDd " -o Debug\CMakeCUDACompilerId.cu.obj "D:\Solver src\stomech-solver\CMakeFiles\3.14.4\CompilerIdCUDA\CMakeCUDACompilerId.cu"
+  
+  D:\Solver src\stomech-solver\CMakeFiles\3.14.4\CompilerIdCUDA>"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.1\bin\nvcc.exe" -gencode=arch=compute_35,code=\"sm_35,compute_35\" --use-local-env -ccbin "C:\Program Files (x86)\Microsoft Visual Studio\2017\Professional\VC\Tools\MSVC\14.16.27023\bin\HostX64\x86" -x cu  -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.1\include" -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.1\include"  -G   --keep-dir Debug -maxrregcount=0  --machine 32 --compile -cudart static  -g   -D_MBCS -Xcompiler "/EHsc /W0 /nologo /Od /FdDebug\vc141.pdb /FS /Zi /RTC1 /MDd " -o Debug\CMakeCUDACompilerId.cu.obj "D:\Solver src\stomech-solver\CMakeFiles\3.14.4\CompilerIdCUDA\CMakeCUDACompilerId.cu" 
+  nvcc fatal   : 32 bit compilation is only supported for Microsoft Visual Studio 2013 and earlier
+C:\Program Files (x86)\Microsoft Visual Studio\2017\Professional\Common7\IDE\VC\VCTargets\BuildCustomizations\CUDA 10.1.targets(762,9): error MSB3721: The command ""C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.1\bin\nvcc.exe" -gencode=arch=compute_35,code=\"sm_35,compute_35\" --use-local-env -ccbin "C:\Program Files (x86)\Microsoft Visual Studio\2017\Professional\VC\Tools\MSVC\14.16.27023\bin\HostX64\x86" -x cu  -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.1\include" -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.1\include"  -G   --keep-dir Debug -maxrregcount=0  --machine 32 --compile -cudart static  -g   -D_MBCS -Xcompiler "/EHsc /W0 /nologo /Od /FdDebug\vc141.pdb /FS /Zi /RTC1 /MDd " -o Debug\CMakeCUDACompilerId.cu.obj "D:\Solver src\stomech-solver\CMakeFiles\3.14.4\CompilerIdCUDA\CMakeCUDACompilerId.cu"" exited with code 1. [D:\Solver src\stomech-solver\CMakeFiles\3.14.4\CompilerIdCUDA\CompilerIdCUDA.vcxproj]
+Done Building Project "D:\Solver src\stomech-solver\CMakeFiles\3.14.4\CompilerIdCUDA\CompilerIdCUDA.vcxproj" (CudaBuildCore target(s)) -- FAILED.
+Done Building Project "D:\Solver src\stomech-solver\CMakeFiles\3.14.4\CompilerIdCUDA\CompilerIdCUDA.vcxproj" (default targets) -- FAILED.
+
+Build FAILED.
+
+"D:\Solver src\stomech-solver\CMakeFiles\3.14.4\CompilerIdCUDA\CompilerIdCUDA.vcxproj" (default target) (1) ->
+"D:\Solver src\stomech-solver\CMakeFiles\3.14.4\CompilerIdCUDA\CompilerIdCUDA.vcxproj" (CudaBuildCore target) (1:2) ->
+(CudaBuildCore target) -> 
+  C:\Program Files (x86)\Microsoft Visual Studio\2017\Professional\Common7\IDE\VC\VCTargets\BuildCustomizations\CUDA 10.1.targets(762,9): error MSB3721: The command ""C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.1\bin\nvcc.exe" -gencode=arch=compute_35,code=\"sm_35,compute_35\" --use-local-env -ccbin "C:\Program Files (x86)\Microsoft Visual Studio\2017\Professional\VC\Tools\MSVC\14.16.27023\bin\HostX64\x86" -x cu  -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.1\include" -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.1\include"  -G   --keep-dir Debug -maxrregcount=0  --machine 32 --compile -cudart static  -g   -D_MBCS -Xcompiler "/EHsc /W0 /nologo /Od /FdDebug\vc141.pdb /FS /Zi /RTC1 /MDd " -o Debug\CMakeCUDACompilerId.cu.obj "D:\Solver src\stomech-solver\CMakeFiles\3.14.4\CompilerIdCUDA\CMakeCUDACompilerId.cu"" exited with code 1. [D:\Solver src\stomech-solver\CMakeFiles\3.14.4\CompilerIdCUDA\CompilerIdCUDA.vcxproj]
+
+    0 Warning(s)
+    1 Error(s)
+
+Time Elapsed 00:00:01.50
+
+
+Compiling the CUDA compiler identification source file "CMakeCUDACompilerId.cu" failed.
+Compiler:  
+Build flags: 
+Id flags:  -v;--keep;--keep-dir;tmp
+
+The output was:
+1
+Microsoft (R) Build Engine version 15.9.21+g9802d43bc3 for .NET Framework
+Copyright (C) Microsoft Corporation. All rights reserved.
+
+Build started 17/05/2019 14:59:35.
+Project "D:\Solver src\stomech-solver\CMakeFiles\3.14.4\CompilerIdCUDA\CompilerIdCUDA.vcxproj" on node 1 (default targets).
+PrepareForBuild:
+  Creating directory "Debug\".
+  Creating directory "Debug\CompilerIdCUDA.tlog\".
+InitializeBuildStatus:
+  Creating "Debug\CompilerIdCUDA.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
+AddCudaCompileDeps:
+  C:\Program Files (x86)\Microsoft Visual Studio\2017\Professional\VC\Tools\MSVC\14.16.27023\bin\HostX64\x86\cl.exe /E /nologo /showIncludes /TP /D__CUDACC__ /D_MBCS /I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.1\include" /I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.1\bin" /I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.1\include" /I. /FIcuda_runtime.h /c "D:\Solver src\stomech-solver\CMakeFiles\3.14.4\CompilerIdCUDA\CMakeCUDACompilerId.cu" 
+Project "D:\Solver src\stomech-solver\CMakeFiles\3.14.4\CompilerIdCUDA\CompilerIdCUDA.vcxproj" (1) is building "D:\Solver src\stomech-solver\CMakeFiles\3.14.4\CompilerIdCUDA\CompilerIdCUDA.vcxproj" (1:2) on node 1 (CudaBuildCore target(s)).
+CudaBuildCore:
+  Compiling CUDA source file CMakeCUDACompilerId.cu...
+  cmd.exe /C "C:\Users\chwo02\AppData\Local\Temp\tmp2caa2c77a250478c91bbc499ee1a4f92.cmd"
+  "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.1\bin\nvcc.exe" -gencode=arch=compute_35,code=\"sm_35,compute_35\" --use-local-env -ccbin "C:\Program Files (x86)\Microsoft Visual Studio\2017\Professional\VC\Tools\MSVC\14.16.27023\bin\HostX64\x86" -x cu  -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.1\include" -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.1\include"  -G   --keep-dir Debug -maxrregcount=0  --machine 32 --compile -cudart static  -g   -D_MBCS -Xcompiler "/EHsc /W0 /nologo /Od /FdDebug\vc141.pdb /FS /Zi /RTC1 /MDd " -o Debug\CMakeCUDACompilerId.cu.obj "D:\Solver src\stomech-solver\CMakeFiles\3.14.4\CompilerIdCUDA\CMakeCUDACompilerId.cu"
+  
+  D:\Solver src\stomech-solver\CMakeFiles\3.14.4\CompilerIdCUDA>"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.1\bin\nvcc.exe" -gencode=arch=compute_35,code=\"sm_35,compute_35\" --use-local-env -ccbin "C:\Program Files (x86)\Microsoft Visual Studio\2017\Professional\VC\Tools\MSVC\14.16.27023\bin\HostX64\x86" -x cu  -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.1\include" -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.1\include"  -G   --keep-dir Debug -maxrregcount=0  --machine 32 --compile -cudart static  -g   -D_MBCS -Xcompiler "/EHsc /W0 /nologo /Od /FdDebug\vc141.pdb /FS /Zi /RTC1 /MDd " -o Debug\CMakeCUDACompilerId.cu.obj "D:\Solver src\stomech-solver\CMakeFiles\3.14.4\CompilerIdCUDA\CMakeCUDACompilerId.cu" 
+  nvcc fatal   : 32 bit compilation is only supported for Microsoft Visual Studio 2013 and earlier
+C:\Program Files (x86)\Microsoft Visual Studio\2017\Professional\Common7\IDE\VC\VCTargets\BuildCustomizations\CUDA 10.1.targets(762,9): error MSB3721: The command ""C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.1\bin\nvcc.exe" -gencode=arch=compute_35,code=\"sm_35,compute_35\" --use-local-env -ccbin "C:\Program Files (x86)\Microsoft Visual Studio\2017\Professional\VC\Tools\MSVC\14.16.27023\bin\HostX64\x86" -x cu  -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.1\include" -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.1\include"  -G   --keep-dir Debug -maxrregcount=0  --machine 32 --compile -cudart static  -g   -D_MBCS -Xcompiler "/EHsc /W0 /nologo /Od /FdDebug\vc141.pdb /FS /Zi /RTC1 /MDd " -o Debug\CMakeCUDACompilerId.cu.obj "D:\Solver src\stomech-solver\CMakeFiles\3.14.4\CompilerIdCUDA\CMakeCUDACompilerId.cu"" exited with code 1. [D:\Solver src\stomech-solver\CMakeFiles\3.14.4\CompilerIdCUDA\CompilerIdCUDA.vcxproj]
+Done Building Project "D:\Solver src\stomech-solver\CMakeFiles\3.14.4\CompilerIdCUDA\CompilerIdCUDA.vcxproj" (CudaBuildCore target(s)) -- FAILED.
+Done Building Project "D:\Solver src\stomech-solver\CMakeFiles\3.14.4\CompilerIdCUDA\CompilerIdCUDA.vcxproj" (default targets) -- FAILED.
+
+Build FAILED.
+
+"D:\Solver src\stomech-solver\CMakeFiles\3.14.4\CompilerIdCUDA\CompilerIdCUDA.vcxproj" (default target) (1) ->
+"D:\Solver src\stomech-solver\CMakeFiles\3.14.4\CompilerIdCUDA\CompilerIdCUDA.vcxproj" (CudaBuildCore target) (1:2) ->
+(CudaBuildCore target) -> 
+  C:\Program Files (x86)\Microsoft Visual Studio\2017\Professional\Common7\IDE\VC\VCTargets\BuildCustomizations\CUDA 10.1.targets(762,9): error MSB3721: The command ""C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.1\bin\nvcc.exe" -gencode=arch=compute_35,code=\"sm_35,compute_35\" --use-local-env -ccbin "C:\Program Files (x86)\Microsoft Visual Studio\2017\Professional\VC\Tools\MSVC\14.16.27023\bin\HostX64\x86" -x cu  -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.1\include" -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.1\include"  -G   --keep-dir Debug -maxrregcount=0  --machine 32 --compile -cudart static  -g   -D_MBCS -Xcompiler "/EHsc /W0 /nologo /Od /FdDebug\vc141.pdb /FS /Zi /RTC1 /MDd " -o Debug\CMakeCUDACompilerId.cu.obj "D:\Solver src\stomech-solver\CMakeFiles\3.14.4\CompilerIdCUDA\CMakeCUDACompilerId.cu"" exited with code 1. [D:\Solver src\stomech-solver\CMakeFiles\3.14.4\CompilerIdCUDA\CompilerIdCUDA.vcxproj]
+
+    0 Warning(s)
+    1 Error(s)
+
+Time Elapsed 00:00:01.38
+
+
