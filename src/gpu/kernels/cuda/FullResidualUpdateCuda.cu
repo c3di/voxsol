@@ -125,16 +125,20 @@ __global__ void cuda_updateAllVertexResidualsInBlock(
 
     uint3 globalVertexCoord = { globalResidualCoord.x * 2, globalResidualCoord.y * 2, globalResidualCoord.z * 2 };
     const int globalIndex = c_solutionDimensions.y*c_solutionDimensions.x*globalVertexCoord.z + c_solutionDimensions.x*globalVertexCoord.y + globalVertexCoord.x;
+
     if (!isInsideSolutionSpace(globalVertexCoord)) {
         return;
     }
+
     Vertex* __restrict__ vertexToUpdate = &verticesOnGPU[globalIndex];
 
-    REAL rhsVec[3] = { 0,0,0 };
-    const REAL* __restrict__ matrices = getPointerToMatricesForVertexGlobalResid(vertexToUpdate, matricesOnGPU);
+    if (vertexToUpdate->materialConfigId != EMPTY_MATERIALS_CONFIG) {
+        REAL rhsVec[3] = { 0,0,0 };
+        const REAL* __restrict__ matrices = getPointerToMatricesForVertexGlobalResid(vertexToUpdate, matricesOnGPU);
 
-    buildRHSVectorForVertex(verticesOnGPU, rhsVec, matrices, globalVertexCoord);
-    updateVertexResidual(residualsOnGPU, rhsVec, matrices, globalResidualCoord, vertexToUpdate);
+        buildRHSVectorForVertex(verticesOnGPU, rhsVec, matrices, globalVertexCoord);
+        updateVertexResidual(residualsOnGPU, rhsVec, matrices, globalResidualCoord, vertexToUpdate);
+    }
 }
 
 __host__

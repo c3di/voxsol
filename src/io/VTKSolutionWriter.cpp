@@ -38,7 +38,7 @@ void VTKSolutionWriter::fillFilteredPointMap()
 	auto vertices = solution->getVertices();
 	for (unsigned int i = 0; i < vertices->size(); i++)
 	{
-		if (vertices->at(i).materialConfigId == 0)
+		if (vertices->at(i).materialConfigId == EMPTY_MATERIALS_CONFIG)
 			continue;
 
 		pointMapOriginalToFiltered[i] = numberOfPoints;

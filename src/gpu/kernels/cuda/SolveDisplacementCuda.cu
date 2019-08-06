@@ -125,9 +125,9 @@ __device__ void updateVerticesInRegion(
 
         Vertex* __restrict__ vertexToUpdate = &localVertices[localCoord.z][localCoord.y][localCoord.x];
 
-        if (vertexToUpdate->materialConfigId != 0) {
+        if (vertexToUpdate->materialConfigId != EMPTY_MATERIALS_CONFIG) {
             // Config 0 is reserved for vertices surrounded by empty material, these don't need to be processed
-            const REAL* __restrict__ matrices = &matConfigEquations[static_cast<unsigned int>(vertexToUpdate->materialConfigId) * EQUATION_ENTRY_SIZE];
+            const REAL* __restrict__ matrices = &matConfigEquations[static_cast<int>(vertexToUpdate->materialConfigId) * EQUATION_ENTRY_SIZE];
             buildRHSVectorForVertex(rhsVec, localVertices, matrices, localCoord);
             updateVertex(vertexToUpdate, rhsVec, matrices);
         }

@@ -6,7 +6,8 @@
 #define NOMINMAX
 #endif
 
-typedef unsigned int ConfigId;
+typedef int ConfigId;
+const ConfigId EMPTY_MATERIALS_CONFIG = INT_MAX;
 
 #ifdef USE_DOUBLE_PRECISION
 

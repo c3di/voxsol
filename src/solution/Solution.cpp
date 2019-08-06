@@ -66,7 +66,7 @@ void Solution::computeMaterialConfigurationEquations() {
 void Solution::createVoidMaterialConfiguration(std::unordered_map<MaterialConfiguration, UniqueConfig>& matConfigToEquation) {
     std::vector<Material*> emptyMats = {&Material::EMPTY,&Material::EMPTY, &Material::EMPTY, &Material::EMPTY, &Material::EMPTY, &Material::EMPTY, &Material::EMPTY, &Material::EMPTY};
     MaterialConfiguration voidConfig(&emptyMats);
-    matConfigToEquation[voidConfig].equationId = 0;
+    matConfigToEquation[voidConfig].equationId = EMPTY_MATERIALS_CONFIG;
 }
 
 void Solution::gatherUniqueMaterialConfigurations() {
@@ -83,7 +83,7 @@ void Solution::gatherUniqueMaterialConfigurations() {
 }
 
 void Solution::scanSolutionForUniqueConfigurations(std::unordered_map<MaterialConfiguration, UniqueConfig>& matConfigToEquation) {
-    ConfigId equationIdCounter = 1; // 0 is reserved for the void material configuration (all empty materials)
+    ConfigId equationIdCounter = 0;
 
     for (unsigned int z = 0; z < size.z; z++) {
         for (unsigned int y = 0; y < size.y; y++) {
@@ -135,10 +135,12 @@ void Solution::sortUniqueConfigurationsByFrequency(std::unordered_map<MaterialCo
         return a->numInstancesInProblem > b->numInstancesInProblem;
     });
 
-    //The sorted position in the array becomes the configuration's ID. This way ID 1 will be the most common config, 2 the second most common etc.
-    // ID 0 is reserved for the void material configuration
+    //The sorted position in the array becomes the configuration's ID. This way ID 0 will be the most common config, 2 the second most common etc.
+    //UINT_MAX is reserved for the empty configuration and should be retained, as these are later early-exited in the GPU kernels
     for (int i = 0; i < sortedByFrequency.size(); i++) {
-        sortedByFrequency[i]->equationId = i+1;
+        if (sortedByFrequency[i]->equationId != EMPTY_MATERIALS_CONFIG) {
+            sortedByFrequency[i]->equationId = i;
+        }
     }
 }
 
@@ -162,6 +164,9 @@ void Solution::computeEquationsForUniqueMaterialConfigurations() {
 
     for (int i = 0; i < vertices.size(); i++) {
         int equationId = vertices[i].materialConfigId;
+        if (equationId == EMPTY_MATERIALS_CONFIG) {
+            continue;
+        }
         MaterialConfigurationEquations* equations = &matConfigEquations[equationId];
 
         if (!equations->isInitialized()) {
