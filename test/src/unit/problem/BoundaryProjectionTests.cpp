@@ -33,8 +33,8 @@ TEST_F(BoundaryProjectionTests, SimpleDirichletProjection) {
     importer.populateDiscreteProblem(&problem);
 
     DirichletBoundary dirichlet(DirichletBoundary::FIXED_ALL);
-    BoundaryProjector projector(&problem);
-    projector.projectDirichletBoundaryAlongNegZ(&dirichlet);
+    BoundaryProjector projector(&problem, ProblemSide::NEGATIVE_Z);
+    projector.projectDirichletBoundary(&dirichlet);
 
     ASSERT_FALSE(problem.getDirichletBoundaryAtVertex(libmmv::Vec3ui(0, 0, 6)).hasFixedAxes()) << "Expected voxel with empty material to have no dirichlet boundary";
     ASSERT_TRUE(problem.getDirichletBoundaryAtVertex(libmmv::Vec3ui(3, 3, 7)).hasFixedAxes()) << "Expected top z-layer surface vertex to have received a dirichlet boundary";
@@ -49,8 +49,8 @@ TEST_F(BoundaryProjectionTests, DirichletOntoDiamondShape) {
     importer.populateDiscreteProblem(&problem);
 
     DirichletBoundary dirichlet(DirichletBoundary::FIXED_ALL);
-    BoundaryProjector projector(&problem);
-    projector.projectDirichletBoundaryAlongNegZ(&dirichlet);
+    BoundaryProjector projector(&problem, ProblemSide::NEGATIVE_Z);
+    projector.projectDirichletBoundary(&dirichlet);
 
     // The top of the pyramid is 2x2 centered voxels. The next layer is 3x3 voxels. We're projecting in the -z direction. This means of the 8 vertices for each of the top voxels, all but the inner 
     // vertex on the bottom side should receive a boundary, since the voxels in the 3x3 layer also get a boundary and they share the bottom vertices with the 2x2 layer. 

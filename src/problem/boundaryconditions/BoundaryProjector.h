@@ -14,29 +14,25 @@ class NeumannBoundary;
 */
 class BoundaryProjector {
 public:
-    BoundaryProjector(DiscreteProblem* problem, const ProblemSide side);
+    BoundaryProjector(DiscreteProblem* problem, ProblemSide side);
     ~BoundaryProjector();
 
-    // depthFromTop determines how far rays are traced to look for a non-empty hit, 
-	// depthFromTopHit determines how thick the volume is where hits can apply the 
-	// boundary starting from the outer most hit. 
-    void setMaxProjectionDepth(unsigned int depthFromTop, unsigned int depthFromFirstHit);
+    // maxAbsoluteDepth: how far rays are traced into the volume to look for a non-empty hit
+    void setMaxProjectionDepth(unsigned int maxAbsoluteDepth);
+    void setProjectionDirection(ProblemSide side);
 
 	void projectDirichletBoundary(DirichletBoundary* condition);
 	void projectNeumannBoundary(REAL totalForce, unsigned char materialFilter = 255);
 
 protected:
+    ProblemSide projectFromSide;
     DiscreteProblem* problem;
     libmmv::Vec3ui problemSize;
-	// TODO: Better variable names (upper and lower bound?)
-    unsigned int maxDepthFromTop = 20;
-    unsigned int maxDepthFromTopmostHit = 20;
-
-	virtual libmmv::Vec3i getProjectionDirection() = 0;
-	virtual libmmv::Vec3ui nextVoxel() = 0;
-	virtual void sortByDepth(std::vector<libmmv::Vec3ui>& surfaceVoxels) = 0;
-	virtual void applyBoundaryConditionToVerticesForVoxel(libmmv::Vec3ui& voxel) = 0;
+    unsigned int maxAbsoluteDepth = 20;
 
     void projectRayToFindSurface(libmmv::Vec3ui& origin, std::vector<libmmv::Vec3ui>* surfaceCandidates, unsigned char matIdFilter);
-
+    
+    libmmv::Vec3i getProjectionStepVector();
+    NeumannBoundary getNeumannBoundary(REAL forcePerVertex);
+    std::string getProjectionDirectionAsString();
 };

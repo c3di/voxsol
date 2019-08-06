@@ -90,11 +90,7 @@ TEST_F(DiscreteProblemTests, DirichletBoundaryPlacement) {
 
     actual = problem.getDirichletBoundaryAtVertex(libmmv::Vec3ui(2, 2, 2));
     EXPECT_TRUE(actual == DirichletBoundary(DirichletBoundary::FIXED_Z));
-
-    problem.setDirichletBoundaryAtVertex(0, DirichletBoundary(DirichletBoundary::NONE));
-    actual = problem.getDirichletBoundaryAtVertex(libmmv::Vec3ui(0, 0, 0));
-    EXPECT_TRUE(actual == DirichletBoundary(DirichletBoundary::NONE));
-
+    
     actual = problem.getDirichletBoundaryAtVertex(libmmv::Vec3ui(1, 1, 1));
     EXPECT_TRUE(actual == DirichletBoundary(DirichletBoundary::NONE)) << "Expected vertex with no boundary condition to return DirichletBoundary::NONE";
 }

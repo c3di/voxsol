@@ -55,12 +55,13 @@ TEST_F(CompressionLoadTest, SimpleCompression) {
     fillProblemWithMaterial(problemInstance.getProblemLOD(0), Templates::Mat.STEEL);
 
     DirichletBoundary fixed(DirichletBoundary::FIXED_ALL);
-    BoundaryProjector bProjector(problemInstance.getProblemLOD(0));
-    bProjector.setMaxProjectionDepth(2, 1);
-    bProjector.projectDirichletBoundaryAlongPosZ(&fixed);
+    BoundaryProjector bProjector(problemInstance.getProblemLOD(0), ProblemSide::POSITIVE_Z);
+    bProjector.setMaxProjectionDepth(2);
+    bProjector.projectDirichletBoundary(&fixed);
 
-    REAL totalNeumannStressNewtons = asREAL(-1e9);
-    bProjector.projectNeumannStressAlongNegZ(totalNeumannStressNewtons);
+    bProjector.setProjectionDirection(ProblemSide::NEGATIVE_Z);
+    REAL totalNeumannForceNewtons = asREAL(-1e9);
+    bProjector.projectNeumannBoundary(totalNeumannForceNewtons);
 
     problemInstance.createAdditionalLODs(2);
 
@@ -106,12 +107,13 @@ TEST_F(CompressionLoadTest, SimpleCompressionAnisotropicVoxels) {
     fillProblemWithMaterial(problemInstance.getProblemLOD(0), Templates::Mat.STEEL);
 
     DirichletBoundary fixed(DirichletBoundary::FIXED_ALL);
-    BoundaryProjector bProjector(problemInstance.getProblemLOD(0));
-    bProjector.setMaxProjectionDepth(2, 1);
-    bProjector.projectDirichletBoundaryAlongPosZ(&fixed);
+    BoundaryProjector bProjector(problemInstance.getProblemLOD(0), ProblemSide::POSITIVE_Z);
+    bProjector.setMaxProjectionDepth(2);
+    bProjector.projectDirichletBoundary(&fixed);
 
-    REAL totalNeumannStressNewtons = asREAL(-1e9);
-    bProjector.projectNeumannStressAlongNegZ(totalNeumannStressNewtons);
+    bProjector.setProjectionDirection(ProblemSide::NEGATIVE_Z);
+    REAL totalNeumannForceNewtons = asREAL(-1e9);
+    bProjector.projectNeumannBoundary(totalNeumannForceNewtons);
 
     problemInstance.createAdditionalLODs(0);
 
@@ -155,12 +157,13 @@ TEST_F(CompressionLoadTest, SimpleCompressionNonUnitArea) {
     fillProblemWithMaterial(problemInstance.getProblemLOD(0), Templates::Mat.STEEL);
 
     DirichletBoundary fixed(DirichletBoundary::FIXED_ALL);
-    BoundaryProjector bProjector(problemInstance.getProblemLOD(0));
-    bProjector.setMaxProjectionDepth(2, 1);
-    bProjector.projectDirichletBoundaryAlongPosX(&fixed);
+    BoundaryProjector bProjector(problemInstance.getProblemLOD(0), ProblemSide::POSITIVE_Z);
+    bProjector.setMaxProjectionDepth(2);
+    bProjector.projectDirichletBoundary(&fixed);
 
+    bProjector.setProjectionDirection(ProblemSide::NEGATIVE_Z);
     REAL totalNeumannForceNewtons = asREAL(-1e9);
-    bProjector.projectNeumannStressAlongNegX(totalNeumannForceNewtons);
+    bProjector.projectNeumannBoundary(totalNeumannForceNewtons);
 
     problemInstance.createAdditionalLODs(1);
 
@@ -204,12 +207,13 @@ TEST_F(CompressionLoadTest, SimpleCompressionAnisotropicUnitArea) {
     fillProblemWithMaterial(problemInstance.getProblemLOD(0), Templates::Mat.STEEL);
 
     DirichletBoundary fixed(DirichletBoundary::FIXED_ALL);
-    BoundaryProjector bProjector(problemInstance.getProblemLOD(0));
-    bProjector.setMaxProjectionDepth(2, 1);
-    bProjector.projectDirichletBoundaryAlongPosX(&fixed);
+    BoundaryProjector bProjector(problemInstance.getProblemLOD(0), ProblemSide::POSITIVE_X);
+    bProjector.setMaxProjectionDepth(2);
+    bProjector.projectDirichletBoundary(&fixed);
 
+    bProjector.setProjectionDirection(ProblemSide::NEGATIVE_X);
     REAL totalNeumannForceNewtons = asREAL(-1e9);
-    bProjector.projectNeumannStressAlongNegX(totalNeumannForceNewtons);
+    bProjector.projectNeumannBoundary(totalNeumannForceNewtons);
 
     problemInstance.createAdditionalLODs(1);
 
