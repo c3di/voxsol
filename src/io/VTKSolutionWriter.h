@@ -18,7 +18,6 @@ public:
 
 	void virtual writeEntireStructureToFile(const std::string& filename);
 	
-	
     void filterOutNullVoxels();
     void setMechanicalValuesOutput(bool flag);
 
@@ -33,7 +32,7 @@ protected:
     Solution* solution;
     ResidualVolume* importanceVolume;
     bool enableResidualOutput = false;
-    bool enableMatConfigIdOutput = false;
+    bool enableMatConfigIdOutput = true;
     bool enableMechanicalValuesOutput = false;
     
 

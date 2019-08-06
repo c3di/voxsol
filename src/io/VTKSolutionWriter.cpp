@@ -188,7 +188,8 @@ void VTKSolutionWriter::writeCellData(std::ostream& stream) {
 		writeVonMisesStresses(stream, &solutionAnalyzer);
 		writeVonMisesStrains(stream, &solutionAnalyzer);
 		writeStressTensors(stream, &solutionAnalyzer);
-		writeStrainTensors(stream, &solutionAnalyzer);
+		//writeStressTensors(stream, &solutionAnalyzer);
+		//writeStrainTensors(stream, &solutionAnalyzer);
 	}
 }
 
@@ -357,7 +358,7 @@ void VTKSolutionWriter::writePointData(std::ostream& stream) {
 	stream << "POINT_DATA " << numberOfPoints << std::endl;
 
 	writeDisplacements(stream);
-	//writeBoundaries();
+	writeBoundaries(stream);
 
 	if (enableResidualOutput && importanceVolume != nullptr) {
 		writeResiduals(stream);
@@ -369,12 +370,22 @@ void VTKSolutionWriter::writePointData(std::ostream& stream) {
 
 void VTKSolutionWriter::writeDisplacements(std::ostream& stream) {
 	stream << "VECTORS displacement double" << std::endl;
+    bool didWarnNAN = false;
 
 	std::vector<Vertex>* vertices = solution->getVertices();
 	for (unsigned int i = 0; i < numberOfPoints; i++) {
 		unsigned int index = nullVoxelsWereFiltered ? pointMapFilteredToOriginal[i] : i;
 		Vertex v = vertices->at(index);
-		stream << v.x << " " << v.y << " " << v.z << std::endl;
+        if (isnan(v.z)) {
+            stream << "100 100 100" << std::endl;
+            if (!didWarnNAN) {
+                std::cout << "WARN: NaN displacements encountered in solution!" << std::endl;
+                didWarnNAN = true;
+            }
+        }
+        else {
+            stream << v.x << " " << v.y << " " << v.z << std::endl;
+        }
 	}
 	stream << std::endl;
 }

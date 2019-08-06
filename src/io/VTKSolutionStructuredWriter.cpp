@@ -21,6 +21,7 @@ void VTKSolutionStructuredWriter::writeEntireStructureToStream(std::ostream& str
 	writeHeader(stream);
 	writePoints(stream);
 	writeCellData(stream);
+    writePointData(stream);
 }
 
 void VTKSolutionStructuredWriter::writeHeader(std::ostream& stream)

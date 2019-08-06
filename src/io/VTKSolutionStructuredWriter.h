@@ -9,7 +9,7 @@ public:
 	VTKSolutionStructuredWriter(Solution* solution, ResidualVolume* importanceVolume = nullptr) : VTKSolutionWriter(solution, importanceVolume) {};
 	~VTKSolutionStructuredWriter();
 
-	void VTKSolutionStructuredWriter::writeEntireStructureToFile(const std::string& filename);
+	void VTKSolutionStructuredWriter::writeEntireStructureToFile(const std::string& filename) override;
 
 protected:
 	void VTKSolutionStructuredWriter::writeEntireStructureToStream(std::ostream& stream);
