@@ -4,6 +4,7 @@
 #include <experimental/filesystem>
 #include "XMLProblemDeserializer.h"
 #include "problem/boundaryconditions/BoundaryProjector.h"
+#include "io/ImageDirectoryImporter.h"
 
 XMLProblemDeserializer::XMLProblemDeserializer(const std::string& path) : 
     document(),
@@ -37,16 +38,18 @@ std::string XMLProblemDeserializer::getFullPathToInputFile(std::string& relative
     throw std::ios_base::failure(ss.str());
 }
 
-ProblemInstance XMLProblemDeserializer::getProblemInstance() {
+std::unique_ptr<ProblemInstance> XMLProblemDeserializer::getProblemInstance() {
+    std::unique_ptr<ProblemInstance> problemInstance = std::unique_ptr<ProblemInstance>(new ProblemInstance());
+
     try {
-        problemInstance = ProblemInstance();
+        
         document.LoadFile(pathToFile.c_str());
 
-        parseMaterialDictionary();
-        parseDiscreteProblem();
-        parseDirichletBoundaryProjection();
-        parseNeumannBoundaryProjection();
-        parseLevelsOfDetail();
+        parseMaterialDictionary(problemInstance);
+        parseDiscreteProblem(problemInstance);
+        parseDirichletBoundaryProjection(problemInstance);
+        parseNeumannBoundaryProjection(problemInstance);
+        parseLevelsOfDetail(problemInstance);
     }
     catch (std::exception e) {
         std::cerr << "[ERROR] XMLProblemDeserializer: " << e.what();
@@ -56,7 +59,7 @@ ProblemInstance XMLProblemDeserializer::getProblemInstance() {
     return problemInstance;
 }
 
-void XMLProblemDeserializer::parseMaterialDictionary() {
+void XMLProblemDeserializer::parseMaterialDictionary(std::unique_ptr<ProblemInstance>& problemInstance) {
     tinyxml2::XMLElement* matDictElement = document.RootElement()->FirstChildElement("MaterialDictionary");
     if (matDictElement == NULL) {
         throw std::ios_base::failure("Required element MaterialDictionary not found");
@@ -75,10 +78,10 @@ void XMLProblemDeserializer::parseMaterialDictionary() {
         dict.addMaterial(mat);
     }
 
-    problemInstance.materialDictionary = dict;
+    problemInstance->materialDictionary = dict;
 }
 
-void XMLProblemDeserializer::parseMaterialMapping(MRCImporter* importer, tinyxml2::XMLElement* inputFileElement) {
+void XMLProblemDeserializer::parseMaterialMapping(std::unique_ptr<ProblemInstance>& problemInstance, MRCImporter* importer, tinyxml2::XMLElement* inputFileElement) {
     tinyxml2::XMLElement* matMappingElement = inputFileElement->FirstChildElement("MaterialMapping");
     if (matMappingElement == NULL) {
         throw std::ios_base::failure("A MaterialMapping is required when importing a problem from an MRC stack");
@@ -95,7 +98,7 @@ void XMLProblemDeserializer::parseMaterialMapping(MRCImporter* importer, tinyxml
             throw std::ios_base::failure("Invalid color value in material mapping. Valid color values must be in range (0,255)");
         }
 
-        Material* mat = problemInstance.materialDictionary.getMaterialById(matID);
+        Material* mat = problemInstance->materialDictionary.getMaterialById(matID);
         if (mat == NULL) {
             throw std::ios_base::failure("Encountered a material ID that has no matching material in the given MaterialDictionary");
         }
@@ -105,7 +108,7 @@ void XMLProblemDeserializer::parseMaterialMapping(MRCImporter* importer, tinyxml
 
 }
 
-void XMLProblemDeserializer::parseDiscreteProblem() {
+void XMLProblemDeserializer::parseDiscreteProblem(std::unique_ptr<ProblemInstance>& problemInstance) {
     tinyxml2::XMLElement* problemElement = document.RootElement()->FirstChildElement("DiscreteProblem");
     if (problemElement == NULL) {
         throw std::ios_base::failure("Required element DiscreteProblem not found");
@@ -126,12 +129,12 @@ void XMLProblemDeserializer::parseDiscreteProblem() {
         throw std::ios_base::failure("Invalid or missing voxel size encountered while deserializing DiscreteProblem");
     }
 
-    problemInstance.initFromParameters(libmmv::Vec3ui(sizeX, sizeY, sizeZ), libmmv::Vec3<REAL>(voxelSizeX, voxelSizeY, voxelSizeZ));
+    problemInstance->initFromParameters(libmmv::Vec3ui(sizeX, sizeY, sizeZ), libmmv::Vec3<REAL>(voxelSizeX, voxelSizeY, voxelSizeZ));
 
-    parseInputFile(problemElement);
+    parseInputFile(problemInstance, problemElement);
 }
 
-void XMLProblemDeserializer::parseInputFile(tinyxml2::XMLElement* discreteProblemElement) {
+void XMLProblemDeserializer::parseInputFile(std::unique_ptr<ProblemInstance>& problemInstance, tinyxml2::XMLElement* discreteProblemElement) {
     tinyxml2::XMLElement* inputFileElement = discreteProblemElement->FirstChildElement("InputFile");
     if (inputFileElement == NULL) {
         return;
@@ -141,12 +144,18 @@ void XMLProblemDeserializer::parseInputFile(tinyxml2::XMLElement* discreteProble
     std::string filePathString(inputFilePath);
     filePathString = getFullPathToInputFile(filePathString);
 
-    MRCImporter importer(filePathString);
-    parseMaterialMapping(&importer, inputFileElement);
-    importer.populateDiscreteProblem(problemInstance.getProblemLOD(0));
+    if (filePathString.find(".mrc") != std::string::npos || filePathString.find(".MRC") != std::string::npos) {
+        MRCImporter importer(filePathString);
+        parseMaterialMapping(problemInstance, &importer, inputFileElement);
+        importer.populateDiscreteProblem(problemInstance->getProblemLOD(0));
+    }
+    else {
+
+    }
+
 }
 
-void XMLProblemDeserializer::parseDirichletBoundaryProjection() {
+void XMLProblemDeserializer::parseDirichletBoundaryProjection(std::unique_ptr<ProblemInstance>& problemInstance) {
     tinyxml2::XMLElement* boundariesElement = document.RootElement()->FirstChildElement("DirichletBoundaries");
     if (boundariesElement == NULL) {
         throw std::ios_base::failure("Required element DirichletBoundaries not found");
@@ -208,7 +217,7 @@ void XMLProblemDeserializer::parseDirichletBoundaryProjection() {
 
 }
 
-void XMLProblemDeserializer::parseNeumannBoundaryProjection() {
+void XMLProblemDeserializer::parseNeumannBoundaryProjection(std::unique_ptr<ProblemInstance>& problemInstance) {
     tinyxml2::XMLElement* boundariesElement = document.RootElement()->FirstChildElement("NeumannBoundaries");
     if (boundariesElement == NULL) {
         throw std::ios_base::failure("Required element NeumannBoundaries not found");
@@ -264,12 +273,12 @@ void XMLProblemDeserializer::parseNeumannBoundaryProjection() {
 
 }
 
-void XMLProblemDeserializer::parseLevelsOfDetail() {
+void XMLProblemDeserializer::parseLevelsOfDetail(std::unique_ptr<ProblemInstance>& problemInstance) {
     tinyxml2::XMLElement* lodGenElement = document.RootElement()->FirstChildElement("LODGenerator");
     if (lodGenElement == NULL) {
         throw std::ios_base::failure("Required element LODGenerator not found");
     }
 
     int levelsOfDetail = lodGenElement->IntAttribute("numLevelsOfDetail", 0);
-    problemInstance.createAdditionalLODs(levelsOfDetail);
+    problemInstance->createAdditionalLODs(levelsOfDetail);
 }

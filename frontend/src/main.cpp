@@ -173,17 +173,17 @@ int main(int argc, char* argv[]) {
     std::string xmlInputFile("demonstrator_bone.xml");
 
     XMLProblemDeserializer xmlDeserializer(xmlInputFile);
-    ProblemInstance problemInstance = xmlDeserializer.getProblemInstance();
+    std::unique_ptr<ProblemInstance> problemInstance = xmlDeserializer.getProblemInstance();
 
-    int numLODs = problemInstance.getNumberOfLODs();
+    int numLODs = problemInstance->getNumberOfLODs();
     for (int lod = numLODs-1; lod >= 0; lod--) {
-        solveGPU(problemInstance, lod);
+        solveGPU(*problemInstance, lod);
         if (lod > 0) {
-            problemInstance.projectCoarseSolutionToFinerSolution(lod, lod - 1);
+            problemInstance->projectCoarseSolutionToFinerSolution(lod, lod - 1);
         }
     }
 
-    std::vector<Vertex>* vertices = problemInstance.getSolutionLOD(0)->getVertices();
+    std::vector<Vertex>* vertices = problemInstance->getSolutionLOD(0)->getVertices();
     REAL maxDisp = 0;
     for (auto it = vertices->begin(); it != vertices->end(); it++) {
         if (it->z > maxDisp) {

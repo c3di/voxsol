@@ -30,16 +30,16 @@ TEST_F(XMLProblemDeserializerTests, 8x8x8_with_4x4x6_cube_xml) {
     std::string filePath = IOHelper::getAbsolutePathToFile("test/data/8x8x8_with_4x4x6_cube.xml");
     XMLProblemDeserializer xmlDeserializer(filePath);
 
-    ProblemInstance problemInstance = xmlDeserializer.getProblemInstance();
-    ASSERT_EQ(problemInstance.getNumberOfLODs(), 2) << "Expected 2 LODs total"; //includes full res also (LOD 0)
-    DiscreteProblem* problemlod0 = problemInstance.getProblemLOD(0);
+    std::unique_ptr<ProblemInstance> problemInstance = xmlDeserializer.getProblemInstance();
+    ASSERT_EQ(problemInstance->getNumberOfLODs(), 2) << "Expected 2 LODs total"; //includes full res also (LOD 0)
+    DiscreteProblem* problemlod0 = problemInstance->getProblemLOD(0);
     libmmv::Vec3ui expectedSize(8, 8, 8);
     libmmv::Vec3<REAL> expectedVoxelSize(asREAL(0.125), asREAL(0.125), asREAL(0.125));
 
     ASSERT_EQ(problemlod0->getSize(), expectedSize) << "Expected problem size to be 8x8x8 voxels";
     ASSERT_EQ(problemlod0->getVoxelSize(), expectedVoxelSize) << "Expected voxel size to be 1/8";
 
-    MaterialDictionary matDict = problemInstance.materialDictionary;
+    MaterialDictionary matDict = problemInstance->materialDictionary;
     ASSERT_TRUE(matDict.contains(0) && matDict.contains(6)) << "Expected two materials, empty (id=0) and aluminium (id=6)";
 
     Material* aluminium = matDict.getMaterialById(6);

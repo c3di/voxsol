@@ -4,7 +4,9 @@
 #include "gpu/CudaCommonFunctions.h"
 
 ResidualVolume::ResidualVolume(DiscreteProblem* problem) :
-    problem(problem)
+    problem(problem),
+    importancePyramidManaged(nullptr),
+    levelStatsManaged(nullptr)
 {
 
 }
@@ -62,7 +64,7 @@ REAL ResidualVolume::getMaxResidualOnLevelZero() const {
 REAL ResidualVolume::getAverageResidual(REAL ignoreThreshold, int* numVerticesNotConverged) const {
     LevelStats levelZeroStats = levelStatsManaged[0];
     REAL* levelStart = &importancePyramidManaged[levelZeroStats.startIndex];
-    REAL averageResidual = 0;
+    REAL totalResidual = 0;
     int numResidualsGreaterThanEps = 0;
 
     for (unsigned int z = 0; z <= levelZeroStats.sizeZ; z++)
@@ -70,7 +72,7 @@ REAL ResidualVolume::getAverageResidual(REAL ignoreThreshold, int* numVerticesNo
             for (unsigned int x = 0; x <= levelZeroStats.sizeX; x++) {
                 REAL res = getResidualOnLevel(0, x, y, z);
                 if (res > ignoreThreshold) {
-                    averageResidual += res;
+                    totalResidual += res;
                     numResidualsGreaterThanEps++;
                 }
             }
@@ -82,7 +84,7 @@ REAL ResidualVolume::getAverageResidual(REAL ignoreThreshold, int* numVerticesNo
         return ignoreThreshold;
     }
     
-    return averageResidual / numResidualsGreaterThanEps;
+    return totalResidual / numResidualsGreaterThanEps;
 }
 
 REAL ResidualVolume::getResidualOnLevel(unsigned int level, unsigned int x, unsigned int y, unsigned int z) const
