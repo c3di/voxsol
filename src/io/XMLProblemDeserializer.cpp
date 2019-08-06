@@ -152,15 +152,14 @@ void XMLProblemDeserializer::parseDirichletBoundaryProjection() {
         throw std::ios_base::failure("Required element DirichletBoundaries not found");
     }
 
-    BoundaryProjector bProjector(problemInstance.getProblemLOD(0));
+    BoundaryProjector bProjector(problemInstance->getProblemLOD(0), ProblemSide::NEGATIVE_Z);
     tinyxml2::XMLElement* projectorElement = boundariesElement->FirstChildElement("DirichletBoundaryProjector");
     if (projectorElement != NULL) {
         int maxDepth = projectorElement->IntAttribute("maximumDepth", 10);
-        int maxDepthFromFirstHit = projectorElement->IntAttribute("maximumDepthFromFirstHit", 10);
-        bProjector.setMaxProjectionDepth(maxDepth, maxDepthFromFirstHit);
+        bProjector.setMaxProjectionDepth(maxDepth);
     }
     else {
-        std::cout << "WARN: No DirichletBoundaryProjector element found, using defaults maxDepth=10 and maxDepthFromFirstHit=10 \n";
+        std::cout << "WARN: No DirichletBoundaryProjector element found, using defaults maxDepth=10 and projectionDirection=-Z \n";
     }
 
     for (tinyxml2::XMLElement* child = boundariesElement->FirstChildElement("DirichletBoundary"); child != NULL; child = child->NextSiblingElement("DirichletBoundary")) {
@@ -186,23 +185,25 @@ void XMLProblemDeserializer::parseDirichletBoundaryProjection() {
         std::string directionVal(direction);
 
         if (directionVal == "+x" || directionVal == "+X") {
-            bProjector.projectDirichletBoundaryAlongPosX(&boundary);
+            bProjector.setProjectionDirection(ProblemSide::POSITIVE_X);
         }
         else if (directionVal == "-x" || directionVal == "-X") {
-            bProjector.projectDirichletBoundaryAlongNegX(&boundary);
+            bProjector.setProjectionDirection(ProblemSide::NEGATIVE_X);
         }
         else if (directionVal == "+y" || directionVal == "+Y") {
-            bProjector.projectDirichletBoundaryAlongPosY(&boundary);
+            bProjector.setProjectionDirection(ProblemSide::POSITIVE_Y);
         }
         else if (directionVal == "-y" || directionVal == "-Y") {
-            bProjector.projectDirichletBoundaryAlongNegY(&boundary);
+            bProjector.setProjectionDirection(ProblemSide::NEGATIVE_Y);
         }
         else if (directionVal == "+z" || directionVal == "+Z") {
-            bProjector.projectDirichletBoundaryAlongPosZ(&boundary);
+            bProjector.setProjectionDirection(ProblemSide::POSITIVE_Z);
         }
         else if (directionVal == "-z" || directionVal == "-Z") {
-            bProjector.projectDirichletBoundaryAlongNegZ(&boundary);
+            bProjector.setProjectionDirection(ProblemSide::NEGATIVE_Z);
         }
+
+        bProjector.projectDirichletBoundary(&boundary);
     }
 
 }
@@ -213,17 +214,16 @@ void XMLProblemDeserializer::parseNeumannBoundaryProjection() {
         throw std::ios_base::failure("Required element NeumannBoundaries not found");
     }
 
-    BoundaryProjector bProjector(problemInstance.getProblemLOD(0));
+    BoundaryProjector bProjector(problemInstance->getProblemLOD(0), ProblemSide::NEGATIVE_Z);
     unsigned char materialFilter = 255;
     tinyxml2::XMLElement* projectorElement = boundariesElement->FirstChildElement("NeumannBoundaryProjector");
     if (projectorElement != NULL) {
         int maxDepth = projectorElement->IntAttribute("maximumDepth", 10);
-        int maxDepthFromFirstHit = projectorElement->IntAttribute("maximumDepthFromFirstHit", 10);
         materialFilter = (unsigned char) projectorElement->IntAttribute("materialFilter", 255);
-        bProjector.setMaxProjectionDepth(maxDepth, maxDepthFromFirstHit);
+        bProjector.setMaxProjectionDepth(maxDepth);
     }
     else {
-        std::cout << "[WARN]: No NeumannBoundaryProjector element found, using defaults maxDepth=10 and maxDepthFromFirstHit=10 \n";
+        std::cout << "[WARN]: No NeumannBoundaryProjector element found, using defaults maxDepth=10 and projectionDirection=-Z \n";
     }
 
     for (tinyxml2::XMLElement* child = boundariesElement->FirstChildElement("NeumannBoundary"); child != NULL; child = child->NextSiblingElement("NeumannBoundary")) {
@@ -241,23 +241,25 @@ void XMLProblemDeserializer::parseNeumannBoundaryProjection() {
         std::string directionVal(direction);
 
         if (directionVal == "+x" || directionVal == "+X") {
-           bProjector.projectNeumannStressAlongPosX(totalStressInNewtons, materialFilter);
+            bProjector.setProjectionDirection(ProblemSide::POSITIVE_X);
         }
         else if (directionVal == "-x" || directionVal == "-X") {
-            bProjector.projectNeumannStressAlongNegX(totalStressInNewtons, materialFilter);
+            bProjector.setProjectionDirection(ProblemSide::NEGATIVE_X);
         }
         else if (directionVal == "+y" || directionVal == "+Y") {
-            bProjector.projectNeumannStressAlongPosY(totalStressInNewtons, materialFilter);
+            bProjector.setProjectionDirection(ProblemSide::POSITIVE_Y);
         }
         else if (directionVal == "-y" || directionVal == "-Y") {
-            bProjector.projectNeumannStressAlongNegY(totalStressInNewtons, materialFilter);
+            bProjector.setProjectionDirection(ProblemSide::NEGATIVE_Y);
         }
         else if (directionVal == "+z" || directionVal == "+Z") {
-            bProjector.projectNeumannStressAlongPosZ(totalStressInNewtons, materialFilter);
+            bProjector.setProjectionDirection(ProblemSide::POSITIVE_Z);
         }
         else if (directionVal == "-z" || directionVal == "-Z") {
-            bProjector.projectNeumannStressAlongNegZ(totalStressInNewtons, materialFilter);
+            bProjector.setProjectionDirection(ProblemSide::NEGATIVE_Z);
         }
+
+        bProjector.projectNeumannBoundary(totalStressInNewtons, materialFilter);
     }
 
 }
