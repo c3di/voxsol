@@ -19,7 +19,7 @@ private:
     int iteration;
     std::mt19937 rng;
 
-    void shiftOffsetStochastically();
+    void shiftOffsetRandomly();
     void shiftOffsetDeterministically();
     void writeDebugOutput(int samplingIteration, int3* blockOrigins, int numBlocks);
 };

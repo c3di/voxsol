@@ -42,7 +42,9 @@ int SequentialBlockSampler::generateNextBlockOrigins(int3* blockOrigins, int max
         }
 
         if (lastOrigin.z > (int)solutionDims.z) {
-            shiftOffsetStochastically();
+            // Note: It's important to add a random offset to the block origins, otherwise the simulation can produce 
+            // self-reinforcing errors that eventually lead to divergence
+            shiftOffsetRandomly();
             lastOrigin.x = currentOffset.x;
             lastOrigin.y = currentOffset.y;
             lastOrigin.z = currentOffset.z;
@@ -84,13 +86,13 @@ void SequentialBlockSampler::shiftOffsetDeterministically() {
     
 }
 
-void SequentialBlockSampler::shiftOffsetStochastically() {
+void SequentialBlockSampler::shiftOffsetRandomly() {
     std::random_device rd;
     std::uniform_int_distribution<int> rngOffset(0, 1);
 
     currentOffset.x = rngOffset(rng) - 1;
     currentOffset.y = rngOffset(rng) - 1;
-    //currentOffset.z = rngOffset(rng) - 1;
+    currentOffset.z = rngOffset(rng) - 1;
 }
 
 void SequentialBlockSampler::writeDebugOutput(int samplingIteration, int3* blockOrigins, int numBlocks) {
