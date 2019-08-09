@@ -87,10 +87,10 @@ __device__ void updateVertexResidual(
     REAL* residualsOnGPU,
     REAL* rhsVec,
     const REAL* __restrict__ matrices,
-    const uint3& globalCenterCoord,
+    const int& residualIndex,
     Vertex* vertexToUpdate
 ) {
-    const int residualIndex = globalCenterCoord.z * c_residualDimensions.y * c_residualDimensions.x + globalCenterCoord.y * c_residualDimensions.x + globalCenterCoord.x;
+    
 
     rhsVec[0] = -rhsVec[0] + __ldg(matrices + NEUMANN_OFFSET);
     rhsVec[1] = -rhsVec[1] + __ldg(matrices + NEUMANN_OFFSET + 1);
@@ -131,13 +131,17 @@ __global__ void cuda_updateAllVertexResidualsInBlock(
     }
 
     Vertex* __restrict__ vertexToUpdate = &verticesOnGPU[globalIndex];
+    const int residualIndex = globalResidualCoord.z * c_residualDimensions.y * c_residualDimensions.x + globalResidualCoord.y * c_residualDimensions.x + globalResidualCoord.x;
 
     if (vertexToUpdate->materialConfigId != EMPTY_MATERIALS_CONFIG) {
         REAL rhsVec[3] = { 0,0,0 };
         const REAL* __restrict__ matrices = getPointerToMatricesForVertexGlobalResid(vertexToUpdate, matricesOnGPU);
 
         buildRHSVectorForVertex(verticesOnGPU, rhsVec, matrices, globalVertexCoord);
-        updateVertexResidual(residualsOnGPU, rhsVec, matrices, globalResidualCoord, vertexToUpdate);
+        updateVertexResidual(residualsOnGPU, rhsVec, matrices, residualIndex, vertexToUpdate);
+    }
+    else {
+        residualsOnGPU[residualIndex] = asREAL(0);
     }
 }
 
