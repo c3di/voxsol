@@ -164,10 +164,10 @@ void LODGenerator::extrapolateNeumannBoundariesToCoarserProblem(DiscreteProblem*
 
 void LODGenerator::distributeNeumannBoundaryToNeighbors(NeumannBoundary& condition, VertexCoordinate& fineCoord, DiscreteProblem* coarseProblem) {
     std::vector<VertexCoordinate> candidates = findCandidateVerticesForBoundaryConditionProjection(fineCoord, coarseProblem);
-    libmmv::Vec3<REAL> distributedStress = condition.stress / (REAL)candidates.size();
+    libmmv::Vec3<REAL> distributedForce = condition.force / (REAL)candidates.size();
 
     for (VertexCoordinate candidate : candidates) {
-        NeumannBoundary newCondition(distributedStress);
+        NeumannBoundary newCondition(distributedForce);
         coarseProblem->setNeumannBoundaryAtVertex(candidate, newCondition, true);
     }
 }
@@ -198,10 +198,6 @@ std::vector<VertexCoordinate> LODGenerator::findCandidateVerticesForBoundaryCond
 }
 
 bool LODGenerator::existsInCoarserLOD(libmmv::Vec3ui & fineCoord, libmmv::Vec3ui coarseSize) {
-    if (!isEvenCoord(fineCoord)) {
-        // Coarser level is always a factor of 2 smaller -> only even coordinates map to it directly
-        return false;
-    }
     if (fineCoord.x / 2 >= coarseSize.x || fineCoord.y / 2 >= coarseSize.y || fineCoord.z / 2 >= coarseSize.z) {
         // Fine coord is even but may map to a coarse coord that is outside the coarse level
         return false;
