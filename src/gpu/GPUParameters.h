@@ -10,6 +10,6 @@
 #define BLOCK_SIZE                  6           // 6    Number of threads in one block dimension (total threads per block is BLOCK_SIZE^3)
 #define THREADS_PER_BLOCK           216         // 216  Number of total threads per block
 #define MAX_CONCURRENT_BLOCKS       8           // 8    Max number of concurrent blocks per SM
-#define MAX_BLOCKS_PER_ITERATION    768         // 768  Maximum number of regions to update per iteration of the solve displacement routine
+#define MAX_BLOCKS_PER_ITERATION    2048         // 768  Maximum number of regions to update per iteration of the solve displacement routine
 
 #define NUM_LAUNCHES_BETWEEN_RESIDUAL_UPDATES 500

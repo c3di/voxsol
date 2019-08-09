@@ -34,10 +34,10 @@ namespace std {
         std::size_t operator()(const NeumannBoundary& k) const
         {
             std::hash<REAL> hasher;
-            size_t hash = hasher(k.stress.x);
-            hash_combine2(hash, hasher(k.stress.y));
+            size_t hash = hasher(k.force.x);
+            hash_combine2(hash, hasher(k.force.y));
             
-            hash_combine2(hash, hasher(k.stress.z));
+            hash_combine2(hash, hasher(k.force.z));
             return hash;
         }
     };
