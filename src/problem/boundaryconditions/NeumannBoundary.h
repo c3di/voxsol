@@ -6,16 +6,16 @@
 class NeumannBoundary {
 public:
     NeumannBoundary();
-    NeumannBoundary(libmmv::Vec3<REAL>& stress);
+    NeumannBoundary(libmmv::Vec3<REAL>& force);
     ~NeumannBoundary();
 
     void combine(NeumannBoundary& other);
 
     bool operator==(const NeumannBoundary& other) const {
-        return stress == other.stress;
+        return force == other.force;
     }
 
-    libmmv::Vec3<REAL> stress;
+    libmmv::Vec3<REAL> force;
 };
 
 namespace std {

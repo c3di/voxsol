@@ -55,7 +55,6 @@ protected:
     unsigned int numLaunchesSinceLastFullResidualUpdate = UINT_MAX-1; //Trigger a residual update at first iteration
     unsigned int numLaunchesBeforeResidualUpdate = NUM_LAUNCHES_BETWEEN_RESIDUAL_UPDATES;
     FullResidualUpdateKernel fullResidualUpdateKernel;
-    REAL maxResidualOnLevelZero = 0;
 
     void prepareInputs();
 

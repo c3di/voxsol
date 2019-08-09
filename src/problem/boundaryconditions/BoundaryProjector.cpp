@@ -58,7 +58,7 @@ void BoundaryProjector::projectNeumannBoundary(REAL totalForce, unsigned char ma
     ProblemSideIterator sideIterator(problem, projectFromSide);
     while (sideIterator.hasNext()) {
         libmmv::Vec3ui origin = sideIterator.next();
-        projectRayToFindSurface(origin, &surfaceVoxels, 255);
+        projectRayToFindSurface(origin, &surfaceVoxels, materialFilter);
     }
 
     REAL neumannForcePerVoxel = totalForce / surfaceVoxels.size();

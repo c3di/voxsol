@@ -86,13 +86,13 @@ TEST_F(LODGeneratorTests, NeumannFromFineToCoarse) {
 
     // fine coord 1,1,0 should map to coarse coords 000, 100, 010, 110 which should each get 1/4th the stress
     NeumannBoundary coarse000 = coarseProblem.getNeumannBoundaryAtVertex(VertexCoordinate(0, 0, 0));
-    ASSERT_TRUE(closeEqual(coarse000.stress, libmmv::Vec3<REAL>(asREAL(5) / asREAL(4), 0, 0)));
+    ASSERT_TRUE(closeEqual(coarse000.force, libmmv::Vec3<REAL>(asREAL(5) / asREAL(4), 0, 0)));
 
     // fine coord 2,1,0 should map to coarse coords 100, 110 which should each get 1/2 the Y stress, plus the 1/4 X stress from fine coord 1,1,0
     NeumannBoundary coarse100 = coarseProblem.getNeumannBoundaryAtVertex(VertexCoordinate(1, 0, 0));
-    ASSERT_TRUE(closeEqual(coarse100.stress, libmmv::Vec3<REAL>(asREAL(5) / asREAL(4), asREAL(2.5), 0)));
+    ASSERT_TRUE(closeEqual(coarse100.force, libmmv::Vec3<REAL>(asREAL(5) / asREAL(4), asREAL(2.5), 0)));
 
     // fine coord 4,0,0 should map to coarse coord 200 which should get the full 10 stress in XYZ plus the 1/2 Z stress from fine coord 4,1,0
     NeumannBoundary coarse200 = coarseProblem.getNeumannBoundaryAtVertex(VertexCoordinate(2, 0, 0));
-    ASSERT_TRUE(closeEqual(coarse200.stress, libmmv::Vec3<REAL>(asREAL(10), asREAL(10), asREAL(10) + asREAL(2.5))));
+    ASSERT_TRUE(closeEqual(coarse200.force, libmmv::Vec3<REAL>(asREAL(10), asREAL(10), asREAL(10) + asREAL(2.5))));
 }

@@ -406,7 +406,7 @@ void VTKSolutionWriter::writeBoundaries(std::ostream& stream) {
 	for (unsigned int i = 0; i < numberOfPoints; i++) {
 		unsigned int index = nullVoxelsWereFiltered ? pointMapFilteredToOriginal[i] : i;
 		NeumannBoundary boundary = problem->getNeumannBoundaryAtVertex(index);
-		stream << boundary.stress.x << " " << boundary.stress.y << " " << boundary.stress.z << std::endl;
+		stream << boundary.force.x << " " << boundary.force.y << " " << boundary.force.z << std::endl;
 	}
 	stream << std::endl;
 }

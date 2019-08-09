@@ -74,7 +74,7 @@ void MaterialConfigurationEquations::serialize(void* destination) const {
         matrices[i].serialize(serializationPointer);
         serializationPointer += Matrix3x3::SizeInBytes;
     }
-    memcpy(serializationPointer, &neumannBoundaryCondition.stress.dim, sizeof(REAL) * 3);
+    memcpy(serializationPointer, &neumannBoundaryCondition.force.dim, sizeof(REAL) * 3);
 
 #endif
 }

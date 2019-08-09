@@ -53,7 +53,6 @@ void SolveDisplacementKernel::launch() {
         if (numLaunchesSinceLastFullResidualUpdate >= numLaunchesBeforeResidualUpdate) {
             fullResidualUpdateKernel.launch();
             numLaunchesSinceLastFullResidualUpdate = 0;
-            maxResidualOnLevelZero = residualVolume->getMaxResidualOnLevelZero();
         }
     }
 }
@@ -215,7 +214,7 @@ void SolveDisplacementKernel::cpuSolveIteration() {
                 cpuBuildRHSVector(&rhsVec, matrices, x, y, z);
 
                 // Move to right hand side of equation and add neumann stress
-                rhsVec = -rhsVec + neumann->stress;
+                rhsVec = -rhsVec + neumann->force;
 
                 // Multiply with inverse LHS matrix to get new displacement of center vertex
                 currentVertex->x =
@@ -265,7 +264,7 @@ void SolveDisplacementKernel::debugOutputEquationsCPU() {
             }
             outFile << std::endl;
         }
-        libmmv::Vec3<REAL> neumann = matrices->getNeumannBoundaryCondition()->stress;
+        libmmv::Vec3<REAL> neumann = matrices->getNeumannBoundaryCondition()->force;
         outFile << "Neumann: " << neumann.x << " " << neumann.y << " " << neumann.z << std::endl << std::endl;
     }
 

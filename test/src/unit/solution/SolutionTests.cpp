@@ -133,12 +133,12 @@ TEST_F(SolutionTests, NeumannBoundaryAppliedToEquations) {
     unsigned short eqId = sol.getEquationIdForFragment(stressInX);
     const MaterialConfigurationEquations stressInXEqns = equations->at(eqId);
 
-    EXPECT_TRUE(stressInXEqns.getNeumannBoundaryCondition()->stress.x == 9999) << "Expected material config equation to store the right neumann boundary stress";
+    EXPECT_TRUE(stressInXEqns.getNeumannBoundaryCondition()->force.x == 9999) << "Expected material config equation to store the right neumann boundary force";
 
     ProblemFragment uniformStress = problem.extractLocalProblem(libmmv::Vec3ui(2, 0, 0));
     eqId = sol.getEquationIdForFragment(uniformStress);
     const MaterialConfigurationEquations uniformStressEqns = equations->at(eqId);
-    libmmv::Vec3<REAL> stress = uniformStressEqns.getNeumannBoundaryCondition()->stress;
+    libmmv::Vec3<REAL> force = uniformStressEqns.getNeumannBoundaryCondition()->force;
 
-    EXPECT_TRUE(stress.x == 100 && stress.y == 100 && stress.z == 100) << "Expected material config to store the right neumann boundary stress";
+    EXPECT_TRUE(force.x == 100 && force.y == 100 && force.z == 100) << "Expected material config to store the right neumann boundary force";
 }
