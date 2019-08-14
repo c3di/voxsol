@@ -67,7 +67,7 @@ unsigned int VTKSolutionWriter::getMappedIndex(unsigned int originalIndex)
 	if (!nullVoxelsWereFiltered)
 		return originalIndex;
 
-	return pointMapOriginalToFiltered[originalIndex];
+	return pointMapFilteredToOriginal[originalIndex];
 }
 
 void VTKSolutionWriter::writeEntireStructureToFile(const std::string& filename)
@@ -117,7 +117,7 @@ void VTKSolutionWriter::writeOnePoint(std::ostream& stream, unsigned int origina
 {
 	unsigned int mappedIndex = getMappedIndex(originalIndex);
 
-	if (nullVoxelsWereFiltered && solution->getVertices()->at(mappedIndex).materialConfigId == 0)
+	if (nullVoxelsWereFiltered && solution->getVertices()->at(mappedIndex).materialConfigId == EMPTY_MATERIALS_CONFIG)
 		return;
 
 	libmmv::Vec3<REAL> position = solution->getProblem()->getVertexPosition(mappedIndex);
@@ -418,7 +418,7 @@ void VTKSolutionWriter::writeResiduals(std::ostream& stream) {
 	for (unsigned int i = 0; i < numberOfPoints; i++) {
 		unsigned int index = nullVoxelsWereFiltered ? pointMapFilteredToOriginal[i] : i;
 		Vertex v = vertices->at(index);
-		if (nullVoxelsWereFiltered && v.materialConfigId == 0) {
+		if (nullVoxelsWereFiltered && v.materialConfigId == EMPTY_MATERIALS_CONFIG) {
 			continue;
 		}
 		VertexCoordinate fullresCoord = solution->mapToCoordinate(index);
@@ -436,7 +436,7 @@ void VTKSolutionWriter::writeMaterialConfigIds(std::ostream& stream) {
 	for (unsigned int i = 0; i < numberOfPoints; i++) {
 		unsigned int index = nullVoxelsWereFiltered ? pointMapFilteredToOriginal[i] : i;
 		Vertex v = vertices->at(index);
-		if (nullVoxelsWereFiltered && v.materialConfigId == 0) {
+		if (nullVoxelsWereFiltered && v.materialConfigId == EMPTY_MATERIALS_CONFIG) {
 			continue;
 		}
 		VertexCoordinate fullresCoord = solution->mapToCoordinate(index);
