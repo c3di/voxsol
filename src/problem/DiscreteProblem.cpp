@@ -54,6 +54,17 @@ void DiscreteProblem::setNeumannBoundaryAtVertex(unsigned int index, NeumannBoun
     }
 }
 
+void DiscreteProblem::setDisplacementBoundaryAtVertex(VertexCoordinate & coordinate, DisplacementBoundary & condition) {
+    unsigned int index = mapToVertexIndex(coordinate);
+    setDisplacementBoundaryAtVertex(index, condition);
+}
+
+void DiscreteProblem::setDisplacementBoundaryAtVertex(unsigned int index, DisplacementBoundary & condition) {
+    if (dirichletBoundaryConditions.count(index) == 0) {
+        displacementBoundaryConditions[index] = condition;
+    }
+}
+
 unsigned int DiscreteProblem::mapToVoxelIndex(VoxelCoordinate& coordinate) const {
     if (outOfVoxelBounds(coordinate)) {
         throw std::invalid_argument("coordinate " + coordinate.to_string() + " cannot be mapped to an index because it is outside the voxel space");
@@ -148,6 +159,11 @@ std::unordered_map<unsigned int, DirichletBoundary>* DiscreteProblem::getDirichl
     return &dirichletBoundaryConditions;
 }
 
+std::unordered_map<unsigned int, DisplacementBoundary>* DiscreteProblem::getDisplacementBoundaryMap()
+{
+    return &displacementBoundaryConditions;
+}
+
 bool DiscreteProblem::outOfVoxelBounds(VoxelCoordinate& coordinate) const {
     return coordinate.x < 0 || coordinate.x >= problemSize.x || coordinate.y < 0 || coordinate.y >= problemSize.y || coordinate.z < 0 || coordinate.z >= problemSize.z;
 }
@@ -185,6 +201,15 @@ void DiscreteProblem::considerNeumannBoundaryAtLocalProblem(ProblemFragment& fra
     unsigned int index = mapToVertexIndex(fragment.getCenterVertex());
     if (neumannBoundaryConditions.count(index) > 0) {
         fragment.setNeumannBoundary(neumannBoundaryConditions.at(index));
+    }
+}
+
+void DiscreteProblem::considerDisplacementBoundaryAtLocalProblem(ProblemFragment & fragment) const {
+    unsigned int index = mapToVertexIndex(fragment.getCenterVertex());
+    if (displacementBoundaryConditions.count(index) > 0) {
+        fragment.setDirichletBoundary(DirichletBoundary(DirichletBoundary::FIXED_ALL));
+        libmmv::Vec3<REAL> force = displacementBoundaryConditions.at(index).displacement;
+        fragment.setNeumannBoundary(NeumannBoundary(force));
     }
 }
 

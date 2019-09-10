@@ -3,6 +3,7 @@
 #include "problem/DiscreteProblem.h"
 #include "problem/boundaryconditions/DirichletBoundary.h"
 #include "problem/boundaryconditions/NeumannBoundary.h"
+#include "problem/boundaryconditions/DisplacementBoundary.h"
 #include "problem/boundaryconditions/ProblemSideIterator.h"
 #include <iostream>
 
@@ -77,6 +78,59 @@ void BoundaryProjector::projectNeumannBoundary(REAL totalForce, unsigned char ma
         }
     }
     std::cout << "Projected Neumann boundary onto " << numBoundaryVoxels << " voxels in " << getProjectionDirectionAsString() << " direction\n";
+}
+
+void BoundaryProjector::projectDisplacementBoundary(REAL percentOfDimension, unsigned char materialFilter) {
+    std::vector<libmmv::Vec3ui> surfaceVoxels;
+    ProblemSideIterator sideIterator(problem, projectFromSide);
+    while (sideIterator.hasNext()) {
+        libmmv::Vec3ui origin = sideIterator.next();
+        projectRayToFindSurface(origin, &surfaceVoxels, materialFilter);
+    }
+
+    libmmv::Vec3<REAL> displacement = getDisplacementFromPercent(percentOfDimension);
+
+    unsigned int numBoundaryVoxels = 0;
+    if (surfaceVoxels.size() > 0) {
+        for (auto it = surfaceVoxels.begin(); it != surfaceVoxels.end(); it++) {
+            DisplacementBoundary dispBoundary(displacement);
+            for (int sideIndex = 0; sideIndex < 4; sideIndex++) {
+                libmmv::Vec3ui vertexCoord(*it);
+                vertexCoord = vertexCoord + sideIterator.sideIndexToVertexCoordinateOffset(sideIndex);
+                problem->setDisplacementBoundaryAtVertex(vertexCoord, dispBoundary);
+            }
+            numBoundaryVoxels++;
+        }
+    }
+    std::cout << "Projected Neumann boundary onto " << numBoundaryVoxels << " voxels in " << getProjectionDirectionAsString() << " direction\n";
+}
+
+libmmv::Vec3<REAL> BoundaryProjector::getDisplacementFromPercent(REAL percentOfDimension) {
+    percentOfDimension /= asREAL(100);
+    libmmv::Vec3<REAL> displacement(0, 0, 0);
+
+    switch (projectFromSide) {
+    case POSITIVE_X:
+        displacement.x = asREAL(problem->getSize().x * problem->getVoxelSize().x * percentOfDimension * -1);
+        return displacement;
+    case NEGATIVE_X:
+        displacement.x = asREAL(problem->getSize().x * problem->getVoxelSize().x * percentOfDimension);
+        return displacement;
+    case POSITIVE_Y:
+        displacement.y = asREAL(problem->getSize().y * problem->getVoxelSize().y * percentOfDimension * -1);
+        return displacement;
+    case NEGATIVE_Y:
+        displacement.y = asREAL(problem->getSize().y * problem->getVoxelSize().y * percentOfDimension);
+        return displacement;
+    case POSITIVE_Z:
+        displacement.z = asREAL(problem->getSize().z * problem->getVoxelSize().z * percentOfDimension * -1);
+        return displacement;
+    case NEGATIVE_Z:
+        displacement.z = asREAL(problem->getSize().z * problem->getVoxelSize().z * percentOfDimension);
+        return displacement;
+    default:
+        throw std::runtime_error("Illegal projection direction encountered");
+    }
 }
 
 std::string BoundaryProjector::getProjectionDirectionAsString() {

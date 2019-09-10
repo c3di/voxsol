@@ -228,7 +228,7 @@ void XMLProblemDeserializer::parseDirichletBoundaryProjection(std::unique_ptr<Pr
 void XMLProblemDeserializer::parseNeumannBoundaryProjection(std::unique_ptr<ProblemInstance>& problemInstance) {
     tinyxml2::XMLElement* boundariesElement = document.RootElement()->FirstChildElement("NeumannBoundaries");
     if (boundariesElement == NULL) {
-        throw std::ios_base::failure("Required element NeumannBoundaries not found");
+        return;
     }
 
     ProblemSide projectFrom = ProblemSide::NEGATIVE_Z;
@@ -281,6 +281,62 @@ void XMLProblemDeserializer::parseNeumannBoundaryProjection(std::unique_ptr<Prob
             boundaryProj.setMaxProjectionDepth(maxProjectionDepth);
             boundaryProj.projectNeumannBoundary(totalStressInNewtons, materialFilter);
         }
+    }
+
+}
+
+void XMLProblemDeserializer::parseDisplacementBoundaryProjection(std::unique_ptr<ProblemInstance>& problemInstance) {
+    tinyxml2::XMLElement* boundariesElement = document.RootElement()->FirstChildElement("DisplacementBoundaries");
+    if (boundariesElement == NULL) {
+        return;
+    }
+
+    BoundaryProjector bProjector(problemInstance->getProblemLOD(0), ProblemSide::NEGATIVE_Z);
+    unsigned char materialFilter = 255;
+    tinyxml2::XMLElement* projectorElement = boundariesElement->FirstChildElement("DisplacementBoundaryProjector");
+    if (projectorElement != NULL) {
+        int maxDepth = projectorElement->IntAttribute("maximumDepth", 10);
+        materialFilter = (unsigned char)projectorElement->IntAttribute("materialFilter", 255);
+        bProjector.setMaxProjectionDepth(maxDepth);
+    }
+    else {
+        std::cout << "[WARN]: No DisplacementBoundaryProjector element found, using defaults maxDepth=10 and projectionDirection=-Z \n";
+    }
+
+    for (tinyxml2::XMLElement* child = boundariesElement->FirstChildElement("DisplacementBoundary"); child != NULL; child = child->NextSiblingElement("DisplacementBoundary")) {
+
+        REAL percentOfDimension = child->FloatAttribute("percentOfDimension", asREAL(0.0));
+        if (percentOfDimension == 0) {
+            throw std::ios_base::failure("invalid or missing percentOfDimension attribute in DisplacementBoundary");
+        }
+
+        const char* direction = child->Attribute("projectionDirection");
+        if (direction == NULL) {
+            throw std::ios_base::failure("invalid or missing projectionDirection attribute in DisplacementBoundary");
+        }
+
+        std::string directionVal(direction);
+
+        if (directionVal == "+x" || directionVal == "+X") {
+            bProjector.setProjectionDirection(ProblemSide::POSITIVE_X);
+        }
+        else if (directionVal == "-x" || directionVal == "-X") {
+            bProjector.setProjectionDirection(ProblemSide::NEGATIVE_X);
+        }
+        else if (directionVal == "+y" || directionVal == "+Y") {
+            bProjector.setProjectionDirection(ProblemSide::POSITIVE_Y);
+        }
+        else if (directionVal == "-y" || directionVal == "-Y") {
+            bProjector.setProjectionDirection(ProblemSide::NEGATIVE_Y);
+        }
+        else if (directionVal == "+z" || directionVal == "+Z") {
+            bProjector.setProjectionDirection(ProblemSide::POSITIVE_Z);
+        }
+        else if (directionVal == "-z" || directionVal == "-Z") {
+            bProjector.setProjectionDirection(ProblemSide::NEGATIVE_Z);
+        }
+
+        bProjector.projectDisplacementBoundary(percentOfDimension, materialFilter);
     }
 
 }

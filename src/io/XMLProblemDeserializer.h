@@ -25,6 +25,7 @@ protected:
     void parseDiscreteProblem(std::unique_ptr<ProblemInstance>& problemInstance);
     void parseDirichletBoundaryProjection(std::unique_ptr<ProblemInstance>& problemInstance);
     void parseNeumannBoundaryProjection(std::unique_ptr<ProblemInstance>& problemInstance);
+    void parseDisplacementBoundaryProjection(std::unique_ptr<ProblemInstance>& problemInstance);
     void parseLevelsOfDetail(std::unique_ptr<ProblemInstance>& problemInstance);
     void parseInputFile(std::unique_ptr<ProblemInstance>& problemInstance, tinyxml2::XMLElement* discreteProblemElement);
 };
