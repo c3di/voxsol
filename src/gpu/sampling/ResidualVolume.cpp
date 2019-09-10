@@ -61,16 +61,38 @@ REAL ResidualVolume::getMaxResidualOnLevelZero() const {
     return maxResidual;
 }
 
-REAL ResidualVolume::getAverageResidual(REAL ignoreThreshold, int* numVerticesNotConverged) const {
+REAL ResidualVolume::getAverageResidual(int* numVerticesNotConverged) const {
     LevelStats levelZeroStats = levelStatsManaged[0];
     REAL* levelStart = &importancePyramidManaged[levelZeroStats.startIndex];
-    REAL totalResidual = 0;
+    double totalResidual = 0;
     int numResidualsGreaterThanEps = 0;
 
-    for (unsigned int z = 0; z <= levelZeroStats.sizeZ; z++)
-        for (unsigned int y = 0; y <= levelZeroStats.sizeY; y++)
-            for (unsigned int x = 0; x <= levelZeroStats.sizeX; x++) {
-                REAL res = getResidualOnLevel(0, x, y, z);
+    for (unsigned int z = 0; z < levelZeroStats.sizeZ; z++)
+        for (unsigned int y = 0; y < levelZeroStats.sizeY; y++)
+            for (unsigned int x = 0; x < levelZeroStats.sizeX; x++) {
+                double res = 1.0 + getResidualOnLevel(0, x, y, z);
+                if (res > 1.0) {
+                    totalResidual += res * res;
+                    numResidualsGreaterThanEps++;
+                }
+            }
+    if (numVerticesNotConverged != NULL) {
+        *numVerticesNotConverged = numResidualsGreaterThanEps;
+    }
+
+    return asREAL( (totalResidual / (double) numResidualsGreaterThanEps) - 1.0 );
+}
+
+REAL ResidualVolume::getAverageResidualWithThreshold(REAL ignoreThreshold, int* numVerticesNotConverged) const {
+    LevelStats levelZeroStats = levelStatsManaged[0];
+    REAL* levelStart = &importancePyramidManaged[levelZeroStats.startIndex];
+    double totalResidual = 0;
+    int numResidualsGreaterThanEps = 0;
+
+    for (unsigned int z = 0; z < levelZeroStats.sizeZ; z++)
+        for (unsigned int y = 0; y < levelZeroStats.sizeY; y++)
+            for (unsigned int x = 0; x < levelZeroStats.sizeX; x++) {
+                double res = getResidualOnLevel(0, x, y, z);
                 if (res > ignoreThreshold) {
                     totalResidual += res;
                     numResidualsGreaterThanEps++;
@@ -83,8 +105,8 @@ REAL ResidualVolume::getAverageResidual(REAL ignoreThreshold, int* numVerticesNo
     if (numResidualsGreaterThanEps == 0) {
         return ignoreThreshold;
     }
-    
-    return totalResidual / numResidualsGreaterThanEps;
+
+    return asREAL((totalResidual / (double)numResidualsGreaterThanEps));
 }
 
 REAL ResidualVolume::getResidualOnLevel(unsigned int level, unsigned int x, unsigned int y, unsigned int z) const

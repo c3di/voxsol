@@ -63,10 +63,11 @@ void solveGPU(ProblemInstance& problemInstance, int lod) {
     int numIterationsDone = 0;
     int numIterationsTarget = 200;
     REAL maxResidual = 10000000;
-    REAL epsilon = asREAL(1.0e-6);
+    REAL aveResidual = 10000000;
+    REAL epsilon = asREAL(1.0e-8);
     kernel.setNumLaunchesBeforeResidualUpdate(1999);
-    int numVerticesNotConverged = 0;
-    int numVerticesInSolution = (int)problemInstance.getSolutionLOD(lod)->getVertices()->size();
+    int numVerticesNotConverged= 0;
+    int numVerticesOnResidualLevelZero = (int)problemInstance.getResidualVolumeLOD(lod)->getNumVerticesOnLevelZero();
 
     //std::stringstream fp = std::stringstream();
 
@@ -76,7 +77,7 @@ void solveGPU(ProblemInstance& problemInstance, int lod) {
 
     //for (int i = 1; i <= numIterationsTarget; i++) {
     //while (elapsed < targetMilliseconds) {
-    while (maxResidual > epsilon) {
+    while (aveResidual > epsilon) {
         auto start = std::chrono::high_resolution_clock::now();
         totalIterations++;
         
@@ -104,10 +105,10 @@ void solveGPU(ProblemInstance& problemInstance, int lod) {
         }
 
         if (totalIterations % 2000 == 0) {
-            maxResidual = problemInstance.getResidualVolumeLOD(lod)->getAverageResidual(epsilon, &numVerticesNotConverged);
+            aveResidual = problemInstance.getResidualVolumeLOD(lod)->getAverageResidualWithThreshold( epsilon, &numVerticesNotConverged);
 
-            if (numVerticesNotConverged < numVerticesInSolution * 0.0001) {
-                maxResidual = epsilon;
+            if (numVerticesNotConverged < numVerticesOnResidualLevelZero * 0.0001) {
+                aveResidual = epsilon;
             }  
         }
 

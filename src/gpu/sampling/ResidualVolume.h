@@ -24,7 +24,8 @@ public:
     void updateEntirePyramid();
     REAL getTotalResidual() const;
     REAL getMaxResidualOnLevelZero() const;
-    REAL getAverageResidual(REAL epsilon, int* numVerticesNotConverged = NULL) const;
+    REAL getAverageResidual(int* numVerticesNotConverged = NULL) const;
+    REAL getAverageResidualWithThreshold(REAL threshold, int* numVerticesNotConverged = NULL) const;
 
     REAL* getPyramidDevicePointer();
     LevelStats* getLevelStatsDevicePointer();
