@@ -99,7 +99,7 @@ std::string BoundaryProjector::getProjectionDirectionAsString() {
 }
 
 NeumannBoundary BoundaryProjector::getNeumannBoundary(REAL forcePerVertex) {
-    libmmv::Vec3<REAL> forceVector;
+    libmmv::Vec3<REAL> forceVector(0,0,0);
 
     switch (projectFromSide) {
     case POSITIVE_X:

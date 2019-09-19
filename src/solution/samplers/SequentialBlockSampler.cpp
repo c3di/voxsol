@@ -88,11 +88,11 @@ void SequentialBlockSampler::shiftOffsetDeterministically() {
 
 void SequentialBlockSampler::shiftOffsetRandomly() {
     std::random_device rd;
-    std::uniform_int_distribution<int> rngOffset(0, 1);
+    std::uniform_int_distribution<int> rngOffset(-1, 0);
 
-    currentOffset.x = rngOffset(rng) - 1;
-    currentOffset.y = rngOffset(rng) - 1;
-    currentOffset.z = rngOffset(rng) - 1;
+    currentOffset.x = rngOffset(rng);
+    currentOffset.y = rngOffset(rng);
+    currentOffset.z = rngOffset(rng);
 }
 
 void SequentialBlockSampler::writeDebugOutput(int samplingIteration, int3* blockOrigins, int numBlocks) {
