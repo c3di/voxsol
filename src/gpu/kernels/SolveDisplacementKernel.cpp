@@ -42,7 +42,6 @@ void SolveDisplacementKernel::launch() {
         cudaLaunchSolveDisplacementKernel(
             serializedVertices,
             serializedMatConfigEquations,
-            residualVolume->getPyramidDevicePointer(),
             blockOrigins,
             numBlockOriginsPerIteration,
             solutionDimensions
@@ -103,6 +102,9 @@ void SolveDisplacementKernel::allocateBlockOrigins() {
 
 void SolveDisplacementKernel::pushMatConfigEquationsManaged() {
     size_t size = solution->getMaterialConfigurationEquations()->size() * MaterialConfigurationEquations::SizeInBytes;
+    if (size == 0) {
+        std::cerr << "ERR: Material configuration equations were not generated before launching the solve displacement kernel!\n";
+    }
     cudaCheckSuccess(cudaMallocManaged(&serializedMatConfigEquations, size));
     serializeMaterialConfigurationEquations(serializedMatConfigEquations);
     fullResidualUpdateKernel.setMatConfigEquationsOnGPU(serializedMatConfigEquations);
@@ -202,7 +204,7 @@ void SolveDisplacementKernel::cpuSolveIteration() {
             for (unsigned int x = 0; x < solutionDimensions.x; x++) {
                 flatIndex++;
                 Vertex* currentVertex = &vertices->at(flatIndex);
-                if (currentVertex->materialConfigId == 0) {
+                if (currentVertex->materialConfigId == EMPTY_MATERIALS_CONFIG) {
                     continue;
                 }
                 const MaterialConfigurationEquations* matrices = &solution->getMaterialConfigurationEquations()->at(currentVertex->materialConfigId);

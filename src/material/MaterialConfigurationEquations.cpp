@@ -1,21 +1,22 @@
 #include <stdafx.h>
 #include "MaterialConfigurationEquations.h"
 
-// 27 3x3 matrices, 1 vec3 for neumann boundary condition (stress)
-const size_t MaterialConfigurationEquations::SizeInBytes = sizeof(REAL) * 9 * 27 + 3 * sizeof(REAL);
+// 28 3x3 matrices, 1 vec3 for neumann boundary condition (stress)
+const size_t MaterialConfigurationEquations::SizeInBytes = sizeof(REAL) * 9 * 28 + 3 * sizeof(REAL);
 
 MaterialConfigurationEquations::MaterialConfigurationEquations(ConfigId id) :
     id(id),
     neumannBoundaryCondition()
 {
-    matrices = std::vector<Matrix3x3>(27, Matrix3x3::identity);
+    matrices = std::vector<Matrix3x3>(28, Matrix3x3::identity);
+    dirichlet[0] = 1; dirichlet[1] = 1; dirichlet[2] = 1;
 }
 
 MaterialConfigurationEquations::MaterialConfigurationEquations() :
     id(std::numeric_limits<ConfigId>::max()),
     neumannBoundaryCondition()
 {
-    matrices = std::vector<Matrix3x3>(27, Matrix3x3::identity);
+    matrices = std::vector<Matrix3x3>(28, Matrix3x3::identity);
 }
 
 MaterialConfigurationEquations::~MaterialConfigurationEquations() {
@@ -70,7 +71,7 @@ void MaterialConfigurationEquations::serialize(void* destination) const {
 
 #else
     unsigned char* serializationPointer = (unsigned char*)destination;
-    for (unsigned char i = 0; i < 27; i++) {
+    for (unsigned char i = 0; i < 28; i++) {
         matrices[i].serialize(serializationPointer);
         serializationPointer += Matrix3x3::SizeInBytes;
     }
@@ -81,6 +82,10 @@ void MaterialConfigurationEquations::serialize(void* destination) const {
 
 void MaterialConfigurationEquations::setId(ConfigId id) {
     this->id = id;
+}
+
+void MaterialConfigurationEquations::setLHS(Matrix3x3& lhs) {
+    matrices[27] = Matrix3x3(lhs);
 }
 
 void MaterialConfigurationEquations::setLHSInverse(Matrix3x3& lhsInverse) {

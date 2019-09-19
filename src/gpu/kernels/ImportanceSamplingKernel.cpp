@@ -22,13 +22,13 @@ void ImportanceSamplingKernel::launch() {
         initCurandState();
     }
     if (canExecute()) {
-        cudaLaunchPyramidUpdateKernel(residualVolume->getPyramidDevicePointer(), residualVolume->getNumberOfLevels(), residualVolume->getLevelStatsDevicePointer());
+        cudaLaunchPyramidUpdateKernel(residualVolume->getNextBufferForResidualUpdate(), residualVolume->getNumberOfLevels(), residualVolume->getActiveLevelStatsObject());
 
         cudaLaunchImportanceSamplingKernel(
             blockOrigins, 
             numBlocksToGenerate, 
-            residualVolume->getPyramidDevicePointer(),
-            residualVolume->getLevelStatsDevicePointer(),
+            residualVolume->getActiveResidualBuffer(),
+            residualVolume->getActiveLevelStatsObject(),
             rngStateOnGPU,
             residualVolume->getNumberOfLevels() - 1
         );

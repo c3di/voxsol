@@ -4,11 +4,12 @@
 #include "gpu/CudaCommonFunctions.h"
 
 ResidualVolume::ResidualVolume(DiscreteProblem* problem) :
-    problem(problem),
-    importancePyramidManaged(nullptr),
-    levelStatsManaged(nullptr)
+    problem(problem)
 {
-
+    for (int i = 0; i < NUMBER_OF_BUFFERS; i++) {
+        residualPyramidBuffers[i] = nullptr;
+        levelStatsBuffers[i] = nullptr;
+    }
 }
 
 ResidualVolume::~ResidualVolume()
@@ -18,13 +19,15 @@ ResidualVolume::~ResidualVolume()
 
 
 void ResidualVolume::freeCudaResources() {
-    if (importancePyramidManaged != nullptr) {
-        cudaCheckSuccess(cudaFree(importancePyramidManaged));
-        importancePyramidManaged = nullptr;
-    }
-    if (levelStatsManaged != nullptr) {
-        cudaCheckSuccess(cudaFree(levelStatsManaged));
-        levelStatsManaged = nullptr;
+    for (int i = 0; i < NUMBER_OF_BUFFERS; i++) {
+        if (residualPyramidBuffers[i] != nullptr) {
+            cudaCheckSuccess(cudaFree(residualPyramidBuffers[i]));
+            residualPyramidBuffers[i] = nullptr;
+        }
+        if (levelStatsBuffers[i] != nullptr) {
+            cudaCheckSuccess(cudaFree(levelStatsBuffers[i]));
+            levelStatsBuffers[i] = nullptr;
+        }
     }
 }
 
@@ -32,21 +35,21 @@ REAL* ResidualVolume::getLocationOfVertexProjectedToLevel(unsigned int level, Ve
     unsigned int x = fullresCoord.x >> (level+1); //divide by 2 level+1 times, +1 because level zero is already fullres/2
     unsigned int y = fullresCoord.y >> (level+1);
     unsigned int z = fullresCoord.z >> (level+1);
-    LevelStats* levelStats = &levelStatsManaged[level];
-    REAL* projectedLocation = importancePyramidManaged + levelStats->startIndex;
+    LevelStats* levelStats = &getActiveLevelStatsObject()[level];
+    REAL* projectedLocation = getActiveResidualBuffer() + levelStats->startIndex;
 
     projectedLocation += z * levelStats->sizeX * levelStats->sizeY + y * levelStats->sizeX + x;
     return projectedLocation;
 }
 
-REAL ResidualVolume::getResidualOnLevel(unsigned int level, VertexCoordinate & levelCoord) const
+REAL ResidualVolume::getResidualOnLevel(unsigned int level, VertexCoordinate & levelCoord)
 {
     return getResidualOnLevel(level, levelCoord.x, levelCoord.y, levelCoord.z);
 }
 
-REAL ResidualVolume::getMaxResidualOnLevelZero() const {
-    LevelStats levelZeroStats = levelStatsManaged[0];
-    REAL* levelStart = &importancePyramidManaged[levelZeroStats.startIndex];
+REAL ResidualVolume::getMaxResidualOnLevelZero() {
+    LevelStats levelZeroStats = getActiveLevelStatsObject()[0];
+    REAL* levelStart = &getActiveResidualBuffer()[levelZeroStats.startIndex];
     REAL maxResidual = 0;
 
     for (unsigned int z = 0; z <= levelZeroStats.sizeZ; z++)
@@ -61,9 +64,45 @@ REAL ResidualVolume::getMaxResidualOnLevelZero() const {
     return maxResidual;
 }
 
-REAL ResidualVolume::getAverageResidual(int* numVerticesNotConverged) const {
-    LevelStats levelZeroStats = levelStatsManaged[0];
-    REAL* levelStart = &importancePyramidManaged[levelZeroStats.startIndex];
+REAL ResidualVolume::getResidualDeltaToLastUpdate(int* numVerticesNotConverged) {
+    LevelStats levelZeroStats = getActiveLevelStatsObject()[0];
+    int levelZeroNumEntries = levelZeroStats.sizeX * levelZeroStats.sizeY * levelZeroStats.sizeZ;
+
+    REAL* lastBuffer;
+    if (currentActiveBuffer == 0) {
+        lastBuffer = residualPyramidBuffers[NUMBER_OF_BUFFERS - 1];
+    }
+    else {
+        lastBuffer = residualPyramidBuffers[currentActiveBuffer - 1];
+    }
+
+    REAL* currentBuffer = getActiveResidualBuffer();
+    int endOfLevelZero = levelZeroStats.startIndex + levelZeroNumEntries;
+
+    REAL totalDelta = 0;
+    int totalVerticesNotZero = 0;
+
+    for (int i = levelZeroStats.startIndex; i < endOfLevelZero; i++) {
+        if (currentBuffer[i] != 0) {
+            totalDelta += abs(lastBuffer[i] - currentBuffer[i]);
+            totalVerticesNotZero++;
+        }
+    }
+
+    if (numVerticesNotConverged != nullptr) {
+        *numVerticesNotConverged = totalVerticesNotZero;
+    }
+
+    if (totalVerticesNotZero == 0) {
+        return 0;
+    }
+
+    return totalDelta / totalVerticesNotZero;
+}
+
+REAL ResidualVolume::getAverageResidual(int* numVerticesNotConverged) {
+    LevelStats levelZeroStats = getActiveLevelStatsObject()[0];
+    REAL* levelStart = &getActiveResidualBuffer()[levelZeroStats.startIndex];
     double totalResidual = 0;
     int numResidualsGreaterThanEps = 0;
 
@@ -83,9 +122,9 @@ REAL ResidualVolume::getAverageResidual(int* numVerticesNotConverged) const {
     return asREAL( (totalResidual / (double) numResidualsGreaterThanEps) - 1.0 );
 }
 
-REAL ResidualVolume::getAverageResidualWithThreshold(REAL ignoreThreshold, int* numVerticesNotConverged) const {
-    LevelStats levelZeroStats = levelStatsManaged[0];
-    REAL* levelStart = &importancePyramidManaged[levelZeroStats.startIndex];
+REAL ResidualVolume::getAverageResidualWithThreshold(REAL ignoreThreshold, int* numVerticesNotConverged) {
+    LevelStats levelZeroStats = getActiveLevelStatsObject()[0];
+    REAL* levelStart = &getActiveResidualBuffer()[levelZeroStats.startIndex];
     double totalResidual = 0;
     int numResidualsGreaterThanEps = 0;
 
@@ -109,9 +148,9 @@ REAL ResidualVolume::getAverageResidualWithThreshold(REAL ignoreThreshold, int* 
     return asREAL((totalResidual / (double)numResidualsGreaterThanEps));
 }
 
-REAL ResidualVolume::getResidualOnLevel(unsigned int level, unsigned int x, unsigned int y, unsigned int z) const
+REAL ResidualVolume::getResidualOnLevel(unsigned int level, unsigned int x, unsigned int y, unsigned int z)
 {
-    LevelStats statsForLevel = levelStatsManaged[level];
+    LevelStats statsForLevel = getActiveLevelStatsObject()[level];
 
     if (x < 0 || x >= statsForLevel.sizeX)
         return asREAL(0.0);
@@ -120,12 +159,38 @@ REAL ResidualVolume::getResidualOnLevel(unsigned int level, unsigned int x, unsi
     if (z < 0 || z >= statsForLevel.sizeZ)
         return asREAL(0.0);
 
-    REAL* levelPointer = importancePyramidManaged + statsForLevel.startIndex;
+    REAL* levelPointer = getActiveResidualBuffer() + statsForLevel.startIndex;
     levelPointer += z * statsForLevel.sizeY * statsForLevel.sizeX + y * statsForLevel.sizeX + x;
     return *levelPointer;
 }
 
-REAL ResidualVolume::getTotalResidual() const {
+REAL ResidualVolume::getResidualDeltaOnLevel(unsigned int level, unsigned int x, unsigned int y, unsigned int z)
+{
+    LevelStats statsForLevel = getActiveLevelStatsObject()[level];
+    int locationInBuffer = statsForLevel.startIndex + statsForLevel.sizeX * statsForLevel.sizeY * z + statsForLevel.sizeX * y + x;
+
+    if (x < 0 || x >= statsForLevel.sizeX)
+        return asREAL(0.0);
+    if (y < 0 || y >= statsForLevel.sizeY)
+        return asREAL(0.0);
+    if (z < 0 || z >= statsForLevel.sizeZ)
+        return asREAL(0.0);
+
+    REAL* lastBuffer;
+    if (currentActiveBuffer == 0) {
+        lastBuffer = residualPyramidBuffers[NUMBER_OF_BUFFERS - 1];
+    }
+    else {
+        lastBuffer = residualPyramidBuffers[currentActiveBuffer - 1];
+    }
+
+    REAL* currentBuffer = getActiveResidualBuffer();
+
+    return abs(lastBuffer[locationInBuffer] - currentBuffer[locationInBuffer]);
+
+}
+
+REAL ResidualVolume::getTotalResidual() {
     return getResidualOnLevel(numberOfLevels-1, 0, 0, 0);
 }
 
@@ -134,8 +199,8 @@ void ResidualVolume::updatePyramid(unsigned int level, VertexCoordinate & from, 
         return;
     }
     if (level != 0) {
-        LevelStats statsForLevel = levelStatsManaged[level];
-        REAL* levelStart = &importancePyramidManaged[statsForLevel.startIndex];
+        LevelStats statsForLevel = getActiveLevelStatsObject()[level];
+        REAL* levelStart = &getActiveResidualBuffer()[statsForLevel.startIndex];
 
         for (unsigned int z = from.z; z <= to.z; z++)
             for (unsigned int y = from.y; y <= to.y; y++)
@@ -163,23 +228,29 @@ void ResidualVolume::updateEntirePyramid() {
 
 REAL* ResidualVolume::getPointerToLevel(unsigned int level)
 {
-    REAL* p = importancePyramidManaged + levelStatsManaged[level].startIndex;
+    REAL* p = getActiveResidualBuffer() + getActiveLevelStatsObject()[level].startIndex;
     return p;
 }
 
-REAL* ResidualVolume::getPyramidDevicePointer()
+REAL* ResidualVolume::getActiveResidualBuffer()
 {
-    return importancePyramidManaged;
+    return residualPyramidBuffers[currentActiveBuffer];
 }
 
-LevelStats* ResidualVolume::getLevelStatsDevicePointer()
+REAL* ResidualVolume::getNextBufferForResidualUpdate()
 {
-    return levelStatsManaged;
+    currentActiveBuffer = (currentActiveBuffer + 1) % NUMBER_OF_BUFFERS;
+    return residualPyramidBuffers[currentActiveBuffer];
+}
+
+LevelStats* ResidualVolume::getActiveLevelStatsObject()
+{
+    return levelStatsBuffers[currentActiveBuffer];
 }
 
 LevelStats* ResidualVolume::getPointerToStatsForLevel(unsigned int level)
 {
-    LevelStats* l = levelStatsManaged + level;
+    LevelStats* l = getActiveLevelStatsObject() + level;
     return l;
 }
 
@@ -194,8 +265,11 @@ unsigned int ResidualVolume::getNumVerticesOnLevelZero() const
 
 void ResidualVolume::initializePyramidFromProblem() {
     computeDepthOfPyramid();
-    allocateManagedMemory();
-    initializeLeveLZeroResidualsFromProblem();
+
+    for (int i = 0; i < NUMBER_OF_BUFFERS; i++) {
+        allocateManagedMemory(i);
+    }
+
     updateEntirePyramid();
 }
 
@@ -207,12 +281,14 @@ void ResidualVolume::computeDepthOfPyramid()
     numberOfLevels = (int)std::ceil(log) + 1;
 }
 
-void ResidualVolume::allocateManagedMemory() {
+void ResidualVolume::allocateManagedMemory(int bufferNumber) {
     unsigned int x = problem->getSize().x + 1; // number of vertices is 1 greater than number of voxels
     unsigned int y = problem->getSize().y + 1;
     unsigned int z = problem->getSize().z + 1;
 
-    cudaCheckSuccess(cudaMallocManaged(&levelStatsManaged, numberOfLevels * sizeof(LevelStats)));
+    cudaCheckSuccess(cudaMallocManaged(&levelStatsBuffers[bufferNumber], numberOfLevels * sizeof(LevelStats)));
+
+    LevelStats* levelStats = levelStatsBuffers[bufferNumber];
 
     size_t totalSizeInBytes = 0;
     unsigned int levelIndex = 0;
@@ -220,17 +296,17 @@ void ResidualVolume::allocateManagedMemory() {
         if (i > 0) {
             // Next level starts at the end of the previous level, except level 0 which starts at 0
             levelIndex += x*y*z;
-            levelStatsManaged[i].startIndex = levelIndex;
+            levelStats[i].startIndex = levelIndex;
         }
         x = (x+1) / 2; y = (y+1) / 2; z = (z+1) / 2;
         totalSizeInBytes += x * y * z * sizeof(REAL);
-        levelStatsManaged[i].sizeX = x;
-        levelStatsManaged[i].sizeY = y;
-        levelStatsManaged[i].sizeZ = z;
+        levelStats[i].sizeX = x;
+        levelStats[i].sizeY = y;
+        levelStats[i].sizeZ = z;
     }
 
-    cudaCheckSuccess(cudaMallocManaged(&importancePyramidManaged, totalSizeInBytes));
-    memset(importancePyramidManaged, 0, totalSizeInBytes);
+    cudaCheckSuccess(cudaMallocManaged(&residualPyramidBuffers[bufferNumber], totalSizeInBytes));
+    memset(residualPyramidBuffers[bufferNumber], 0, totalSizeInBytes);
 }
 
 // Initially all residuals are 0 and the only "active" region of the simulation are the Neumann Boundary areas,

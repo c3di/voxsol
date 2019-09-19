@@ -6,7 +6,7 @@
 #include "gpu/CudaCommonFunctions.h"
 #include "gpu/GPUParameters.h"
 
-#define MATRIX_ENTRY(rhsMatricesStartPointer, matrixIndex, row, col) __ldg(rhsMatricesStartPointer + matrixIndex*9 + col*3 + row) //matrixIndex*9 + col*3 + row
+#define MATRIX_ENTRY(rhsMatrices, matrixIndex, row, col) __ldg(rhsMatrices + matrixIndex*9 + col*3 + row) //row*27*3 + col*27 + matrixIndex
 
 __constant__ uint3 c_solutionDimensions;
 __constant__ uint3 c_residualDimensions;
@@ -67,20 +67,26 @@ __device__ void buildRHSVectorForVertex(
                 const REAL nz = neighbor->z;
 
                 rhsVec[0] += MATRIX_ENTRY(matrices, localNeighborIndex, 0, 0) * nx;
-                rhsVec[0] += MATRIX_ENTRY(matrices, localNeighborIndex, 0, 1) * ny;
-                rhsVec[0] += MATRIX_ENTRY(matrices, localNeighborIndex, 0, 2) * nz;
+                rhsVec[0] += MATRIX_ENTRY(matrices, localNeighborIndex, 1, 0) * ny;
+                rhsVec[0] += MATRIX_ENTRY(matrices, localNeighborIndex, 2, 0) * nz;
 
-                rhsVec[1] += MATRIX_ENTRY(matrices, localNeighborIndex, 1, 0) * nx;
+                rhsVec[1] += MATRIX_ENTRY(matrices, localNeighborIndex, 0, 1) * nx;
                 rhsVec[1] += MATRIX_ENTRY(matrices, localNeighborIndex, 1, 1) * ny;
-                rhsVec[1] += MATRIX_ENTRY(matrices, localNeighborIndex, 1, 2) * nz;
+                rhsVec[1] += MATRIX_ENTRY(matrices, localNeighborIndex, 2, 1) * nz;
 
-                rhsVec[2] += MATRIX_ENTRY(matrices, localNeighborIndex, 2, 0) * nx;
-                rhsVec[2] += MATRIX_ENTRY(matrices, localNeighborIndex, 2, 1) * ny;
+                rhsVec[2] += MATRIX_ENTRY(matrices, localNeighborIndex, 0, 2) * nx;
+                rhsVec[2] += MATRIX_ENTRY(matrices, localNeighborIndex, 1, 2) * ny;
                 rhsVec[2] += MATRIX_ENTRY(matrices, localNeighborIndex, 2, 2) * nz;
+
+                //if (globalCenterCoord.x == 0 && globalCenterCoord.y == 0 && globalCenterCoord.z == 4) {
+                 //   printf("N(%i,%i,%i):\t %f,%f,%f  |||  %f,%f,%f  |||  %f,%f,%f\n", neighborCoord.x, neighborCoord.y, neighborCoord.z, MATRIX_ENTRY(matrices, localNeighborIndex, 0, 0), MATRIX_ENTRY(matrices, localNeighborIndex, 1, 0), MATRIX_ENTRY(matrices, localNeighborIndex, 2, 0), MATRIX_ENTRY(matrices, localNeighborIndex, 0, 1), MATRIX_ENTRY(matrices, localNeighborIndex, 1, 1), MATRIX_ENTRY(matrices, localNeighborIndex, 2, 1), MATRIX_ENTRY(matrices, localNeighborIndex, 0, 2), MATRIX_ENTRY(matrices, localNeighborIndex, 1, 2), MATRIX_ENTRY(matrices, localNeighborIndex, 2, 2));
+                //}
             }
         }
     }
-    
+    //if (globalCenterCoord.x == 0 && globalCenterCoord.y == 0 && globalCenterCoord.z == 4) {
+    //    printf("RHS: %f,%f,%f\n", rhsVec[0], rhsVec[1], rhsVec[2]);
+   // }
 }
 
 __device__ void updateVertexResidual(
@@ -88,29 +94,55 @@ __device__ void updateVertexResidual(
     REAL* rhsVec,
     const REAL* __restrict__ matrices,
     const int& residualIndex,
-    Vertex* vertexToUpdate
+    Vertex* vertexToUpdate,
+    const uint3& globalCenterCoord
 ) {
-    
-
     rhsVec[0] = -rhsVec[0] + __ldg(matrices + NEUMANN_OFFSET);
     rhsVec[1] = -rhsVec[1] + __ldg(matrices + NEUMANN_OFFSET + 1);
     rhsVec[2] = -rhsVec[2] + __ldg(matrices + NEUMANN_OFFSET + 2);
 
-    REAL dx = MATRIX_ENTRY(matrices, CENTER_VERTEX_INDEX, 0, 0) * rhsVec[0] +
-        MATRIX_ENTRY(matrices, CENTER_VERTEX_INDEX, 1, 0) * rhsVec[1] +
-        MATRIX_ENTRY(matrices, CENTER_VERTEX_INDEX, 2, 0) * rhsVec[2];
-    REAL dy = MATRIX_ENTRY(matrices, CENTER_VERTEX_INDEX, 0, 1) * rhsVec[0] +
-        MATRIX_ENTRY(matrices, CENTER_VERTEX_INDEX, 1, 1) * rhsVec[1] +
-        MATRIX_ENTRY(matrices, CENTER_VERTEX_INDEX, 2, 1) * rhsVec[2];
-    REAL dz = MATRIX_ENTRY(matrices, CENTER_VERTEX_INDEX, 0, 2) * rhsVec[0] +
-        MATRIX_ENTRY(matrices, CENTER_VERTEX_INDEX, 1, 2) * rhsVec[1] +
-        MATRIX_ENTRY(matrices, CENTER_VERTEX_INDEX, 2, 2) * rhsVec[2];
-    
-    dx = dx - vertexToUpdate->x;
-    dy = dy - vertexToUpdate->y;
-    dz = dz - vertexToUpdate->z;
+    REAL dx = MATRIX_ENTRY(matrices, 27, 0, 0) * vertexToUpdate->x +
+        MATRIX_ENTRY(matrices, 27, 1, 0) * vertexToUpdate->y +
+        MATRIX_ENTRY(matrices, 27, 2, 0) * vertexToUpdate->z;
+    REAL dy = MATRIX_ENTRY(matrices, 27, 0, 1) * vertexToUpdate->x +
+        MATRIX_ENTRY(matrices, 27, 1, 1) * vertexToUpdate->y +
+        MATRIX_ENTRY(matrices, 27, 2, 1) * vertexToUpdate->z;
+    REAL dz = MATRIX_ENTRY(matrices, 27, 0, 2) * vertexToUpdate->x +
+        MATRIX_ENTRY(matrices, 27, 1, 2) * vertexToUpdate->y +
+        MATRIX_ENTRY(matrices, 27, 2, 2) * vertexToUpdate->z;
 
-    residualsOnGPU[residualIndex] = sqrt(dx*dx + dy*dy + dz*dz);
+   // if (globalCenterCoord.x == 0 && globalCenterCoord.y == 0 && globalCenterCoord.z == 4) {
+   //     printf("Disp: %f,%f,%f\n", dx, dy, dz);
+   // }
+
+    dx = dx - rhsVec[0];
+    dy = dy - rhsVec[1];
+    dz = dz - rhsVec[2];
+
+    //if (globalCenterCoord.x == 0 && globalCenterCoord.y == 0 && globalCenterCoord.z == 4) {
+    //    printf("DIFF: %f,%f,%f\n", dx, dy, dz);
+   // }
+
+    REAL normKU = sqrt(dx*dx + dy * dy + dz * dz);
+    REAL normF = sqrt(rhsVec[0]*rhsVec[0] + rhsVec[1]*rhsVec[1] + rhsVec[2] * rhsVec[2]);
+
+    //if (globalCenterCoord.x == 0 && globalCenterCoord.y == 0 && globalCenterCoord.z == 4) {
+    //    printf("normKU: %f   normF: %f   err:%f\n\n", normKU, normF, normKU/normF);
+   // }
+
+    //if (residualsOnGPU[residualIndex] > asREAL(1)) {
+    //    printf("\nCOORD: %i,%i,%i   normKU: %f   normF: %f   err:%f    oldResid:%f    newResid:%f\n", globalCenterCoord.x, globalCenterCoord.y, globalCenterCoord.z, normKU, normF, normKU / normF, residualsOnGPU[residualIndex], abs(residualsOnGPU[residualIndex] - normKU / normF));
+    //}
+
+    //if (normKU / normF > asREAL(1)) {
+    //    printf("\nCOORD: %i,%i,%i   normKU: %f   normF: %f   err:%f\n", globalCenterCoord.x, globalCenterCoord.y, globalCenterCoord.z, normKU, normF, normKU / normF);
+    //}
+
+    if (normF > 0)
+        residualsOnGPU[residualIndex] = normKU / normF;
+    else
+        residualsOnGPU[residualIndex] = 0;
+   
 }
 
 __global__ void cuda_updateAllVertexResidualsInBlock(
@@ -138,7 +170,7 @@ __global__ void cuda_updateAllVertexResidualsInBlock(
         const REAL* __restrict__ matrices = getPointerToMatricesForVertexGlobalResid(vertexToUpdate, matricesOnGPU);
 
         buildRHSVectorForVertex(verticesOnGPU, rhsVec, matrices, globalVertexCoord);
-        updateVertexResidual(residualsOnGPU, rhsVec, matrices, residualIndex, vertexToUpdate);
+        updateVertexResidual(residualsOnGPU, rhsVec, matrices, residualIndex, vertexToUpdate, globalVertexCoord);
     }
     else {
         residualsOnGPU[residualIndex] = asREAL(0);

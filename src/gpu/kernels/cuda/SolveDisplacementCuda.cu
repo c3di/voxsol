@@ -184,8 +184,7 @@ __device__
 void copyVerticesFromSharedToGlobalAndUpdateResiduals(
     Vertex localVertices[BLOCK_SIZE + 2][BLOCK_SIZE + 2][BLOCK_SIZE + 2],
     Vertex* verticesOnGPU,
-    const int3 blockOriginCoord,
-    REAL* residualVolume
+    const int3 blockOriginCoord
 ) {
     const int numThreadsNeeded = BLOCK_SIZE * BLOCK_SIZE * BLOCK_SIZE; //each thread will copy over one vertex in the inner block (without the border)
     int threadIdx_1D = threadIdx.y * 32 + threadIdx.x;
@@ -242,8 +241,7 @@ __global__
 void cuda_SolveDisplacement(
     Vertex* verticesOnGPU,
     const REAL* matConfigEquations,
-    const int3* blockOrigins,
-    REAL* residualVolume
+    const int3* blockOrigins
 ) {
     const int3 blockOriginCoord = blockOrigins[blockIdx.x];
     if (blockOriginCoord.x >= c_solutionDimensions.x || blockOriginCoord.y >= c_solutionDimensions.y || blockOriginCoord.z >= c_solutionDimensions.z) {
@@ -262,7 +260,7 @@ void cuda_SolveDisplacement(
     
     __syncthreads();
 
-    copyVerticesFromSharedToGlobalAndUpdateResiduals(localVertices, verticesOnGPU, blockOriginCoord, residualVolume); 
+    copyVerticesFromSharedToGlobalAndUpdateResiduals(localVertices, verticesOnGPU, blockOriginCoord); 
 
 }
 
@@ -322,7 +320,6 @@ __host__
 extern "C" void cudaLaunchSolveDisplacementKernel(
     Vertex* vertices,
     const REAL* matConfigEquations,
-    REAL* residualVolume,
     int3* blockOrigins,
     const int numBlockOrigins,
     const uint3 solutionDims
@@ -360,7 +357,7 @@ extern "C" void cudaLaunchSolveDisplacementKernel(
         int3* currentBlockOrigins = &blockOrigins[i * maxConcurrentBlocks];
         int numBlocks = std::min(numBlockOrigins - i*maxConcurrentBlocks, maxConcurrentBlocks);
 
-        cuda_SolveDisplacement <<< numBlocks, threadsPerBlock >>>(vertices, matConfigEquations, currentBlockOrigins, residualVolume);
+        cuda_SolveDisplacement <<< numBlocks, threadsPerBlock >>>(vertices, matConfigEquations, currentBlockOrigins);
         cudaDeviceSynchronize();
         cudaCheckExecution();
     }

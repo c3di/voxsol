@@ -160,7 +160,7 @@ TEST_F(ImportanceVolumeTests, LargeProblemTotalResidualTestGPU) {
     testVolume.initializePyramidFromProblem();
     ASSERT_EQ(7, testVolume.getNumberOfLevels()) << "Expected a pyramid with 7 levels for solution size 101x11x11";
 
-    cudaLaunchPyramidUpdateKernel(testVolume.getPyramidDevicePointer(), 7, testVolume.getLevelStatsDevicePointer());
+    cudaLaunchPyramidUpdateKernel(testVolume.getActiveResidualBuffer(), 7, testVolume.getActiveLevelStatsObject());
 
     ASSERT_EQ(1212, testVolume.getResidualOnLevel(6, VertexCoordinate(0, 0, 0))) << "Total residual should be the sum of all the neumann residuals (1212 * 1.0)";
 }

@@ -25,12 +25,13 @@ private:
     const QuadraticBaseIntegrals quadIntegrals;
 
     void computeLHS(const ProblemFragment& fragment, MaterialConfigurationEquations* equations, const BaseIntegrals* integrals) const;
-    void applyDirichletBoundaryConditionsToLHS(Matrix3x3& lhsInverse, const ProblemFragment& fragment) const;
-
+   
     void computeRHS(const ProblemFragment& fragment, MaterialConfigurationEquations* equations, const BaseIntegrals* integrals) const;
     void computeRHSForNode(unsigned int nodeIndex, const ProblemFragment& fragment, MaterialConfigurationEquations* equations, const BaseIntegrals* integrals) const;
 
     void setNeumannBoundary(const ProblemFragment& fragment, MaterialConfigurationEquations* equations) const;
+    void applyDirichletBoundaryConditionsToInvertedMatrix(Matrix3x3& mat, const ProblemFragment& fragment) const;
+    void applyDirichletBoundaryConditionsToMatrix(Matrix3x3& mat, const ProblemFragment& fragment) const;
 
     void checkMatrixConditionNumber(const Matrix3x3& mat) const;
 };

@@ -10,6 +10,8 @@ struct LevelStats {
     unsigned int sizeZ = 0;
 };
 
+#define NUMBER_OF_BUFFERS 2
+
 class ResidualVolume {
 public:
     ResidualVolume(DiscreteProblem* problem);
@@ -18,27 +20,34 @@ public:
     void initializePyramidFromProblem();
 
     REAL* getLocationOfVertexProjectedToLevel(unsigned int level, VertexCoordinate& fullresCoord);
-    REAL getResidualOnLevel(unsigned int level, VertexCoordinate& levelCoord) const;
-    REAL getResidualOnLevel(unsigned int level ,unsigned int x, unsigned int y, unsigned int z) const;
+    REAL getResidualOnLevel(unsigned int level, VertexCoordinate& levelCoord);
+    REAL getResidualOnLevel(unsigned int level ,unsigned int x, unsigned int y, unsigned int z) ;
     void updatePyramid(unsigned int level, VertexCoordinate& from, VertexCoordinate& to);
     void updateEntirePyramid();
-    REAL getTotalResidual() const;
-    REAL getMaxResidualOnLevelZero() const;
-    REAL getAverageResidual(int* numVerticesNotConverged = NULL) const;
-    REAL getAverageResidualWithThreshold(REAL threshold, int* numVerticesNotConverged = NULL) const;
+    REAL getTotalResidual() ;
+    REAL getMaxResidualOnLevelZero() ;
+    REAL getAverageResidual(int* numVerticesNotConverged = NULL) ;
+    REAL getAverageResidualWithThreshold(REAL threshold, int* numVerticesNotConverged = NULL) ;
 
-    REAL* getPyramidDevicePointer();
-    LevelStats* getLevelStatsDevicePointer();
+    REAL getResidualDeltaToLastUpdate(int* numVerticesNotConverged);
+    REAL getResidualDeltaOnLevel(unsigned int level, unsigned int x, unsigned int y, unsigned int z);
+
+    REAL* getActiveResidualBuffer() ;
+    REAL* getNextBufferForResidualUpdate();
+
+    LevelStats* getActiveLevelStatsObject();
+
     REAL* getPointerToLevel(unsigned int level);
     LevelStats* getPointerToStatsForLevel(unsigned int level);
+    
     unsigned int getNumberOfLevels() const;
-
     unsigned int getNumVerticesOnLevelZero() const;
 
 protected:
     // This is GPU managed memory, any read/write operations on it may trigger a costly CPU<->GPU memory sync!
-    REAL* importancePyramidManaged = nullptr;
-    LevelStats* levelStatsManaged = nullptr;
+    REAL* residualPyramidBuffers[NUMBER_OF_BUFFERS];
+    LevelStats* levelStatsBuffers[NUMBER_OF_BUFFERS];
+    int currentActiveBuffer = 0;
 
     DiscreteProblem* problem;
 
@@ -47,7 +56,7 @@ protected:
 
     void freeCudaResources();
 
-    void allocateManagedMemory();
+    void allocateManagedMemory(int bufferNumber);
     void initializeLeveLZeroResidualsFromProblem();
     void computeDepthOfPyramid();
 };

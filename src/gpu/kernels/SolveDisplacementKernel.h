@@ -13,7 +13,7 @@
 #include "FullResidualUpdateKernel.h"
 #include "gpu/GPUParameters.h"
 
-extern "C" void cudaLaunchSolveDisplacementKernel(Vertex* verticesOnGPU, REAL* matConfigEquationsOnGPU, REAL* residualVolume, int3* blockOrigins, const int numBlocks, const uint3 solutionDims);
+extern "C" void cudaLaunchSolveDisplacementKernel(Vertex* verticesOnGPU, REAL* matConfigEquationsOnGPU, int3* blockOrigins, const int numBlocks, const uint3 solutionDims);
 
 class SolveDisplacementKernel : public CudaKernel {
 

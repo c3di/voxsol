@@ -77,18 +77,22 @@ void MaterialConfigurationEquationsFactory::computeLHS(const ProblemFragment& fr
         fullIntegralLHS[14] + fullIntegralLHS[18] + fullIntegralLHS[20]
     );
     Matrix3x3 lhs(col1, col2, col3);
+    Matrix3x3 lhsInverse;
     checkMatrixConditionNumber(lhs);
+    
+
     if (lhs.at(0, 0) == 0 && lhs.at(1, 1) == 0 && lhs.at(2, 2) == 0) {
         // zero-matrix corresponding to problem fragment containing only null materials, don't try to invert this
     }
     else {
-        lhs = Matrix3x3(lhs.inverse());
+        lhsInverse = Matrix3x3(lhs.inverse());
     }
     
+    applyDirichletBoundaryConditionsToMatrix(lhsInverse, fragment);
+    applyDirichletBoundaryConditionsToMatrix(lhs, fragment);
 
-    applyDirichletBoundaryConditionsToLHS(lhs, fragment);
-
-    equations->setLHSInverse(lhs);
+    equations->setLHS(lhs);
+    equations->setLHSInverse(lhsInverse);
 
     delete[] fullIntegralLHS;
 }
@@ -97,20 +101,6 @@ void MaterialConfigurationEquationsFactory::checkMatrixConditionNumber(const Mat
     REAL condition = mat.conditionNumber();
     if (condition > CONDITION_NUMBER_MAX) {
         std::cerr << "Warning: Inverting an ill-conditioned matrix: Cond = " << condition << " for matrix " << mat << std::endl;
-    }
-}
-
-void MaterialConfigurationEquationsFactory::applyDirichletBoundaryConditionsToLHS(Matrix3x3& lhsInverse, const ProblemFragment& fragment) const {
-    DirichletBoundary condition = fragment.getDirichletBoundaryCondition();
-    if (condition.isXFixed()) {
-        // Set first row to 0's, when multiplied with RHS vector later the x component will always be 0 => fixed. Same strategy for y and z below
-        lhsInverse = Matrix3x3(0, 0, 0, lhsInverse.at(1, 0), lhsInverse.at(1, 1), lhsInverse.at(1, 2), lhsInverse.at(2, 0), lhsInverse.at(2, 1), lhsInverse.at(2, 2));
-    }
-    if (condition.isYFixed()) {
-        lhsInverse = Matrix3x3(lhsInverse.at(0, 0), lhsInverse.at(0, 1), lhsInverse.at(0, 2), 0, 0, 0, lhsInverse.at(2, 0), lhsInverse.at(2, 1), lhsInverse.at(2, 2));
-    }
-    if (condition.isZFixed()) {
-        lhsInverse = Matrix3x3(lhsInverse.at(0, 0), lhsInverse.at(0, 1), lhsInverse.at(0, 2), lhsInverse.at(1, 0), lhsInverse.at(1, 1), lhsInverse.at(1, 2), 0, 0, 0);
     }
 }
 
@@ -157,9 +147,24 @@ void MaterialConfigurationEquationsFactory::computeRHSForNode(unsigned int nodeI
     }
     
     Matrix3x3 rhs(matrixRHS[0], matrixRHS[1], matrixRHS[2], matrixRHS[3], matrixRHS[4], matrixRHS[5], matrixRHS[6], matrixRHS[7], matrixRHS[8]);
+    applyDirichletBoundaryConditionsToMatrix(rhs, fragment);
     equations->setRHS(nodeIndex, rhs);
 
     delete[] matrixRHS;
+}
+
+void MaterialConfigurationEquationsFactory::applyDirichletBoundaryConditionsToMatrix(Matrix3x3& mat, const ProblemFragment& fragment) const {
+    DirichletBoundary condition = fragment.getDirichletBoundaryCondition();
+    if (condition.isXFixed()) {
+        // Set first row to 0's, when multiplied with RHS vector later the x component will always be 0 => fixed. Same strategy for y and z below
+        mat = Matrix3x3(0, 0, 0, mat.at(1, 0), mat.at(1, 1), mat.at(1, 2), mat.at(2, 0), mat.at(2, 1), mat.at(2, 2));
+    }
+    if (condition.isYFixed()) {
+        mat = Matrix3x3(mat.at(0, 0), mat.at(0, 1), mat.at(0, 2), 0, 0, 0, mat.at(2, 0), mat.at(2, 1), mat.at(2, 2));
+    }
+    if (condition.isZFixed()) {
+        mat = Matrix3x3(mat.at(0, 0), mat.at(0, 1), mat.at(0, 2), mat.at(1, 0), mat.at(1, 1), mat.at(1, 2), 0, 0, 0);
+    }
 }
 
 void MaterialConfigurationEquationsFactory::setNeumannBoundary(const ProblemFragment& fragment, MaterialConfigurationEquations* equations) const {

@@ -71,9 +71,13 @@ void VTKImportanceVisualizer::writeResiduals(unsigned int level, libmmv::Vec3ui&
     outFile << "LOOKUP_TABLE default" << endl;
 
     REAL* residual = importanceVolume->getPointerToLevel(level);
-    for (unsigned int i = 0; i < numVertices; i++, residual++) {
-        outFile << *residual << endl;
-    }
+
+    for (int z = 0; z < (int)levelSize.z; z++) 
+        for (int y = 0; y < (int)levelSize.y; y++)
+            for (int x = 0; x < (int)levelSize.x; x++) {
+                REAL residualDelta = importanceVolume->getResidualDeltaOnLevel(level, x, y, z);
+                outFile << residualDelta << endl;
+            }
 
     outFile << endl;
 }
