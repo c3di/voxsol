@@ -289,6 +289,7 @@ void ResidualVolume::allocateManagedMemory(int bufferNumber) {
     cudaCheckSuccess(cudaMallocManaged(&levelStatsBuffers[bufferNumber], numberOfLevels * sizeof(LevelStats)));
 
     LevelStats* levelStats = levelStatsBuffers[bufferNumber];
+    levelStats[0].startIndex = 0;
 
     size_t totalSizeInBytes = 0;
     unsigned int levelIndex = 0;
