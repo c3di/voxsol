@@ -175,6 +175,7 @@ int main(int argc, char* argv[]) {
 
     XMLProblemDeserializer xmlDeserializer(xmlInputFile);
     std::unique_ptr<ProblemInstance> problemInstance = xmlDeserializer.getProblemInstance();
+    problemInstance->computeMaterialConfigurationEquations();
 
     int numLODs = problemInstance->getNumberOfLODs();
     for (int lod = numLODs-1; lod >= 0; lod--) {
@@ -194,7 +195,7 @@ int main(int argc, char* argv[]) {
 
     std::cout << std::endl << "Maximum displacement in Z: " << maxDisp << std::endl;
 
-    VTKSolutionWriter vtkWriter(problemInstance.getSolutionLOD(0));
+    VTKSolutionWriter vtkWriter(problemInstance->getSolutionLOD(0));
     vtkWriter.filterOutNullVoxels();
     vtkWriter.setMechanicalValuesOutput(true);
 

@@ -7,7 +7,7 @@
 #include "gpu/kernels/SolveDisplacementKernel.h"
 #include "gpu/sampling/ImportanceBlockSampler.h"
 #include "solution/samplers/SequentialBlockSampler.h"
-#include "io/VTKSamplingVisualizer.h"
+#include "io/VTKImportanceVisualizer.h"
 #include "io/VTKSolutionWriter.h"
 
 ProblemInstance::ProblemInstance() 
@@ -136,26 +136,28 @@ ResidualVolume* ProblemInstance::getResidualVolumeLOD(int lod)
 void ProblemInstance::createAdditionalLODs(int numberOfAdditionalLODs) {
     //TODO: config equations need to be computed for each LOD before a lower LOD can be generated from it, this is kind of restricting because 
     // it's (potentially) a very long operation that may need to be done on GPU
-    computeMaterialConfigurationEquationsForLOD(0);
     getResidualVolumeLOD(0)->initializePyramidFromProblem();
 
     LODGenerator lodGen;
     libmmv::Vec3ui size = problemLODs[0]->getSize();
     libmmv::Vec3<REAL> voxelSize = problemLODs[0]->getVoxelSize();
+
+    libmmv::Vec3<REAL> baseDimensions(size.x * voxelSize.x, size.y * voxelSize.y, size.z * voxelSize.z);
+
     for (int fine = 0; fine < numberOfAdditionalLODs; fine++) {
         int coarse = fine + 1;
 
         if (size.x > 1) {
             size.x /= 2;
-            voxelSize.x *= 2;
+            voxelSize.x = baseDimensions.x / size.x;
         }
         if (size.y > 1) {
             size.y /= 2;
-            voxelSize.y *= 2;
+            voxelSize.y = baseDimensions.y / size.y;
         }
         if (size.z > 1) {
             size.z /= 2;
-            voxelSize.z *= 2;
+            voxelSize.z = baseDimensions.z / size.z;
         }
 
         DiscreteProblem* coarseProblem = new DiscreteProblem(size, voxelSize, problemLODs[fine]->getMaterialDictionary());
@@ -169,8 +171,12 @@ void ProblemInstance::createAdditionalLODs(int numberOfAdditionalLODs) {
         ResidualVolume* coarseResiduals = new ResidualVolume(getProblemLOD(coarse));
         coarseResiduals->initializePyramidFromProblem();
         residualLODs.push_back(coarseResiduals);
+    }
+}
 
-        computeMaterialConfigurationEquationsForLOD(coarse);
+void ProblemInstance::computeMaterialConfigurationEquations() {
+    for (int i = 0; i < problemLODs.size(); i++) {
+        computeMaterialConfigurationEquationsForLOD(i);
     }
 }
 
@@ -200,23 +206,23 @@ int ProblemInstance::solveLOD(int lod, REAL convergenceCriteria, BlockSampler* s
 
     ResidualVolume* residualVolume = getResidualVolumeLOD(lod);
     SolveDisplacementKernel kernel(getSolutionLOD(lod), sampler, residualVolume);
-
-    VTKSamplingVisualizer samplingVis(getSolutionLOD(lod));
-    VTKSolutionWriter vis(getSolutionLOD(lod));
+    kernel.setNumLaunchesBeforeResidualUpdate(199);
     
     REAL currentResidualError = 1000000;
+    int numVerticesNotConverged = 0;
     int totalSteps = 0;
     do {
         kernel.launch();
 
         totalSteps++;
 
-        currentResidualError = residualVolume->getAverageResidual(convergenceCriteria);
-
-        if (totalSteps % 500 == 0 || currentResidualError <= convergenceCriteria) {
-            std::cout << "\rCurrent residual: " << currentResidualError << "                                         ";
+        if (totalSteps % 200 == 0 || currentResidualError <= convergenceCriteria) {
+            currentResidualError = residualVolume->getResidualDeltaToLastUpdate(&numVerticesNotConverged);
+            std::cout << "\rCurrent residual: " << currentResidualError << " Steps: "<< totalSteps << "                                         ";
         }
-
+        if (isnan(currentResidualError)) {
+            break;
+        }
     } while (currentResidualError > convergenceCriteria);
 
     // Copy solved vertices from GPU into the solution
@@ -231,3 +237,16 @@ void ProblemInstance::computeMaterialConfigurationEquationsForLOD(int lod) {
     solutionLODs[lod]->computeMaterialConfigurationEquations();
 }
 
+void ProblemInstance::debug_outputTotalForceForEachLOD() {
+    int numLODs = (int)problemLODs.size() - 1;
+    for (int i = numLODs; i >= 0; i--) {
+        REAL totalForce = 0;
+
+        std::unordered_map<unsigned int, NeumannBoundary>* boundaries = problemLODs.at(i)->getNeumannBoundaryMap();
+        for (auto itt = boundaries->begin(); itt != boundaries->end(); itt++) {
+            totalForce += asREAL(itt->second.force.getLength());
+        }
+
+        std::cout << "Total Neumann force for LOD " << i << " is " << totalForce << std::endl;
+    }
+}

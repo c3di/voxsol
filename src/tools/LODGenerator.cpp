@@ -11,8 +11,6 @@ LODGenerator::~LODGenerator()
 
 void LODGenerator::populateCoarserLevelProblem(DiscreteProblem* coarseProblem, DiscreteProblem* fineProblem) {
     extrapolateMaterialsToCoarserProblem(fineProblem, coarseProblem);
-    extrapolateNeumannBoundariesToCoarserProblem(fineProblem, coarseProblem);
-    extrapolateDirichletBoundariesToCoarserProblem(fineProblem, coarseProblem);
 }
 
 void LODGenerator::populateCoarserLevelSolution(Solution* coarseSolution, DiscreteProblem* coarseProblem, Solution* fineSolution) {
@@ -55,18 +53,10 @@ void LODGenerator::projectDisplacementsToFinerLevel(Solution* coarseSolution, So
             continue;
         }
 
-        if (existsInCoarserLOD(fineCoord, coarseSolution->getSize())) {
-            Vertex* coarseVertex = &coarseVertices->at(coarseIndex);
-            fineVertex->x = coarseVertex->x;
-            fineVertex->y = coarseVertex->y;
-            fineVertex->z = coarseVertex->z;
-        }
-        else {
-            libmmv::Vec3<REAL> interpolatedDisp = interpolateDisplacement(fineCoord, coarseSolution);
-            fineVertex->x = interpolatedDisp.x;
-            fineVertex->y = interpolatedDisp.y;
-            fineVertex->z = interpolatedDisp.z;
-        }
+        libmmv::Vec3<REAL> interpolatedDisp = interpolateDisplacement(fineCoord, coarseSolution);
+        fineVertex->x = interpolatedDisp.x;
+        fineVertex->y = interpolatedDisp.y;
+        fineVertex->z = interpolatedDisp.z;
     }
 }
 
@@ -81,7 +71,7 @@ unsigned char LODGenerator::mergeMaterialsByMode(DiscreteProblem* higherLevel, V
     materials[6] = higherLevel->getMaterial(fineCoord + VoxelCoordinate(1, 1, 0));
     materials[7] = higherLevel->getMaterial(fineCoord + VoxelCoordinate(1, 1, 1));
 
-    // Sort in descending order, material 0 is 'empty'
+    // Sort in descending order, material 0 is always the empty material
     std::sort(materials.begin(), materials.end(), [](Material* & a, Material* & b) -> bool
     {
         return a->id > b->id;
@@ -124,77 +114,6 @@ void LODGenerator::extrapolateMaterialsToCoarserProblem(DiscreteProblem* finePro
             }
         }
     }
-}
-
-void LODGenerator::extrapolateDirichletBoundariesToCoarserProblem(DiscreteProblem* fineProblem, DiscreteProblem* coarseProblem) {
-    libmmv::Vec3ui coarseVertexSize = coarseProblem->getSize() + libmmv::Vec3ui(1, 1, 1);
-    std::unordered_map<unsigned int, DirichletBoundary>* fineDirichletBoundaries = fineProblem->getDirichletBoundaryMap();
-    for (auto it = fineDirichletBoundaries->begin(); it != fineDirichletBoundaries->end(); it++) {
-        unsigned int fineIndex = it->first;
-        DirichletBoundary fineBoundary = it->second;
-        VertexCoordinate fineCoord = fineProblem->mapToVertexCoordinate(fineIndex);
-        DirichletBoundary coarseBoundary(fineBoundary);
-        
-        if (existsInCoarserLOD(fineCoord, coarseVertexSize)) {
-            coarseProblem->setDirichletBoundaryAtVertex(fineCoord / 2, coarseBoundary);
-        }
-        else {
-            distributeDirichletBoundaryToNeighbors(coarseBoundary, fineCoord, coarseProblem);
-        }
-    }
-}
-
-void LODGenerator::extrapolateNeumannBoundariesToCoarserProblem(DiscreteProblem* fineProblem, DiscreteProblem* coarseProblem) {
-    libmmv::Vec3ui coarseVertexSize = coarseProblem->getSize() + libmmv::Vec3ui(1, 1, 1);
-    std::unordered_map<unsigned int, NeumannBoundary>* fineNeumannBoundaries = fineProblem->getNeumannBoundaryMap();
-    for (auto it = fineNeumannBoundaries->begin(); it != fineNeumannBoundaries->end(); it++) {
-        unsigned int fineIndex = it->first;
-        NeumannBoundary fineBoundary = it->second;
-        VertexCoordinate fineCoord = fineProblem->mapToVertexCoordinate(fineIndex);
-        NeumannBoundary coarseBoundary(fineBoundary);
-        
-        if (existsInCoarserLOD(fineCoord, coarseVertexSize)) {
-            coarseProblem->setNeumannBoundaryAtVertex(fineCoord / 2, coarseBoundary, true);
-        }
-        else {
-            distributeNeumannBoundaryToNeighbors(coarseBoundary, fineCoord, coarseProblem);
-        }
-    }
-}
-
-void LODGenerator::distributeNeumannBoundaryToNeighbors(NeumannBoundary& condition, VertexCoordinate& fineCoord, DiscreteProblem* coarseProblem) {
-    std::vector<VertexCoordinate> candidates = findCandidateVerticesForBoundaryConditionProjection(fineCoord, coarseProblem);
-    libmmv::Vec3<REAL> distributedForce = condition.force / (REAL)candidates.size();
-
-    for (VertexCoordinate candidate : candidates) {
-        NeumannBoundary newCondition(distributedForce);
-        coarseProblem->setNeumannBoundaryAtVertex(candidate, newCondition, true);
-    }
-}
-
-void LODGenerator::distributeDirichletBoundaryToNeighbors(DirichletBoundary& condition, VertexCoordinate& fineCoord, DiscreteProblem* coarseProblem) {
-    std::vector<VertexCoordinate> candidates = findCandidateVerticesForBoundaryConditionProjection(fineCoord, coarseProblem);
-
-    for (VertexCoordinate candidate : candidates) {
-        DirichletBoundary newCondition(condition);
-        coarseProblem->setDirichletBoundaryAtVertex(candidate, newCondition);
-    }
-}
-
-std::vector<VertexCoordinate> LODGenerator::findCandidateVerticesForBoundaryConditionProjection(VertexCoordinate& fineCoord, DiscreteProblem* coarseProblem) {
-    std::vector<VertexCoordinate> candidates;
-    libmmv::Vec3ui coarseVertexSize = coarseProblem->getSize() + libmmv::Vec3ui(1, 1, 1);
-    for (int z = -1; z <= 1; z++) {
-        for (int y = -1; y <= 1; y++) {
-            for (int x = -1; x <= 1; x++) {
-                VertexCoordinate offset(fineCoord.x + x, fineCoord.y + y, fineCoord.z + z);
-                if (existsInCoarserLOD(offset, coarseVertexSize)) {
-                    candidates.push_back(offset / 2);
-                }
-            }
-        }
-    }
-    return candidates;
 }
 
 bool LODGenerator::existsInCoarserLOD(libmmv::Vec3ui & fineCoord, libmmv::Vec3ui coarseSize) {

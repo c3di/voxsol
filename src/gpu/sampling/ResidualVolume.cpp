@@ -205,6 +205,9 @@ void ResidualVolume::updatePyramid(unsigned int level, VertexCoordinate & from, 
         for (unsigned int z = from.z; z <= to.z; z++)
             for (unsigned int y = from.y; y <= to.y; y++)
                 for (unsigned int x = from.x; x <= to.x; x++) {
+                    if (x >= statsForLevel.sizeX || y >= statsForLevel.sizeY || z >= statsForLevel.sizeZ) {
+                        continue;
+                    }
                     REAL* currentEntry = levelStart + z * statsForLevel.sizeX * statsForLevel.sizeY + y * statsForLevel.sizeX + x;
                     *currentEntry = asREAL(0.0);
                     *currentEntry += getResidualOnLevel(level - 1, 2 * x,     2 * y,     2 * z);

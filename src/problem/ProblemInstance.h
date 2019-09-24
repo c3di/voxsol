@@ -20,6 +20,7 @@ public:
     void initFromMaterialProbeMRC(std::string& path);
     void initFromParameters(libmmv::Vec3ui& discretization, libmmv::Vec3<REAL>& voxelSize);
     void createAdditionalLODs(int numberOfAdditionalLODs);
+    void computeMaterialConfigurationEquations();
     void createLODTree(int smallestPermissableDimension);
     void projectCoarseSolutionToFinerSolution(int coarseLod, int fineLod);
 
@@ -31,6 +32,8 @@ public:
     ResidualVolume* getResidualVolumeLOD(int lod);
 
     void computeMaterialConfigurationEquationsForLOD(int lod);
+
+    void debug_outputTotalForceForEachLOD();
 
 protected:
     MaterialFactory materialFactory;
