@@ -38,13 +38,21 @@ void VTKSolutionWriter::fillFilteredPointMap()
 	auto vertices = solution->getVertices();
 	for (unsigned int i = 0; i < vertices->size(); i++)
 	{
-		if (vertices->at(i).materialConfigId == EMPTY_MATERIALS_CONFIG)
-			continue;
+        if (vertices->at(i).materialConfigId == EMPTY_MATERIALS_CONFIG && !isDisplacementBoundary(i)) {
+            continue;
+        }
 
 		pointMapOriginalToFiltered[i] = numberOfPoints;
 		pointMapFilteredToOriginal[numberOfPoints] = i;
 		numberOfPoints++;
 	}
+}
+
+// Vertices with an initial displacement have the same configuration ID as void vertices, but we don't want to filter them out so 
+// we need to check for this
+bool VTKSolutionWriter::isDisplacementBoundary(unsigned int vertexIndex) {
+    DiscreteProblem* problem = solution->getProblem();
+    return problem->getDisplacementBoundaryAtVertex(vertexIndex).isNonZero();
 }
 
 void VTKSolutionWriter::fillFilteredCellMap()
@@ -85,14 +93,24 @@ void VTKSolutionWriter::writeEntireStructureToFile(const std::string& filename)
 	stream.close();
 }
 
+bool VTKSolutionWriter::vertexWasFilteredOut(unsigned int vertexIndex) {
+    return nullVoxelsWereFiltered && solution->getVertices()->at(vertexIndex).materialConfigId == EMPTY_MATERIALS_CONFIG && !isDisplacementBoundary(vertexIndex);
+}
+
 void VTKSolutionWriter::writeEntireStructureToStream(std::ostream& stream)
 {
+    std::cout << "Writing solution to VTK...header...";
 	writeHeader(stream);
+    std::cout << "points...";
 	writePoints(stream);
+    std::cout << "cells...";
 	writeCells(stream);
+    std::cout << "cell data...";
 	writeCellTypes(stream);
 	writeCellData(stream);
+    std::cout << "point data...";
 	writePointData(stream);
+    std::cout << "Done.\n";
 }
 
 void VTKSolutionWriter::writeHeader(std::ostream& stream)
@@ -117,7 +135,7 @@ void VTKSolutionWriter::writeOnePoint(std::ostream& stream, unsigned int origina
 {
 	unsigned int mappedIndex = getMappedIndex(originalIndex);
 
-	if (nullVoxelsWereFiltered && solution->getVertices()->at(mappedIndex).materialConfigId == EMPTY_MATERIALS_CONFIG)
+	if (vertexWasFilteredOut(mappedIndex))
 		return;
 
 	libmmv::Vec3<REAL> position = solution->getProblem()->getVertexPosition(mappedIndex);
@@ -162,7 +180,7 @@ void VTKSolutionWriter::writeVertexToCell(std::ostream& stream, unsigned int xi,
 	int flatIndexOfCorner = solution->getProblem()->mapToVertexIndex(corner);
 	if (nullVoxelsWereFiltered) {
 		if (pointMapOriginalToFiltered.count(flatIndexOfCorner) <= 0) {
-			throw std::exception("Could not find mapping for vertex");
+			throw std::exception("ERROR: A vertex was not correctly mapped during null voxel filtering");
 		}
 		flatIndexOfCorner = pointMapOriginalToFiltered[flatIndexOfCorner];
 	}
@@ -183,11 +201,9 @@ void VTKSolutionWriter::writeCellData(std::ostream& stream) {
 	writeMaterials(stream);
 
 	if (enableMechanicalValuesOutput) {
-		std::cout << "Writing Mechanical values..." << std::endl;
 		SolutionAnalyzer solutionAnalyzer(solution->getProblem(), solution);
 		writeVonMisesStresses(stream, &solutionAnalyzer);
 		writeVonMisesStrains(stream, &solutionAnalyzer);
-		writeStressTensors(stream, &solutionAnalyzer);
 		//writeStressTensors(stream, &solutionAnalyzer);
 		//writeStrainTensors(stream, &solutionAnalyzer);
 	}
@@ -394,7 +410,7 @@ void VTKSolutionWriter::writeBoundaries(std::ostream& stream) {
 	DiscreteProblem* problem = solution->getProblem();
 	std::vector<Vertex>* vertices = solution->getVertices();
 
-	stream << "VECTORS dirichlet_border float" << std::endl;
+	stream << "VECTORS boundary_dirichlet float" << std::endl;
 	for (unsigned int i = 0; i < numberOfPoints; i++) {
 		unsigned int index = nullVoxelsWereFiltered ? pointMapFilteredToOriginal[i] : i;
 		DirichletBoundary boundary = problem->getDirichletBoundaryAtVertex(index);
@@ -402,13 +418,21 @@ void VTKSolutionWriter::writeBoundaries(std::ostream& stream) {
 	}
 	stream << std::endl;
 
-	stream << "VECTORS neumann_border float" << std::endl;
+	stream << "VECTORS boundary_neumann float" << std::endl;
 	for (unsigned int i = 0; i < numberOfPoints; i++) {
 		unsigned int index = nullVoxelsWereFiltered ? pointMapFilteredToOriginal[i] : i;
 		NeumannBoundary boundary = problem->getNeumannBoundaryAtVertex(index);
 		stream << boundary.force.x << " " << boundary.force.y << " " << boundary.force.z << std::endl;
 	}
 	stream << std::endl;
+
+    stream << "VECTORS boundary_displacement float" << std::endl;
+    for (unsigned int i = 0; i < numberOfPoints; i++) {
+        unsigned int index = nullVoxelsWereFiltered ? pointMapFilteredToOriginal[i] : i;
+        DisplacementBoundary boundary = problem->getDisplacementBoundaryAtVertex(index);
+        stream << boundary.displacement.x << " " << boundary.displacement.y << " " << boundary.displacement.z << std::endl;
+    }
+    stream << std::endl;
 }
 
 void VTKSolutionWriter::writeResiduals(std::ostream& stream) {
@@ -418,7 +442,7 @@ void VTKSolutionWriter::writeResiduals(std::ostream& stream) {
 	for (unsigned int i = 0; i < numberOfPoints; i++) {
 		unsigned int index = nullVoxelsWereFiltered ? pointMapFilteredToOriginal[i] : i;
 		Vertex v = vertices->at(index);
-		if (nullVoxelsWereFiltered && v.materialConfigId == EMPTY_MATERIALS_CONFIG) {
+		if (vertexWasFilteredOut(index)) {
 			continue;
 		}
 		VertexCoordinate fullresCoord = solution->mapToCoordinate(index);
@@ -436,7 +460,7 @@ void VTKSolutionWriter::writeMaterialConfigIds(std::ostream& stream) {
 	for (unsigned int i = 0; i < numberOfPoints; i++) {
 		unsigned int index = nullVoxelsWereFiltered ? pointMapFilteredToOriginal[i] : i;
 		Vertex v = vertices->at(index);
-		if (nullVoxelsWereFiltered && v.materialConfigId == EMPTY_MATERIALS_CONFIG) {
+		if (vertexWasFilteredOut(index)) {
 			continue;
 		}
 		VertexCoordinate fullresCoord = solution->mapToCoordinate(index);

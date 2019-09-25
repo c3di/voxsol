@@ -42,6 +42,8 @@ protected:
     std::unordered_map<unsigned int, unsigned int> pointMapFilteredToOriginal;
     std::unordered_map<unsigned int, unsigned int> cellMapOriginalToFiltered;
 	std::unordered_map<unsigned int, unsigned int> cellMapFilteredToOriginal;
+    bool isDisplacementBoundary(unsigned int vertexIndex);
+    bool vertexWasFilteredOut(unsigned int vertexIndex);
 
 	void virtual writeEntireStructureToStream(std::ostream& stream);
     void virtual writeHeader(std::ostream& stream);

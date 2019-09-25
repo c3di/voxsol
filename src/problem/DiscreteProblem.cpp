@@ -60,7 +60,7 @@ void DiscreteProblem::setDisplacementBoundaryAtVertex(VertexCoordinate & coordin
 }
 
 void DiscreteProblem::setDisplacementBoundaryAtVertex(unsigned int index, DisplacementBoundary & condition) {
-    if (dirichletBoundaryConditions.count(index) == 0) {
+    if (displacementBoundaryConditions.count(index) == 0) {
         displacementBoundaryConditions[index] = condition;
     }
 }
@@ -132,6 +132,20 @@ DirichletBoundary DiscreteProblem::getDirichletBoundaryAtVertex(unsigned int ind
     }
     else {
         return DirichletBoundary(DirichletBoundary::NONE);
+    }
+}
+
+DisplacementBoundary DiscreteProblem::getDisplacementBoundaryAtVertex(VertexCoordinate& coordinate) {
+    unsigned int index = mapToVertexIndex(coordinate);
+    return getDisplacementBoundaryAtVertex(index);
+}
+
+DisplacementBoundary DiscreteProblem::getDisplacementBoundaryAtVertex(unsigned int index) {
+    if (displacementBoundaryConditions.count(index) > 0) {
+        return displacementBoundaryConditions[index];
+    }
+    else {
+        return DisplacementBoundary(libmmv::Vec3<REAL>(0,0,0));
     }
 }
 
@@ -207,9 +221,7 @@ void DiscreteProblem::considerNeumannBoundaryAtLocalProblem(ProblemFragment& fra
 void DiscreteProblem::considerDisplacementBoundaryAtLocalProblem(ProblemFragment & fragment) const {
     unsigned int index = mapToVertexIndex(fragment.getCenterVertex());
     if (displacementBoundaryConditions.count(index) > 0) {
-        fragment.setDirichletBoundary(DirichletBoundary(DirichletBoundary::FIXED_ALL));
-        libmmv::Vec3<REAL> force = displacementBoundaryConditions.at(index).displacement;
-        fragment.setNeumannBoundary(NeumannBoundary(force));
+        fragment.setDisplacementBoundary(displacementBoundaryConditions.at(index));
     }
 }
 
@@ -224,3 +236,4 @@ libmmv::Vec3<REAL> DiscreteProblem::getVertexPosition(VertexCoordinate& coordina
     REAL z = static_cast<REAL>(coordinates.z) * voxelSize.z;
     return libmmv::Vec3<REAL>(x, y, z);
 }
+

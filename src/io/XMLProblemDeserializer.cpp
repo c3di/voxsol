@@ -51,6 +51,7 @@ std::unique_ptr<ProblemInstance> XMLProblemDeserializer::getProblemInstance() {
 
         parseDirichletBoundaryProjection(problemInstance);
         parseNeumannBoundaryProjection(problemInstance);
+        parseDisplacementBoundaryProjection(problemInstance);
         
     }
     catch (std::exception e) {
@@ -291,13 +292,12 @@ void XMLProblemDeserializer::parseDisplacementBoundaryProjection(std::unique_ptr
         return;
     }
 
-    BoundaryProjector bProjector(problemInstance->getProblemLOD(0), ProblemSide::NEGATIVE_Z);
+    int maxProjectionDepth = 10;
     unsigned char materialFilter = 255;
     tinyxml2::XMLElement* projectorElement = boundariesElement->FirstChildElement("DisplacementBoundaryProjector");
     if (projectorElement != NULL) {
-        int maxDepth = projectorElement->IntAttribute("maximumDepth", 10);
+        maxProjectionDepth = projectorElement->IntAttribute("maximumDepth", 10);
         materialFilter = (unsigned char)projectorElement->IntAttribute("materialFilter", 255);
-        bProjector.setMaxProjectionDepth(maxDepth);
     }
     else {
         std::cout << "[WARN]: No DisplacementBoundaryProjector element found, using defaults maxDepth=10 and projectionDirection=-Z \n";
@@ -310,6 +310,8 @@ void XMLProblemDeserializer::parseDisplacementBoundaryProjection(std::unique_ptr
             throw std::ios_base::failure("invalid or missing percentOfDimension attribute in DisplacementBoundary");
         }
 
+        ProblemSide projectFrom = ProblemSide::NEGATIVE_Z;
+
         const char* direction = child->Attribute("projectionDirection");
         if (direction == NULL) {
             throw std::ios_base::failure("invalid or missing projectionDirection attribute in DisplacementBoundary");
@@ -318,25 +320,31 @@ void XMLProblemDeserializer::parseDisplacementBoundaryProjection(std::unique_ptr
         std::string directionVal(direction);
 
         if (directionVal == "+x" || directionVal == "+X") {
-            bProjector.setProjectionDirection(ProblemSide::POSITIVE_X);
+            projectFrom = ProblemSide::POSITIVE_X;
         }
         else if (directionVal == "-x" || directionVal == "-X") {
-            bProjector.setProjectionDirection(ProblemSide::NEGATIVE_X);
+            projectFrom = ProblemSide::NEGATIVE_X;
         }
         else if (directionVal == "+y" || directionVal == "+Y") {
-            bProjector.setProjectionDirection(ProblemSide::POSITIVE_Y);
+            projectFrom = ProblemSide::POSITIVE_Y;
         }
         else if (directionVal == "-y" || directionVal == "-Y") {
-            bProjector.setProjectionDirection(ProblemSide::NEGATIVE_Y);
+            projectFrom = ProblemSide::NEGATIVE_Y;
         }
         else if (directionVal == "+z" || directionVal == "+Z") {
-            bProjector.setProjectionDirection(ProblemSide::POSITIVE_Z);
+            projectFrom = ProblemSide::POSITIVE_Z;
         }
         else if (directionVal == "-z" || directionVal == "-Z") {
-            bProjector.setProjectionDirection(ProblemSide::NEGATIVE_Z);
+            projectFrom = ProblemSide::NEGATIVE_Z;
         }
 
-        bProjector.projectDisplacementBoundary(percentOfDimension, materialFilter);
+        DisplacementBoundary initialDisplacement = getDisplacementBoundaryFromPercent(problemInstance, percentOfDimension, projectFrom);
+
+        for (int i = 0; i < problemInstance->getNumberOfLODs(); i++) {
+            BoundaryProjector boundaryProj(problemInstance->getProblemLOD(i), projectFrom);
+            boundaryProj.setMaxProjectionDepth(maxProjectionDepth);
+            boundaryProj.projectDisplacementBoundary(&initialDisplacement, materialFilter);
+        }
     }
 
 }
@@ -349,4 +357,35 @@ void XMLProblemDeserializer::parseLevelsOfDetail(std::unique_ptr<ProblemInstance
 
     int levelsOfDetail = lodGenElement->IntAttribute("numLevelsOfDetail", 0);
     problemInstance->createAdditionalLODs(levelsOfDetail);
+}
+
+DisplacementBoundary XMLProblemDeserializer::getDisplacementBoundaryFromPercent(std::unique_ptr<ProblemInstance>& problemInstance, REAL percentOfDimension, ProblemSide& projectFrom) {
+    percentOfDimension /= asREAL(100);
+    libmmv::Vec3<REAL> displacement(0, 0, 0);
+    DiscreteProblem* problem = problemInstance->getProblemLOD(0);
+
+    switch (projectFrom) {
+    case POSITIVE_X:
+        displacement.x = asREAL(problem->getSize().x * problem->getVoxelSize().x * percentOfDimension);
+        break;
+    case NEGATIVE_X:
+        displacement.x = asREAL(problem->getSize().x * problem->getVoxelSize().x * percentOfDimension);
+        break;
+    case POSITIVE_Y:
+        displacement.y = asREAL(problem->getSize().y * problem->getVoxelSize().y * percentOfDimension);
+        break;
+    case NEGATIVE_Y:
+        displacement.y = asREAL(problem->getSize().y * problem->getVoxelSize().y * percentOfDimension);
+        break;
+    case POSITIVE_Z:
+        displacement.z = asREAL(problem->getSize().z * problem->getVoxelSize().z * percentOfDimension);
+        break;
+    case NEGATIVE_Z:
+        displacement.z = asREAL(problem->getSize().z * problem->getVoxelSize().z * percentOfDimension);
+        break;
+    default:
+        throw std::runtime_error("Illegal projection direction encountered");
+    }
+
+    return DisplacementBoundary(displacement);
 }

@@ -23,7 +23,7 @@ public:
 
 	void projectDirichletBoundary(DirichletBoundary* condition);
 	void projectNeumannBoundary(REAL totalForce, unsigned char materialFilter = 255);
-    void projectDisplacementBoundary(REAL percentOfDimension, unsigned char materialFilter = 255);
+    void projectDisplacementBoundary(DisplacementBoundary* condition, unsigned char materialFilter = 255);
 
 protected:
     ProblemSide projectFromSide;

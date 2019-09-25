@@ -80,7 +80,7 @@ void BoundaryProjector::projectNeumannBoundary(REAL totalForce, unsigned char ma
     std::cout << "Projected Neumann boundary onto " << numBoundaryVoxels << " voxels in " << getProjectionDirectionAsString() << " direction\n";
 }
 
-void BoundaryProjector::projectDisplacementBoundary(REAL percentOfDimension, unsigned char materialFilter) {
+void BoundaryProjector::projectDisplacementBoundary(DisplacementBoundary* condition, unsigned char materialFilter) {
     std::vector<libmmv::Vec3ui> surfaceVoxels;
     ProblemSideIterator sideIterator(problem, projectFromSide);
     while (sideIterator.hasNext()) {
@@ -88,7 +88,7 @@ void BoundaryProjector::projectDisplacementBoundary(REAL percentOfDimension, uns
         projectRayToFindSurface(origin, &surfaceVoxels, materialFilter);
     }
 
-    libmmv::Vec3<REAL> displacement = getDisplacementFromPercent(percentOfDimension);
+    libmmv::Vec3<REAL> displacement = condition->displacement;
 
     unsigned int numBoundaryVoxels = 0;
     if (surfaceVoxels.size() > 0) {
@@ -102,7 +102,7 @@ void BoundaryProjector::projectDisplacementBoundary(REAL percentOfDimension, uns
             numBoundaryVoxels++;
         }
     }
-    std::cout << "Projected Neumann boundary onto " << numBoundaryVoxels << " voxels in " << getProjectionDirectionAsString() << " direction\n";
+    std::cout << "Projected Displacement boundary onto " << numBoundaryVoxels << " voxels in " << getProjectionDirectionAsString() << " direction\n";
 }
 
 libmmv::Vec3<REAL> BoundaryProjector::getDisplacementFromPercent(REAL percentOfDimension) {

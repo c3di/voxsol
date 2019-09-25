@@ -10,6 +10,8 @@ public:
     DisplacementBoundary(libmmv::Vec3<REAL> disp);
     ~DisplacementBoundary();
 
+    bool isNonZero() const;
+
     bool operator==(const DisplacementBoundary& other) const {
         return displacement == other.displacement;
     }

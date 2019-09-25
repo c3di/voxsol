@@ -38,6 +38,8 @@ public:
     DirichletBoundary getDirichletBoundaryAtVertex(unsigned int index);
     NeumannBoundary getNeumannBoundaryAtVertex(VertexCoordinate& coordinate);
     NeumannBoundary getNeumannBoundaryAtVertex(unsigned int index);
+    DisplacementBoundary getDisplacementBoundaryAtVertex(VertexCoordinate& coordinate);
+    DisplacementBoundary getDisplacementBoundaryAtVertex(unsigned int index);
     std::unordered_map<unsigned int, NeumannBoundary>* getNeumannBoundaryMap();
     std::unordered_map<unsigned int, DirichletBoundary>* getDirichletBoundaryMap();
     std::unordered_map<unsigned int, DisplacementBoundary>* getDisplacementBoundaryMap();

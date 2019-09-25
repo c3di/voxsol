@@ -43,12 +43,21 @@ void ProblemFragment::setNeumannBoundary(const NeumannBoundary& stress) {
     neumannBoundaryCondition = NeumannBoundary(stress);
 }
 
+void ProblemFragment::setDisplacementBoundary(const DisplacementBoundary& condition) {
+    displacementBoundaryCondition = DisplacementBoundary(condition);
+}
+
 const DirichletBoundary& ProblemFragment::getDirichletBoundaryCondition() const {
     return dirichletBoundaryCondition;
 }
 
 const NeumannBoundary& ProblemFragment::getNeumannBoundaryCondition() const {
     return neumannBoundaryCondition;
+}
+
+const DisplacementBoundary & ProblemFragment::getDisplacementBoundaryCondition() const
+{
+    return displacementBoundaryCondition;
 }
 
 const std::vector<Material*>* ProblemFragment::getMaterials() const {
