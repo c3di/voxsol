@@ -198,29 +198,31 @@ void XMLProblemDeserializer::parseDirichletBoundaryProjection(std::unique_ptr<Pr
 
         std::string directionVal(direction);
 
-        if (directionVal == "+x" || directionVal == "+X") {
+        if (directionVal == "+x" || directionVal == "+X" || directionVal == "X" || directionVal == "x") {
             projectFrom = ProblemSide::POSITIVE_X;
         }
         else if (directionVal == "-x" || directionVal == "-X") {
             projectFrom = ProblemSide::NEGATIVE_X;
         }
-        else if (directionVal == "+y" || directionVal == "+Y") {
+        else if (directionVal == "+y" || directionVal == "+Y" || directionVal == "Y" || directionVal == "y") {
             projectFrom = ProblemSide::POSITIVE_Y;
         }
         else if (directionVal == "-y" || directionVal == "-Y") {
             projectFrom = ProblemSide::NEGATIVE_Y;
         }
-        else if (directionVal == "+z" || directionVal == "+Z") {
+        else if (directionVal == "+z" || directionVal == "+Z" || directionVal == "Z" || directionVal == "z") {
             projectFrom = ProblemSide::POSITIVE_Z;
         }
         else if (directionVal == "-z" || directionVal == "-Z") {
             projectFrom = ProblemSide::NEGATIVE_Z;
         }
 
+        int maxDepthForLOD = maxProjectionDepth;
         for (int i = 0; i < problemInstance->getNumberOfLODs(); i++) {
             BoundaryProjector boundaryProj(problemInstance->getProblemLOD(i), projectFrom);
-            boundaryProj.setMaxProjectionDepth(maxProjectionDepth);
+            boundaryProj.setMaxProjectionDepth(maxDepthForLOD);
             boundaryProj.projectDirichletBoundary(&boundary);
+            maxDepthForLOD = std::max(maxDepthForLOD / 2, 1);
         }
     }
 
@@ -258,29 +260,31 @@ void XMLProblemDeserializer::parseNeumannBoundaryProjection(std::unique_ptr<Prob
 
         std::string directionVal(direction);
 
-        if (directionVal == "+x" || directionVal == "+X") {
+        if (directionVal == "+x" || directionVal == "+X" || directionVal == "X" || directionVal == "x") {
             projectFrom = ProblemSide::POSITIVE_X;
         }
         else if (directionVal == "-x" || directionVal == "-X") {
             projectFrom = ProblemSide::NEGATIVE_X;
         }
-        else if (directionVal == "+y" || directionVal == "+Y") {
+        else if (directionVal == "+y" || directionVal == "+Y" || directionVal == "Y" || directionVal == "y") {
             projectFrom = ProblemSide::POSITIVE_Y;
         }
         else if (directionVal == "-y" || directionVal == "-Y") {
             projectFrom = ProblemSide::NEGATIVE_Y;
         }
-        else if (directionVal == "+z" || directionVal == "+Z") {
+        else if (directionVal == "+z" || directionVal == "+Z" || directionVal == "Z" || directionVal == "z") {
             projectFrom = ProblemSide::POSITIVE_Z;
         }
         else if (directionVal == "-z" || directionVal == "-Z") {
             projectFrom = ProblemSide::NEGATIVE_Z;
         }
 
+        int maxDepthForLOD = maxProjectionDepth;
         for (int i = 0; i < problemInstance->getNumberOfLODs(); i++) {
             BoundaryProjector boundaryProj(problemInstance->getProblemLOD(i), projectFrom);
-            boundaryProj.setMaxProjectionDepth(maxProjectionDepth);
-            boundaryProj.projectNeumannBoundary(totalStressInNewtons, materialFilter);
+            boundaryProj.setMaxProjectionDepth(maxDepthForLOD);
+            boundaryProj.projectNeumannBoundary(totalStressInNewtons, materialFilter); 
+            maxDepthForLOD = std::max(maxDepthForLOD / 2, 1);
         }
     }
 
@@ -319,19 +323,19 @@ void XMLProblemDeserializer::parseDisplacementBoundaryProjection(std::unique_ptr
 
         std::string directionVal(direction);
 
-        if (directionVal == "+x" || directionVal == "+X") {
+        if (directionVal == "+x" || directionVal == "+X" || directionVal == "X" || directionVal == "x") {
             projectFrom = ProblemSide::POSITIVE_X;
         }
         else if (directionVal == "-x" || directionVal == "-X") {
             projectFrom = ProblemSide::NEGATIVE_X;
         }
-        else if (directionVal == "+y" || directionVal == "+Y") {
+        else if (directionVal == "+y" || directionVal == "+Y" || directionVal == "Y" || directionVal == "y") {
             projectFrom = ProblemSide::POSITIVE_Y;
         }
         else if (directionVal == "-y" || directionVal == "-Y") {
             projectFrom = ProblemSide::NEGATIVE_Y;
         }
-        else if (directionVal == "+z" || directionVal == "+Z") {
+        else if (directionVal == "+z" || directionVal == "+Z" || directionVal == "Z" || directionVal == "z") {
             projectFrom = ProblemSide::POSITIVE_Z;
         }
         else if (directionVal == "-z" || directionVal == "-Z") {
@@ -340,10 +344,12 @@ void XMLProblemDeserializer::parseDisplacementBoundaryProjection(std::unique_ptr
 
         DisplacementBoundary initialDisplacement = getDisplacementBoundaryFromPercent(problemInstance, percentOfDimension, projectFrom);
 
+        int maxDepthForLOD = maxProjectionDepth;
         for (int i = 0; i < problemInstance->getNumberOfLODs(); i++) {
             BoundaryProjector boundaryProj(problemInstance->getProblemLOD(i), projectFrom);
-            boundaryProj.setMaxProjectionDepth(maxProjectionDepth);
+            boundaryProj.setMaxProjectionDepth(maxDepthForLOD);
             boundaryProj.projectDisplacementBoundary(&initialDisplacement, materialFilter);
+            maxDepthForLOD = std::max(maxDepthForLOD / 2, 1);
         }
     }
 
