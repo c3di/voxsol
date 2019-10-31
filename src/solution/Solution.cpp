@@ -30,6 +30,11 @@ Vertex Solution::getVertexAt(VertexCoordinate coord)
     return vertices.at(index);
 }
 
+void Solution::disableMaterialConfigurationCaching()
+{
+    doCacheMaterialConfigurations = false;
+}
+
 const libmmv::Vec3ui Solution::getSize() const {
     return size;
 }
@@ -91,12 +96,11 @@ void Solution::gatherUniqueMaterialConfigurations() {
 
     createVoidMaterialConfiguration(matConfigToEquation);
     scanSolutionForUniqueConfigurations(matConfigToEquation);
-    sortUniqueConfigurationsByFrequency(matConfigToEquation);
-    assignConfigurationIdsToVertices(matConfigToEquation);
-    
-    matConfigEquations.resize(matConfigToEquation.size());
 
-    std::cout << "Found " << matConfigToEquation.size() << " unique local problem configurations\n";
+    if (doCacheMaterialConfigurations) {
+        sortUniqueConfigurationsByFrequency(matConfigToEquation);
+        assignConfigurationIdsToVertices(matConfigToEquation);
+    }
 }
 
 void Solution::scanSolutionForUniqueConfigurations(std::unordered_map<MaterialConfiguration, UniqueConfig>& matConfigToEquation) {
@@ -109,19 +113,25 @@ void Solution::scanSolutionForUniqueConfigurations(std::unordered_map<MaterialCo
                 ProblemFragment fragment = problem->extractLocalProblem(centerCoord);
                 MaterialConfiguration materialConfiguration = fragment.getMaterialConfiguration();
 
-                if (matConfigToEquation.count(materialConfiguration) <= 0) {
+                if (!doCacheMaterialConfigurations) {
+                    Vertex* vertex = &vertices[mapToIndex(centerCoord)];
+                    matConfigToEquation[materialConfiguration].equationId = equationIdCounter;
+                    vertex->materialConfigId = equationIdCounter;
+
+                    equationIdCounter++;
+                } else if (matConfigToEquation.count(materialConfiguration) <= 0) {
                     matConfigToEquation[materialConfiguration].equationId = equationIdCounter;
                     equationIdCounter++;
                 }
-
-                // Necessary if sorting is disabled
-                //Vertex* vertex = &vertices[mapToIndex(centerCoord)];
-                //vertex->materialConfigId = matConfigToEquation[materialConfiguration].equationId;
 
                 matConfigToEquation[materialConfiguration].numInstancesInProblem++;
             }
         }
     }
+
+    std::cout << "Found " << equationIdCounter << " unique local problem configurations\n";
+
+    matConfigEquations.resize(equationIdCounter);
 }
 
 void Solution::sortUniqueConfigurationsByFrequency(std::unordered_map<MaterialConfiguration, UniqueConfig>& matConfigToEquation) {

@@ -23,9 +23,12 @@ public:
     std::vector<Vertex>* getVertices();
     Vertex getVertexAt(VertexCoordinate coord);
 
+    void disableMaterialConfigurationCaching();
+
     DiscreteProblem* getProblem();
 
 protected:
+    bool doCacheMaterialConfigurations = true;
     const libmmv::Vec3ui size;
     const libmmv::Vec3<REAL> voxelSize;
     DiscreteProblem* problem;

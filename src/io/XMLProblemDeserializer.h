@@ -30,6 +30,7 @@ protected:
     void parseNeumannBoundaryProjection(std::unique_ptr<ProblemInstance>& problemInstance);
     void parseDisplacementBoundaryProjection(std::unique_ptr<ProblemInstance>& problemInstance);
     void parseLevelsOfDetail(std::unique_ptr<ProblemInstance>& problemInstance);
+    void parseExperimentParameters(std::unique_ptr<ProblemInstance>& problemInstance);
     void parseInputFile(std::unique_ptr<ProblemInstance>& problemInstance, tinyxml2::XMLElement* discreteProblemElement);
     DisplacementBoundary getDisplacementBoundaryFromPercent(std::unique_ptr<ProblemInstance>& problemInstance, REAL percentOfDimension, ProblemSide& projectFrom);
 };

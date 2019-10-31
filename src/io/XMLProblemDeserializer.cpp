@@ -52,6 +52,7 @@ std::unique_ptr<ProblemInstance> XMLProblemDeserializer::getProblemInstance() {
         parseDirichletBoundaryProjection(problemInstance);
         parseNeumannBoundaryProjection(problemInstance);
         parseDisplacementBoundaryProjection(problemInstance);
+        parseExperimentParameters(problemInstance);
         
     }
     catch (std::exception e) {
@@ -394,4 +395,32 @@ DisplacementBoundary XMLProblemDeserializer::getDisplacementBoundaryFromPercent(
     }
 
     return DisplacementBoundary(displacement);
+}
+
+void XMLProblemDeserializer::parseExperimentParameters(std::unique_ptr<ProblemInstance>& problemInstance) {
+    tinyxml2::XMLElement* paramElement = document.RootElement()->FirstChildElement("ExperimentParameters");
+    if (paramElement == NULL) {
+        return;
+    }
+
+    for (tinyxml2::XMLElement* child = paramElement->FirstChildElement("Parameter"); child != NULL; child = child->NextSiblingElement("Parameter")) {
+        const char* paramName = child->Attribute("name");
+        
+        if (paramName == NULL) {
+            throw std::ios_base::failure("Experiment parameter element is missing required attribute'name'");
+        }
+
+        std::string nameVal(paramName);
+        if (nameVal == "DisableLocalProblemConfigCaching") {
+            bool isCachingDisabled = child->BoolAttribute("value", false);
+            if (isCachingDisabled) {
+                int lods = problemInstance->getNumberOfLODs();
+                for (int i = 0; i < lods; i++) {
+                    problemInstance->getSolutionLOD(i)->disableMaterialConfigurationCaching();
+                }
+
+                std::cout << "\nWARNING: Local problem config caching is DISABLED\n\n";
+            } 
+        }
+    }
 }
