@@ -39,6 +39,7 @@ protected:
 
     void gatherUniqueMaterialConfigurations();
     void computeEquationsForUniqueMaterialConfigurations();
+    void applyInitialDisplacements();
 
     bool outOfBounds(libmmv::Vec3ui& coordinate) const;
 

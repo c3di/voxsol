@@ -54,6 +54,17 @@ void DiscreteProblem::setNeumannBoundaryAtVertex(unsigned int index, NeumannBoun
     }
 }
 
+void DiscreteProblem::setDisplacementBoundaryAtVertex(VertexCoordinate & coordinate, DisplacementBoundary & condition) {
+    unsigned int index = mapToVertexIndex(coordinate);
+    setDisplacementBoundaryAtVertex(index, condition);
+}
+
+void DiscreteProblem::setDisplacementBoundaryAtVertex(unsigned int index, DisplacementBoundary & condition) {
+    if (displacementBoundaryConditions.count(index) == 0) {
+        displacementBoundaryConditions[index] = condition;
+    }
+}
+
 unsigned int DiscreteProblem::mapToVoxelIndex(VoxelCoordinate& coordinate) const {
     if (outOfVoxelBounds(coordinate)) {
         throw std::invalid_argument("coordinate " + coordinate.to_string() + " cannot be mapped to an index because it is outside the voxel space");
@@ -124,6 +135,20 @@ DirichletBoundary DiscreteProblem::getDirichletBoundaryAtVertex(unsigned int ind
     }
 }
 
+DisplacementBoundary DiscreteProblem::getDisplacementBoundaryAtVertex(VertexCoordinate& coordinate) {
+    unsigned int index = mapToVertexIndex(coordinate);
+    return getDisplacementBoundaryAtVertex(index);
+}
+
+DisplacementBoundary DiscreteProblem::getDisplacementBoundaryAtVertex(unsigned int index) {
+    if (displacementBoundaryConditions.count(index) > 0) {
+        return displacementBoundaryConditions[index];
+    }
+    else {
+        return DisplacementBoundary(libmmv::Vec3<REAL>(0,0,0));
+    }
+}
+
 NeumannBoundary DiscreteProblem::getNeumannBoundaryAtVertex(VertexCoordinate& coordinate) {
     unsigned int index = mapToVertexIndex(coordinate);
     return getNeumannBoundaryAtVertex(index);
@@ -146,6 +171,11 @@ std::unordered_map<unsigned int, NeumannBoundary>* DiscreteProblem::getNeumannBo
 std::unordered_map<unsigned int, DirichletBoundary>* DiscreteProblem::getDirichletBoundaryMap()
 {
     return &dirichletBoundaryConditions;
+}
+
+std::unordered_map<unsigned int, DisplacementBoundary>* DiscreteProblem::getDisplacementBoundaryMap()
+{
+    return &displacementBoundaryConditions;
 }
 
 bool DiscreteProblem::outOfVoxelBounds(VoxelCoordinate& coordinate) const {
@@ -188,6 +218,13 @@ void DiscreteProblem::considerNeumannBoundaryAtLocalProblem(ProblemFragment& fra
     }
 }
 
+void DiscreteProblem::considerDisplacementBoundaryAtLocalProblem(ProblemFragment & fragment) const {
+    unsigned int index = mapToVertexIndex(fragment.getCenterVertex());
+    if (displacementBoundaryConditions.count(index) > 0) {
+        fragment.setDisplacementBoundary(displacementBoundaryConditions.at(index));
+    }
+}
+
 libmmv::Vec3<REAL> DiscreteProblem::getVertexPosition(unsigned int index) const {
     VertexCoordinate coordinate = mapToVertexCoordinate(index);
     return getVertexPosition(coordinate);
@@ -199,3 +236,4 @@ libmmv::Vec3<REAL> DiscreteProblem::getVertexPosition(VertexCoordinate& coordina
     REAL z = static_cast<REAL>(coordinates.z) * voxelSize.z;
     return libmmv::Vec3<REAL>(x, y, z);
 }
+

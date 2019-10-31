@@ -6,6 +6,8 @@
 #include "material/MaterialDictionary.h"
 #include "problem/DiscreteProblem.h"
 #include "problem/boundaryconditions/BoundaryProjector.h"
+#include "solution/Solution.h"
+#include "helpers/Templates.h"
 
 class BoundaryProjectionTests : public ::testing::Test {
 
@@ -74,5 +76,25 @@ TEST_F(BoundaryProjectionTests, SimpleNeumannProjection) {
 
     libmmv::Vec3<REAL> stress(0, 0, 1000);
     NeumannBoundary neumann(stress);
+
+}
+
+
+TEST_F(BoundaryProjectionTests, SimpleDisplacementProjection) {
+    DiscreteProblem problem = Templates::Problem::STEEL_2_2_2();
+    Solution solution(&problem);
+
+    DisplacementBoundary initialDisplacement(libmmv::Vec3<REAL>(0, 0, asREAL(0.02)));
+
+    BoundaryProjector projector(&problem, ProblemSide::POSITIVE_Z);
+    projector.projectDisplacementBoundary(&initialDisplacement);
+
+    ASSERT_FALSE(problem.getDisplacementBoundaryAtVertex(VertexCoordinate(0, 0, 0)).isNonZero()) << "Expected non-zero displacement boundary at 0,0,0";
+    ASSERT_FALSE(problem.getDisplacementBoundaryAtVertex(VertexCoordinate(1, 1, 0)).isNonZero()) << "Expected non-zero displacement boundary at 1,1,0";
+    
+    solution.computeMaterialConfigurationEquations();
+
+    ASSERT_TRUE(solution.getVertexAt(VertexCoordinate(0, 0, 0)).materialConfigId == EMPTY_MATERIALS_CONFIG) << "Expected vertex with a displacement boundary to have the configuration ID " << EMPTY_MATERIALS_CONFIG;
+    ASSERT_TRUE(solution.getVertexAt(VertexCoordinate(1, 1, 0)).materialConfigId == EMPTY_MATERIALS_CONFIG) << "Expected vertex with a displacement boundary to have the configuration ID " << EMPTY_MATERIALS_CONFIG;
 
 }

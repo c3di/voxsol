@@ -61,8 +61,25 @@ void Solution::computeMaterialConfigurationEquations() {
     // This is separated into two steps to allow matrix computation to be done asynchronously later
     gatherUniqueMaterialConfigurations();
     computeEquationsForUniqueMaterialConfigurations();
+    applyInitialDisplacements();
 }
 
+void Solution::applyInitialDisplacements() {
+    std::unordered_map<unsigned int, DisplacementBoundary>* initialDisplacements = problem->getDisplacementBoundaryMap();
+    for (auto it = initialDisplacements->begin(); it != initialDisplacements->end(); it++) {
+        Vertex* vertex = &vertices[it->first];
+        DisplacementBoundary initial = it->second;
+
+        vertex->x = initial.displacement.x;
+        vertex->y = initial.displacement.y;
+        vertex->z = initial.displacement.z;
+
+        // Vertices with an initial displacement should never be updated, so they are given the empty materials config which causes 
+        // them to be ignored in the solve displacement kernel
+        vertex->materialConfigId = EMPTY_MATERIALS_CONFIG;
+    }
+}
+ 
 void Solution::createVoidMaterialConfiguration(std::unordered_map<MaterialConfiguration, UniqueConfig>& matConfigToEquation) {
     std::vector<Material*> emptyMats = {&Material::EMPTY,&Material::EMPTY, &Material::EMPTY, &Material::EMPTY, &Material::EMPTY, &Material::EMPTY, &Material::EMPTY, &Material::EMPTY};
     MaterialConfiguration voidConfig(&emptyMats);

@@ -3,6 +3,7 @@
 #include "problem/ProblemFragment.h"
 #include "problem/boundaryconditions/DirichletBoundary.h"
 #include "problem/boundaryconditions/NeumannBoundary.h"
+#include "problem/boundaryconditions/DisplacementBoundary.h"
 #include "material/Material.h"
 #include <vector>
 #include <unordered_map>
@@ -24,6 +25,8 @@ public:
     void setDirichletBoundaryAtVertex(unsigned int index, DirichletBoundary& condition);
     void setNeumannBoundaryAtVertex(VertexCoordinate& coordinate, NeumannBoundary& condition, bool combineIfAlreadyExists = false);
     void setNeumannBoundaryAtVertex(unsigned int index, NeumannBoundary& condition, bool combineIfAlreadyExists = false);
+    void setDisplacementBoundaryAtVertex(VertexCoordinate& coordinate, DisplacementBoundary& condition);
+    void setDisplacementBoundaryAtVertex(unsigned int index, DisplacementBoundary& condition);
 
     Material* getMaterial(VoxelCoordinate& coordinate) const;
     Material* getMaterial(unsigned int index) const;
@@ -35,8 +38,11 @@ public:
     DirichletBoundary getDirichletBoundaryAtVertex(unsigned int index);
     NeumannBoundary getNeumannBoundaryAtVertex(VertexCoordinate& coordinate);
     NeumannBoundary getNeumannBoundaryAtVertex(unsigned int index);
+    DisplacementBoundary getDisplacementBoundaryAtVertex(VertexCoordinate& coordinate);
+    DisplacementBoundary getDisplacementBoundaryAtVertex(unsigned int index);
     std::unordered_map<unsigned int, NeumannBoundary>* getNeumannBoundaryMap();
     std::unordered_map<unsigned int, DirichletBoundary>* getDirichletBoundaryMap();
+    std::unordered_map<unsigned int, DisplacementBoundary>* getDisplacementBoundaryMap();
     MaterialDictionary* getMaterialDictionary();
 
     unsigned int mapToVoxelIndex(VoxelCoordinate& coordinate) const;
@@ -56,10 +62,12 @@ protected:
     MaterialDictionary* materialDictionary;
     std::unordered_map<unsigned int, DirichletBoundary> dirichletBoundaryConditions;
     std::unordered_map<unsigned int, NeumannBoundary> neumannBoundaryConditions;
+    std::unordered_map<unsigned int, DisplacementBoundary> displacementBoundaryConditions;
     std::vector<unsigned char> materialIds;
 
     bool outOfVoxelBounds(VoxelCoordinate& coordinate) const;
     bool outOfVertexBounds(VertexCoordinate& coordinate) const;
     void considerDirichletBoundaryAtLocalProblem(ProblemFragment& fragment) const;
-    void considerNeumannBoundaryAtLocalProblem(ProblemFragment& fragment) const;
+    void considerNeumannBoundaryAtLocalProblem(ProblemFragment& fragment) const; 
+    void considerDisplacementBoundaryAtLocalProblem(ProblemFragment& fragment) const;
 };

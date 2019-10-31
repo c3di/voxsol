@@ -8,6 +8,9 @@
 #include "io/tinyxml2/tinyxml2.h"
 #include "io/MRCImporter.h"
 
+class DisplacementBoundary;
+enum ProblemSide;
+
 class XMLProblemDeserializer {
 public:
     XMLProblemDeserializer(const std::string& path);
@@ -25,6 +28,8 @@ protected:
     void parseDiscreteProblem(std::unique_ptr<ProblemInstance>& problemInstance);
     void parseDirichletBoundaryProjection(std::unique_ptr<ProblemInstance>& problemInstance);
     void parseNeumannBoundaryProjection(std::unique_ptr<ProblemInstance>& problemInstance);
+    void parseDisplacementBoundaryProjection(std::unique_ptr<ProblemInstance>& problemInstance);
     void parseLevelsOfDetail(std::unique_ptr<ProblemInstance>& problemInstance);
     void parseInputFile(std::unique_ptr<ProblemInstance>& problemInstance, tinyxml2::XMLElement* discreteProblemElement);
+    DisplacementBoundary getDisplacementBoundaryFromPercent(std::unique_ptr<ProblemInstance>& problemInstance, REAL percentOfDimension, ProblemSide& projectFrom);
 };
