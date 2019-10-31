@@ -225,7 +225,7 @@ void copyVerticesFromSharedToGlobalAndUpdateResiduals(
 
 #ifdef OUTPUT_NAN_DISPLACEMENTS
                 if (isnan(localVertices[localCoordZ][localCoordY][localCoordX].x)) {
-                    printf("NAN encountered for block %i coord %u %u %u \n", blockIdx.x, localCoord.x, localCoord.y, localCoord.z);
+                    printf("NAN encountered for block %i coord %u %u %u \n", blockIdx.x, localCoordX, localCoordY, localCoordZ);
                 }
 #endif
             }

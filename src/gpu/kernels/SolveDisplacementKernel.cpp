@@ -57,6 +57,10 @@ void SolveDisplacementKernel::launch() {
 }
 
 void SolveDisplacementKernel::forceResidualUpdate() {
+    if (!canExecute()) {
+        prepareInputs();
+    }
+
     fullResidualUpdateKernel.launch();
 }
 
