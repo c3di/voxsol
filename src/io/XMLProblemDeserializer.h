@@ -17,11 +17,13 @@ public:
 
     std::unique_ptr<ProblemInstance> getProblemInstance();
     std::string getFullPathToInputFile(std::string& relativePath);
+    REAL getTargetResidual();
 
 protected:
     std::string pathToFile;
     tinyxml2::XMLDocument document;
     MRCImporter mrcImporter;
+    REAL targetResidual = asREAL(1e-6);
 
     void parseMaterialDictionary(std::unique_ptr<ProblemInstance>& problemInstance);
     void parseMaterialMapping(std::unique_ptr<ProblemInstance>& problemInstance, MRCImporter* importer, tinyxml2::XMLElement* inputFileElement);

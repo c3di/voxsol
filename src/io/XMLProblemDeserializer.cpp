@@ -10,7 +10,13 @@ XMLProblemDeserializer::XMLProblemDeserializer(const std::string& path) :
     document(),
     pathToFile(path)
 {
-
+    try {
+        document.LoadFile(pathToFile.c_str());
+    }
+    catch (std::exception e) {
+        std::cerr << "[ERROR] XMLProblemDeserializer: " << e.what();
+        throw std::runtime_error("Fatal error while deserializing XML file");
+    }
 }
 
 std::string XMLProblemDeserializer::getFullPathToInputFile(std::string& relativePath) {
@@ -42,8 +48,6 @@ std::unique_ptr<ProblemInstance> XMLProblemDeserializer::getProblemInstance() {
     std::unique_ptr<ProblemInstance> problemInstance = std::unique_ptr<ProblemInstance>(new ProblemInstance());
 
     try {
-        
-        document.LoadFile(pathToFile.c_str());
 
         parseMaterialDictionary(problemInstance);
         parseDiscreteProblem(problemInstance);
@@ -419,6 +423,7 @@ void XMLProblemDeserializer::parseExperimentParameters(std::unique_ptr<ProblemIn
         }
 
         std::string nameVal(paramName);
+        
         if (nameVal == "DisableLocalProblemConfigCaching") {
             bool isCachingDisabled = child->BoolAttribute("value", false);
             if (isCachingDisabled) {
@@ -430,5 +435,13 @@ void XMLProblemDeserializer::parseExperimentParameters(std::unique_ptr<ProblemIn
                 std::cout << "\nWARNING: Local problem config caching is DISABLED\n\n";
             } 
         }
+        else if (nameVal == "TargetResidual") {
+            REAL resid = asREAL(child->FloatAttribute("value", targetResidual));
+            targetResidual = resid;
+        }
     }
+}
+
+REAL XMLProblemDeserializer::getTargetResidual() {
+    return targetResidual;
 }
