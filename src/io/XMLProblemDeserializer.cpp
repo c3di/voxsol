@@ -310,11 +310,6 @@ void XMLProblemDeserializer::parseDisplacementBoundaryProjection(std::unique_ptr
 
     for (tinyxml2::XMLElement* child = boundariesElement->FirstChildElement("DisplacementBoundary"); child != NULL; child = child->NextSiblingElement("DisplacementBoundary")) {
 
-        REAL percentOfDimension = child->FloatAttribute("percentOfDimension", asREAL(0.0));
-        if (percentOfDimension == 0) {
-            throw std::ios_base::failure("invalid or missing percentOfDimension attribute in DisplacementBoundary");
-        }
-
         ProblemSide projectFrom = ProblemSide::NEGATIVE_Z;
 
         const char* direction = child->Attribute("projectionDirection");
@@ -343,7 +338,20 @@ void XMLProblemDeserializer::parseDisplacementBoundaryProjection(std::unique_ptr
             projectFrom = ProblemSide::NEGATIVE_Z;
         }
 
-        DisplacementBoundary initialDisplacement = getDisplacementBoundaryFromPercent(problemInstance, percentOfDimension, projectFrom);
+        libmmv::Vec3<REAL> displacement(0, 0, 0);
+
+        REAL percentOfDimension = child->FloatAttribute("percentOfDimension", asREAL(0.0));
+        if (percentOfDimension != 0) {
+            displacement = getDisplacementFromPercent(problemInstance, percentOfDimension, projectFrom);
+        }
+        else {
+            REAL dispX = child->FloatAttribute("x", asREAL(0.0));
+            REAL dispY = child->FloatAttribute("y", asREAL(0.0));
+            REAL dispZ = child->FloatAttribute("z", asREAL(0.0));
+            displacement = libmmv::Vec3<REAL>(dispX, dispY, dispZ);
+        }
+
+        DisplacementBoundary initialDisplacement(displacement);
 
         int maxDepthForLOD = maxProjectionDepth;
         for (int i = 0; i < problemInstance->getNumberOfLODs(); i++) {
@@ -366,7 +374,7 @@ void XMLProblemDeserializer::parseLevelsOfDetail(std::unique_ptr<ProblemInstance
     problemInstance->createAdditionalLODs(levelsOfDetail);
 }
 
-DisplacementBoundary XMLProblemDeserializer::getDisplacementBoundaryFromPercent(std::unique_ptr<ProblemInstance>& problemInstance, REAL percentOfDimension, ProblemSide& projectFrom) {
+libmmv::Vec3<REAL> XMLProblemDeserializer::getDisplacementFromPercent(std::unique_ptr<ProblemInstance>& problemInstance, REAL percentOfDimension, ProblemSide& projectFrom) {
     percentOfDimension /= asREAL(100);
     libmmv::Vec3<REAL> displacement(0, 0, 0);
     DiscreteProblem* problem = problemInstance->getProblemLOD(0);
@@ -394,7 +402,7 @@ DisplacementBoundary XMLProblemDeserializer::getDisplacementBoundaryFromPercent(
         throw std::runtime_error("Illegal projection direction encountered");
     }
 
-    return DisplacementBoundary(displacement);
+    return displacement;
 }
 
 void XMLProblemDeserializer::parseExperimentParameters(std::unique_ptr<ProblemInstance>& problemInstance) {

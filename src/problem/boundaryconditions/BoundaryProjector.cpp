@@ -102,7 +102,7 @@ void BoundaryProjector::projectDisplacementBoundary(DisplacementBoundary* condit
             numBoundaryVoxels++;
         }
     }
-    std::cout << "Projected Displacement boundary onto " << numBoundaryVoxels << " voxels in " << getProjectionDirectionAsString() << " direction\n";
+    std::cout << "Projected Displacement boundary (" << displacement.x << ", " << displacement.y << ", " << displacement.z << ") onto " << numBoundaryVoxels << " voxels in " << getProjectionDirectionAsString() << " direction\n";
 }
 
 libmmv::Vec3<REAL> BoundaryProjector::getDisplacementFromPercent(REAL percentOfDimension) {
