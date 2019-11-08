@@ -4,163 +4,88 @@
 #include <iostream>
 #include <algorithm>
 #include <Windows.h>
+#include "io/CommandLine.h"
 #include "gpu/CudaDebugHelper.h"
-#include "gpu/GPUParameters.h"
-#include "problem/DiscreteProblem.h"
-#include "solution/Solution.h"
-#include "libmmv/math/Vec3.h"
-#include "gpu/kernels/SolveDisplacementKernel.h"
-#include "material/MaterialFactory.h"
-#include "material/MaterialDictionary.h"
-#include "problem/boundaryconditions/DirichletBoundary.h"
-#include "problem/boundaryconditions/NeumannBoundary.h"
-#include "io/VTKSolutionWriter.h"
-#include "io/VTKSolutionStructuredWriter.h"
-#include "io/VTKImportanceVisualizer.h"
-#include "io/VTKSamplingVisualizer.h"
-#include "io/MRCVoxelImporter.h"
-#include "problem/boundaryconditions/BoundaryProjector.h"
-#include "gpu/sampling/ResidualVolume.h"
-#include "gpu/sampling/ImportanceBlockSampler.h"
-#include "gpu/sampling/WaveSampler.h"
-#include "problem/ProblemInstance.h"
-#include "material/MaterialConfiguration.h"
 #include "io/XMLProblemDeserializer.h"
+#include "io/VTKSolutionWriter.h"
 #include "solution/samplers/SequentialBlockSampler.h"
+#include "gpu/kernels/SolveDisplacementKernel.h"
+
 
 #define ACTIVE_DEVICE 0
-//#define ENABLE_VTK_OUTPUT 1
 
 int totalIterations = 0;
-int totalMilliseconds = 0;
-
+__int64 elapsed = 0;
 HWND myConsoleWindow = GetConsoleWindow();
 
-void solveGPU(ProblemInstance& problemInstance, int lod) {
-    //ImportanceBlockSampler sampler(problemInstance.getResidualVolumeLOD(lod));
-    libmmv::Vec3i waveOrigin(0, 0, problemInstance.getSolutionLOD(lod)->getSize().z);
-    libmmv::Vec3i waveDirection(0, 0, -1);
+REAL EPSILON = asREAL(1.0e-6);
+int RESIDUAL_UPDATE_FREQUENCY = 500;
 
-    //WaveSampler sampler(problemInstance.getSolutionLOD(lod), waveOrigin, waveDirection);
-    //ImportanceBlockSampler sampler(problemInstance.getResidualVolumeLOD(lod));
+std::string base_file_path = "";
+
+void solveGPU(ProblemInstance& problemInstance, int lod) {
     SequentialBlockSampler sampler(problemInstance.getSolutionLOD(lod), 6);
 
-    VTKSolutionWriter vtkWriter(problemInstance.getSolutionLOD(lod));
-    vtkWriter.filterOutNullVoxels();
-    vtkWriter.setMechanicalValuesOutput(false);
-
-    VTKSamplingVisualizer samplingVis(problemInstance.getSolutionLOD(lod));
-
-    VTKImportanceVisualizer impVis(problemInstance.getProblemLOD(lod), problemInstance.getResidualVolumeLOD(lod));
-
     SolveDisplacementKernel kernel(problemInstance.getSolutionLOD(lod), &sampler, problemInstance.getResidualVolumeLOD(lod));
-    
+
     std::cout << "Solving LOD " << lod << " with GPU...\n";
-    long targetMilliseconds = 20000;
-
     auto now = std::chrono::high_resolution_clock::now();
-    __int64 elapsed = 0;
     int numIterationsDone = 0;
-    int numIterationsTarget = 200;
-    REAL maxResidual = 10000000;
-    REAL aveResidual = 10000000;
-    REAL epsilon = asREAL(1.0e-8);
-    kernel.setNumLaunchesBeforeResidualUpdate(1999);
-    int numVerticesNotConverged= 0;
+    int numVerticesNotConverged = 0;
     int numVerticesOnResidualLevelZero = (int)problemInstance.getResidualVolumeLOD(lod)->getNumVerticesOnLevelZero();
-
-    //std::stringstream fp = std::stringstream();
-
-    //fp << "d:\\tmp\\gpu_start_lod" << lod << ".vtk";
-    //visualizer.filterOutNullVoxels(true);
-    //visualizer.writeToFile(fp.str());
-
-    //for (int i = 1; i <= numIterationsTarget; i++) {
-    //while (elapsed < targetMilliseconds) {
-    while (aveResidual > epsilon) {
+    REAL remainingResidual = 10000000;
+    kernel.setNumLaunchesBeforeResidualUpdate(RESIDUAL_UPDATE_FREQUENCY - 1);
+    
+    while (remainingResidual > EPSILON) {
         auto start = std::chrono::high_resolution_clock::now();
         totalIterations++;
-        
+
         kernel.launch();
 
-		now = std::chrono::high_resolution_clock::now();
-		elapsed += std::chrono::duration_cast<std::chrono::milliseconds>(now - start).count();
-		numIterationsDone++;
+        now = std::chrono::high_resolution_clock::now();
+        elapsed += std::chrono::duration_cast<std::chrono::milliseconds>(now - start).count();
+        numIterationsDone++;
 
-        if (false) {
-            kernel.pullVertices();
-            std::stringstream fp = std::stringstream();
-
-            fp = std::stringstream();
-            fp << "d:\\tmp\\gpu_" << totalIterations << ".vtk";
-            vtkWriter.writeEntireStructureToFile(fp.str());
-
-            fp = std::stringstream();
-            fp << "d:\\tmp\\step_residuals_" << totalIterations << ".vtk";
-            impVis.writeToFile(fp.str(), 0);
-
-            fp = std::stringstream();
-            fp << "d:\\tmp\\step_sampling_" << totalIterations << ".vtk";
-            samplingVis.writeToFile(fp.str(), kernel.debugGetImportanceSamplesManaged(), kernel.numBlockOriginsPerIteration, BLOCK_SIZE);
-        }
-
-        if (totalIterations % 2000 == 0) {
-            aveResidual = problemInstance.getResidualVolumeLOD(lod)->getAverageResidualWithThreshold( epsilon, &numVerticesNotConverged);
-
-            if (numVerticesNotConverged < numVerticesOnResidualLevelZero * 0.0001) {
-                aveResidual = epsilon;
-            }  
-        }
-
-        if (totalIterations % 100 == 0) {
-            std::cout << "\rResidual: " << maxResidual << " [" << numVerticesNotConverged << "/" << numVerticesInSolution << "] iteration " << totalIterations << "                 ";
+        if (totalIterations % RESIDUAL_UPDATE_FREQUENCY == 0) {
+            remainingResidual = problemInstance.getResidualVolumeLOD(lod)->getResidualDeltaToLastUpdate(&numVerticesNotConverged);
+            std::cout << "\rResidual: " << remainingResidual << " [" << numVerticesNotConverged << "/" << numVerticesOnResidualLevelZero << "] iteration " << totalIterations << "                 ";
         }
 
         if (GetKeyState('Q') & 0x8000/*Check if high-order bit is set (1 << 15)*/ && GetForegroundWindow() == myConsoleWindow)
         {
             std::cout << "\nStopping here..." << std::endl;
+            Sleep(500);
             break;
+        }
+
+        if (GetKeyState('S') & 0x8000/*Check if high-order bit is set (1 << 15)*/ && GetForegroundWindow() == myConsoleWindow)
+        {
+            VTKSolutionWriter vtkWriter(problemInstance.getSolutionLOD(lod));
+            vtkWriter.filterOutNullVoxels();
+            vtkWriter.setMechanicalValuesOutput(true);
+
+            std::cout << "\nOutputting snapshot of current LOD...";
+
+            kernel.pullVertices();
+            std::stringstream fp = std::stringstream();
+            fp << base_file_path << "lod_" << lod << "_snapshot_" << totalIterations << ".vtk";
+            vtkWriter.writeEntireStructureToFile(fp.str());
+
+            std::cout << "Done.\n";
         }
     }
 
-    totalMilliseconds += (int)elapsed;
     kernel.pullVertices();
-
     std::cout << "\nFinished simulating for " << elapsed << "ms. Did " << numIterationsDone << " iterations\n\n";
-    
 
-#ifdef ENABLE_VTK_OUTPUT
-    std::stringstream fp = std::stringstream();
-	fp << "d:\\tmp\\lod_" << lod << "_gpu_end.vtk";
-	visualizer.writeToFile(fp.str());
-
-    //fp = std::stringstream();
-    //fp << "d:\\tmp\\step_sampling_" << lod << ".vtk";
-    //samplingVis.writeToFile(fp.str(), kernel.debugGetImportanceSamplesManaged(), 768, BLOCK_SIZE);
-
-    //fp = std::stringstream();
-    //fp << "d:\\tmp\\step_residuals_" << lod << ".vtk";
-    //impVis.writeAllLevels(fp.str());
-#endif 
 }
 
 int main(int argc, char* argv[]) {
     _putenv("CUDA_VISIBLE_DEVICES=0");
     std::cout << "Stochastic Mechanic Solver -- BY OUR GPUS COMBINED! (except currently limited to 1 GPU)\n\n";
-    
 
     CudaDebugHelper::PrintDeviceInfo(ACTIVE_DEVICE);
-    //CudaDebugHelper::PrintDevicePeerAccess(0, 1);
 
-    /*if (CudaDebugHelper::DevicePeerAccessSupported(0, 1) && CudaDebugHelper::DevicePeerAccessSupported(1, 0)) {
-        //Needed for managed memory to work properly, allow GPUs to access each other's memory
-        cudaDeviceEnablePeerAccess(0, 0);
-        cudaDeviceEnablePeerAccess(1, 0);
-    }
-    else {
-        std::cout << "WARNING: Peer access is not supported by the available GPUs. Forcing managed memory to be allocated on-device. \n\n";
-    }*/
-    
     cudaSetDevice(ACTIVE_DEVICE);
     cudaError_t err = cudaGetLastError();
     if (err != cudaSuccess) {
@@ -171,11 +96,30 @@ int main(int argc, char* argv[]) {
         std::cout << "Cuda device " << ACTIVE_DEVICE << " initialized!\n\n";
     }
 
-    std::string xmlInputFile("demonstrator_bone.xml");
+    CommandLine clParser(argc, argv);
+    const std::string &xmlFilename = clParser.getCmdOption("-i");
+
+    std::string xmlInputFile("tibia_image_update.xml");
+
+    if (xmlFilename.empty()) {
+        std::cout << "No filename found in command line options, using " << xmlInputFile << " instead.\n";
+    }
+    else {
+        xmlInputFile = xmlFilename;
+    }
+
+    const std::string basePathOption = clParser.getCmdOption("-basePath");
+    if (!basePathOption.empty()) {
+        base_file_path = basePathOption;
+    }
 
     XMLProblemDeserializer xmlDeserializer(xmlInputFile);
     std::unique_ptr<ProblemInstance> problemInstance = xmlDeserializer.getProblemInstance();
     problemInstance->computeMaterialConfigurationEquations();
+
+    EPSILON = xmlDeserializer.getTargetResidual();
+
+    std::cout << "\nUsing target residual " << EPSILON << "\n";
 
     int numLODs = problemInstance->getNumberOfLODs();
     for (int lod = numLODs-1; lod >= 0; lod--) {
@@ -185,25 +129,20 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    std::vector<Vertex>* vertices = problemInstance->getSolutionLOD(0)->getVertices();
-    REAL maxDisp = 0;
-    for (auto it = vertices->begin(); it != vertices->end(); it++) {
-        if (it->z > maxDisp) {
-            maxDisp = it->z;
-        }
-    }
-
-    std::cout << std::endl << "Maximum displacement in Z: " << maxDisp << std::endl;
+    std::cout << std::endl << "Total simulation time: " << elapsed << " ms\n\n";
 
     VTKSolutionWriter vtkWriter(problemInstance->getSolutionLOD(0));
     vtkWriter.filterOutNullVoxels();
     vtkWriter.setMechanicalValuesOutput(true);
 
-    std::stringstream fp = std::stringstream();
-    fp << "d:\\tmp\\gpu_end.vtk";
-    vtkWriter.writeEntireStructureToFile(fp.str());
-   
-    std::cout << std::endl << "Total simulation time: " << totalMilliseconds << " ms\n\n";
+    try {
+        std::stringstream fp = std::stringstream();
+        fp << base_file_path << "RESULT_" << xmlInputFile << ".vtk";
+        vtkWriter.writeEntireStructureToFile(fp.str());
+    }
+    catch (std::exception e) {
+        std::cout << e.what() << std::endl;
+    }
 
     return 0;
 }
