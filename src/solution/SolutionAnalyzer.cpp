@@ -153,7 +153,7 @@ REAL* SolutionAnalyzer::getStressTensorAt(VoxelCoordinate coord) {
 
 REAL SolutionAnalyzer::getVonMisesStrainAt(VoxelCoordinate coord) {
     int voxelIndex = problem->mapToVoxelIndex(coord);
-    return getVonMisesStressAt(voxelIndex);
+    return getVonMisesStrainAt(voxelIndex);
 }
 
 REAL SolutionAnalyzer::getVonMisesStressAt(VoxelCoordinate coord) {
