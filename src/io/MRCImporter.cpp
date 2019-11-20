@@ -63,7 +63,7 @@ void MRCImporter::addVoxelSliceToProblem(unsigned int zLayer, DiscreteProblem * 
         
             if (materialMap.count(colorVal) <= 0) {
                 std::stringstream ss;
-                ss << "Unmapped color value encountered while importing MRC stack: " << colorVal << std::endl;
+                ss << "Unmapped color value encountered while importing MRC stack: " << static_cast<unsigned int>(colorVal) << std::endl;
                 throw std::ios_base::failure(ss.str().c_str());
             }
             Material* matchedMat = materialMap.at(colorVal);

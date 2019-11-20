@@ -122,7 +122,7 @@ void MRCVoxelImporter::addVoxelSliceToProblem(unsigned int zLayer, DiscreteProbl
             }
             else {
                 std::stringstream ss;
-                ss << "Unmapped color value encountered while importing MRC stack: " << colorVal << std::endl;
+                ss << "Unmapped color value encountered while importing MRC stack: " << static_cast<unsigned int>(colorVal) << std::endl;
                 throw std::ios_base::failure(ss.str().c_str());
             }
             
