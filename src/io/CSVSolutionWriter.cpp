@@ -14,7 +14,7 @@ CSVSolutionWriter::~CSVSolutionWriter() {
 
 void CSVSolutionWriter::writeSolutionToFile(const std::string & filepath) {
     std::ofstream stream(filepath, std::ios::out);
-    std::cout << "Writing CSV solution file...";
+    std::cout << "Writing CSV solution file to " << filepath << " ...";
 
     try
     {

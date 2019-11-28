@@ -8,6 +8,7 @@
 #include "gpu/CudaDebugHelper.h"
 #include "io/XMLProblemDeserializer.h"
 #include "io/VTKSolutionWriter.h"
+#include "io/CSVSolutionWriter.h"
 #include "solution/samplers/SequentialBlockSampler.h"
 #include "gpu/kernels/SolveDisplacementKernel.h"
 
@@ -135,9 +136,20 @@ int main(int argc, char* argv[]) {
     vtkWriter.filterOutNullVoxels();
     vtkWriter.setMechanicalValuesOutput(true);
 
+    CSVSolutionWriter csvWriter(problemInstance->getSolutionLOD(0));
+
     try {
+        // Remove any directories and the .xml ending
+        std::string filename = xmlInputFile.substr(xmlInputFile.find_last_of("/\\") + 1);
+        std::string::size_type const p(filename.find_last_of('.'));
+        filename = filename.substr(0, p);
+
         std::stringstream fp = std::stringstream();
-        fp << base_file_path << "RESULT_" << xmlInputFile << ".vtk";
+        fp << base_file_path << "CSV_" << filename << ".csv";
+        csvWriter.writeSolutionToFile(fp.str());
+
+        fp = std::stringstream();
+        fp << base_file_path << "RESULT_" << filename << ".vtk";
         vtkWriter.writeEntireStructureToFile(fp.str());
     }
     catch (std::exception e) {
