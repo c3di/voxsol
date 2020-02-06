@@ -352,6 +352,11 @@ void XMLProblemDeserializer::parseDisplacementBoundaryProjection(std::unique_ptr
             REAL dispX = child->FloatAttribute("x", asREAL(0.0));
             REAL dispY = child->FloatAttribute("y", asREAL(0.0));
             REAL dispZ = child->FloatAttribute("z", asREAL(0.0));
+
+            if (dispX == 0 && dispY == 0 && dispZ == 0) {
+                throw std::ios_base::failure("invalid or missing displacement value for DisplacementBoundary. Must supply either 'percentOfDimension' or a valid x,y or z displacement.");
+            }
+
             displacement = libmmv::Vec3<REAL>(dispX, dispY, dispZ);
         }
 
