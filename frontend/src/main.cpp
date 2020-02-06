@@ -21,6 +21,9 @@ HWND myConsoleWindow = GetConsoleWindow();
 
 REAL EPSILON = asREAL(1.0e-6);
 int RESIDUAL_UPDATE_FREQUENCY = 500;
+int PERIODIC_OUTPUT_FREQUENCY = -1;
+
+int nextIterationTarget = 1;
 
 std::string base_file_path = "";
 
@@ -28,6 +31,10 @@ void solveGPU(ProblemInstance& problemInstance, int lod) {
     SequentialBlockSampler sampler(problemInstance.getSolutionLOD(lod), 6);
 
     SolveDisplacementKernel kernel(problemInstance.getSolutionLOD(lod), &sampler, problemInstance.getResidualVolumeLOD(lod));
+
+    VTKSolutionWriter vtkWriter(problemInstance.getSolutionLOD(lod));
+    vtkWriter.filterOutNullVoxels();
+    vtkWriter.setMechanicalValuesOutput(true);
 
     std::cout << "Solving LOD " << lod << " with GPU...\n";
     auto now = std::chrono::high_resolution_clock::now();
@@ -50,6 +57,31 @@ void solveGPU(ProblemInstance& problemInstance, int lod) {
         if (totalIterations % RESIDUAL_UPDATE_FREQUENCY == 0) {
             remainingResidual = problemInstance.getResidualVolumeLOD(lod)->getResidualDeltaToLastUpdate(&numVerticesNotConverged);
             std::cout << "\rResidual: " << remainingResidual << " [" << numVerticesNotConverged << "/" << numVerticesOnResidualLevelZero << "] iteration " << totalIterations << "                 ";
+            
+            if (isnan(remainingResidual)) {
+                std::cout << "\n\n\t[ERROR] NAN residual found, outputting snapshot and aborting simulation\n\n";
+
+                VTKSolutionWriter vtkWriter(problemInstance.getSolutionLOD(lod));
+                vtkWriter.filterOutNullVoxels();
+                vtkWriter.setMechanicalValuesOutput(true);
+                kernel.pullVertices();
+                std::stringstream fp = std::stringstream();
+                fp << base_file_path << "lod_" << lod << "_NAN_snapshot_" << totalIterations << ".vtk";
+                vtkWriter.writeEntireStructureToFile(fp.str());
+
+                exit(EXIT_FAILURE);
+            }
+        }
+
+        // Output periodic snapshots of the solution
+        if (PERIODIC_OUTPUT_FREQUENCY > 0 && (numIterationsDone == 1 || totalIterations == nextIterationTarget)) {
+            kernel.pullVertices();
+
+            std::stringstream fp = std::stringstream();
+            fp << base_file_path << "iteration_" << totalIterations << ".vtk";
+            vtkWriter.writeEntireStructureToFile(fp.str());
+
+            nextIterationTarget += PERIODIC_OUTPUT_FREQUENCY;
         }
 
         if (GetKeyState('Q') & 0x8000/*Check if high-order bit is set (1 << 15)*/ && GetForegroundWindow() == myConsoleWindow)
@@ -114,6 +146,16 @@ int main(int argc, char* argv[]) {
         base_file_path = basePathOption;
     }
 
+    const std::string periodicSnapshots = clParser.getCmdOption("-s");
+    if (!periodicSnapshots.empty()) {
+        try {
+            int rate = std::stoi(periodicSnapshots);
+            PERIODIC_OUTPUT_FREQUENCY = rate;
+        }
+        catch (std::exception const e) {
+            std::cout << "Invalid command line argument: -s " << periodicSnapshots << std::endl;
+        }
+    }
     XMLProblemDeserializer xmlDeserializer(xmlInputFile);
     std::unique_ptr<ProblemInstance> problemInstance = xmlDeserializer.getProblemInstance();
     problemInstance->computeMaterialConfigurationEquations();
