@@ -136,8 +136,14 @@ void SolutionAnalyzer::calculateVonMisesValues() {
         REAL strain_xz = voigtNotationStrainTensors[voxelTensorIndex + 4];
         REAL strain_xy = voigtNotationStrainTensors[voxelTensorIndex + 5];
 
-        vonMisesStrain[voxel] = asREAL(2.0 / 3.0) * sqrt(asREAL(3.0 / 2.0) * (strain_xx*strain_xx + strain_yy * strain_yy + strain_zz * strain_zz) + 
-            asREAL(3.0 / 4.0) * (strain_xy*strain_xy + strain_xz * strain_xz + strain_yz * strain_yz));
+        vonMisesStrain[voxel] = asREAL(2.0 / 3.0) * asREAL(1.0 / sqrt(2.0)) * sqrt(
+            (strain_xx-strain_yy) * (strain_xx-strain_yy) + 
+            (strain_yy-strain_zz) * (strain_yy-strain_zz) +
+            (strain_zz-strain_xx) * (strain_zz-strain_xx) +
+            asREAL(6.0) * strain_yz*strain_yz +
+            asREAL(6.0) * strain_xz*strain_xz +
+            asREAL(6.0) * strain_xy*strain_xy
+        );
     }
 }
 
