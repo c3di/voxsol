@@ -119,6 +119,7 @@ void LODGenerator::extrapolateMaterialsToCoarserProblem(DiscreteProblem* finePro
 bool LODGenerator::existsInCoarserLOD(libmmv::Vec3ui & fineCoord, libmmv::Vec3ui coarseSize) {
     if (fineCoord.x / 2 >= coarseSize.x || fineCoord.y / 2 >= coarseSize.y || fineCoord.z / 2 >= coarseSize.z) {
         // Fine coord is even but may map to a coarse coord that is outside the coarse level
+        // Note: <0 case is also caught here as the coords are unsigned ints, wrapping to MAX_UINT
         return false;
     }
     return true;
@@ -142,6 +143,11 @@ libmmv::Vec3<REAL> LODGenerator::interpolateDisplacement(VertexCoordinate& fineC
                 offset = offset / 2;
                 unsigned int coarseIndex = coarseSolution->mapToIndex(offset);
                 Vertex* coarseVertex = &vertices->at(coarseIndex);
+                if (coarseVertex->materialConfigId == EMPTY_MATERIALS_CONFIG) {
+                    // Don't include vertices surrounded by empty material, their displacement is always 0 and it would artificially reduce the correct
+                    // displacement when it's averaged below
+                    continue;
+                }
                 totalDisp.x += coarseVertex->x;
                 totalDisp.y += coarseVertex->y;
                 totalDisp.z += coarseVertex->z;
