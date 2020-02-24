@@ -414,6 +414,8 @@ libmmv::Vec3<REAL> XMLProblemDeserializer::getDisplacementFromPercent(std::uniqu
     return displacement;
 }
 
+#pragma warning(push)
+#pragma warning(disable:4244) // Possible truncation from REAL to 'float' in argument for child->FloatAttribute
 void XMLProblemDeserializer::parseExperimentParameters(std::unique_ptr<ProblemInstance>& problemInstance) {
     tinyxml2::XMLElement* paramElement = document.RootElement()->FirstChildElement("ExperimentParameters");
     if (paramElement == NULL) {
@@ -446,7 +448,7 @@ void XMLProblemDeserializer::parseExperimentParameters(std::unique_ptr<ProblemIn
         }
     }
 }
-
+#pragma warning(pop)
 REAL XMLProblemDeserializer::getTargetResidual() {
     return targetResidual;
 }
