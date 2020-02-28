@@ -143,11 +143,13 @@ libmmv::Vec3<REAL> LODGenerator::interpolateDisplacement(VertexCoordinate& fineC
                 offset = offset / 2;
                 unsigned int coarseIndex = coarseSolution->mapToIndex(offset);
                 Vertex* coarseVertex = &vertices->at(coarseIndex);
+
                 if (coarseVertex->materialConfigId == EMPTY_MATERIALS_CONFIG) {
                     // Don't include vertices surrounded by empty material, their displacement is always 0 and it would artificially reduce the correct
                     // displacement when it's averaged below
                     continue;
                 }
+                
                 totalDisp.x += coarseVertex->x;
                 totalDisp.y += coarseVertex->y;
                 totalDisp.z += coarseVertex->z;
@@ -155,7 +157,9 @@ libmmv::Vec3<REAL> LODGenerator::interpolateDisplacement(VertexCoordinate& fineC
             }
         }
     }
-    totalDisp = totalDisp / (REAL)totalVertices;
+    if (totalVertices > 0) {
+        totalDisp = totalDisp / (REAL)totalVertices;
+    }
     return totalDisp;
 }
 
