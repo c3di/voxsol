@@ -115,23 +115,23 @@ void Solution::scanSolutionForUniqueConfigurations(std::unordered_map<MaterialCo
 
                 if (!doCacheMaterialConfigurations) {
                     Vertex* vertex = &vertices[mapToIndex(centerCoord)];
-                    matConfigToEquation[materialConfiguration].equationId = equationIdCounter;
+                    matConfigToEquation.at(materialConfiguration).equationId = equationIdCounter;
                     vertex->materialConfigId = equationIdCounter;
 
                     equationIdCounter++;
                 } else if (matConfigToEquation.count(materialConfiguration) <= 0) {
-                    matConfigToEquation[materialConfiguration].equationId = equationIdCounter;
+                    matConfigToEquation.at(materialConfiguration).equationId = equationIdCounter;
                     equationIdCounter++;
                 }
 
-                matConfigToEquation[materialConfiguration].numInstancesInProblem++;
+                matConfigToEquation.at(materialConfiguration).numInstancesInProblem++;
             }
         }
     }
 
+    equationIdCounter += 1; //+1 to account for void materials config
     std::cout << "Found " << equationIdCounter << " unique local problem configurations\n";
-
-    matConfigEquations.resize(equationIdCounter);
+    matConfigEquations.resize(equationIdCounter); 
 }
 
 void Solution::sortUniqueConfigurationsByFrequency(std::unordered_map<MaterialConfiguration, UniqueConfig>& matConfigToEquation) {
@@ -180,7 +180,7 @@ void Solution::assignConfigurationIdsToVertices(std::unordered_map<MaterialConfi
                 MaterialConfiguration materialConfiguration = fragment.getMaterialConfiguration();
 
                 Vertex* vertex = &vertices[mapToIndex(centerCoord)];
-                vertex->materialConfigId = matConfigToEquation[materialConfiguration].equationId;
+                vertex->materialConfigId = matConfigToEquation.at(materialConfiguration).equationId;
             }
         }
     }
@@ -194,7 +194,7 @@ void Solution::computeEquationsForUniqueMaterialConfigurations() {
         if (equationId == EMPTY_MATERIALS_CONFIG) {
             continue;
         }
-        MaterialConfigurationEquations* equations = &matConfigEquations[equationId];
+        MaterialConfigurationEquations* equations = &matConfigEquations.at(equationId);
 
         if (!equations->isInitialized()) {
             equations->setId(equationId);
