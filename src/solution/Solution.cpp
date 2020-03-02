@@ -115,23 +115,24 @@ void Solution::scanSolutionForUniqueConfigurations(std::unordered_map<MaterialCo
 
                 if (!doCacheMaterialConfigurations) {
                     Vertex* vertex = &vertices[mapToIndex(centerCoord)];
-                    matConfigToEquation.at(materialConfiguration).equationId = equationIdCounter;
+                    matConfigToEquation[materialConfiguration].equationId = equationIdCounter;
                     vertex->materialConfigId = equationIdCounter;
 
                     equationIdCounter++;
-                } else if (matConfigToEquation.count(materialConfiguration) <= 0) {
-                    matConfigToEquation.at(materialConfiguration).equationId = equationIdCounter;
+                }
+                else if (matConfigToEquation.count(materialConfiguration) <= 0) {
+                    matConfigToEquation[materialConfiguration].equationId = equationIdCounter;
                     equationIdCounter++;
                 }
 
-                matConfigToEquation.at(materialConfiguration).numInstancesInProblem++;
+                matConfigToEquation[materialConfiguration].numInstancesInProblem++;
             }
         }
     }
 
     equationIdCounter += 1; //+1 to account for void materials config
     std::cout << "Found " << equationIdCounter << " unique local problem configurations\n";
-    matConfigEquations.resize(equationIdCounter); 
+    matConfigEquations.resize(equationIdCounter);
 }
 
 void Solution::sortUniqueConfigurationsByFrequency(std::unordered_map<MaterialConfiguration, UniqueConfig>& matConfigToEquation) {
