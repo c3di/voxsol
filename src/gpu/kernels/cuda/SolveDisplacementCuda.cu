@@ -84,14 +84,48 @@ __device__ void updateVertex(
         newDisplacement += MATRIX_ENTRY(matConfigEquations, CENTER_VERTEX_INDEX, 2, rhsComponentIndex) * rhsVec[workerIndex][2];
 
         if (rhsComponentIndex == 0) {
+#ifdef DYN_ADJUSTMENT_MAX
+            if (abs(vertexToUpdate->x - newDisplacement) > DYN_ADJUSTMENT_MAX) {
+                // Perform dynamical adjustment, discarding any displacement deltas that are larger than the epsilon defined in DYN_ADJUSTMENT_MAX
+                // this is to prevent occasional large errors caused by race conditions. Smaller errors are corrected over time by the stochastic updates
+                // of surrounding vertices
+#ifdef OUTPUT_BAD_DISPLACEMENTS
+                printf("Bad adjustment: %f diff for thread %i in block %i and bucket %i\n", newDisplacement, threadIdx.x, blockIdx.x, threadIdx.x / (blockDim.x / 2));
+#endif
+                return;
+            }
+#endif
             vertexToUpdate->x = newDisplacement;
         }
         if (rhsComponentIndex == 1) {
+#ifdef DYN_ADJUSTMENT_MAX
+            if (abs(vertexToUpdate->y - newDisplacement) > DYN_ADJUSTMENT_MAX) {
+                // Perform dynamical adjustment, discarding any displacement deltas that are larger than the epsilon defined in DYN_ADJUSTMENT_MAX
+                // this is to prevent occasional large errors caused by race conditions. Smaller errors are corrected over time by the stochastic updates
+                // of surrounding vertices
+#ifdef OUTPUT_BAD_DISPLACEMENTS
+                printf("Bad adjustment: %f diff for thread %i in block %i and bucket %i\n", newDisplacement, threadIdx.x, blockIdx.x, threadIdx.x / (blockDim.x / 2));
+#endif
+                return;
+            }
+#endif
             vertexToUpdate->y = newDisplacement;
         }
         if (rhsComponentIndex == 2) {
+#ifdef DYN_ADJUSTMENT_MAX
+            if (abs(vertexToUpdate->z - newDisplacement) > DYN_ADJUSTMENT_MAX) {
+                // Perform dynamical adjustment, discarding any displacement deltas that are larger than the epsilon defined in DYN_ADJUSTMENT_MAX
+                // this is to prevent occasional large errors caused by race conditions. Smaller errors are corrected over time by the stochastic updates
+                // of surrounding vertices
+#ifdef OUTPUT_BAD_DISPLACEMENTS
+                printf("Bad adjustment: %f diff for thread %i in block %i and bucket %i\n", newDisplacement, threadIdx.x, blockIdx.x, threadIdx.x / (blockDim.x / 2));
+#endif
+                return;
+            }
+#endif
             vertexToUpdate->z = newDisplacement;
         }
+
 
     }
 }
@@ -225,7 +259,7 @@ void copyVerticesFromSharedToGlobalAndUpdateResiduals(
 
 #ifdef OUTPUT_NAN_DISPLACEMENTS
                 if (isnan(localVertices[localCoordZ][localCoordY][localCoordX].x)) {
-                    printf("NAN encountered for block %i coord %u %u %u \n", blockIdx.x, localCoordX, localCoordY, localCoordZ);
+                    printf("NAN encountered for block %i coord %u %u %u \n", blockIdx.x, blockOriginCoord.x, blockOriginCoord.y, blockOriginCoord.z);
                 }
 #endif
             }
