@@ -14,7 +14,7 @@
 SequentialBlockSampler::SequentialBlockSampler(Solution* solution, int blockWorkingAreaSize) : 
 solution(solution),
 blockStride(blockWorkingAreaSize), 
-rng(42)
+rng()
 {
     lastOrigin.x = lastOrigin.y = lastOrigin.z = 0;
     currentOffset.x = currentOffset.y = currentOffset.z = 0;
@@ -88,7 +88,7 @@ void SequentialBlockSampler::shiftOffsetDeterministically() {
 
 void SequentialBlockSampler::shiftOffsetRandomly() {
     std::random_device rd;
-    std::uniform_int_distribution<int> rngOffset(-1, 0);
+    std::uniform_int_distribution<int> rngOffset(-1, 1);
 
     currentOffset.x = rngOffset(rng);
     currentOffset.y = rngOffset(rng);
