@@ -160,7 +160,7 @@ __device__ void updateVerticesInRegion(
         Vertex* __restrict__ vertexToUpdate = &localVertices[localCoord.z][localCoord.y][localCoord.x];
 
         if (vertexToUpdate->materialConfigId != EMPTY_MATERIALS_CONFIG) {
-            // Config 0 is reserved for vertices surrounded by empty material, these don't need to be processed
+            // Vertices surrounded by empty material don't need to be processed
             const REAL* __restrict__ matrices = &matConfigEquations[static_cast<int>(vertexToUpdate->materialConfigId) * EQUATION_ENTRY_SIZE];
             buildRHSVectorForVertex(rhsVec, localVertices, matrices, localCoord);
             updateVertex(vertexToUpdate, rhsVec, matrices);
@@ -199,7 +199,7 @@ void copyVerticesFromGlobalToShared(
                 local->x = 0;
                 local->y = 0;
                 local->z = 0;
-                local->materialConfigId = 0;
+                local->materialConfigId = EMPTY_MATERIALS_CONFIG;
 
                 if (isInsideSolution(globalCoord)) {
                     const int globalIndex = c_solutionDimensions.y*c_solutionDimensions.x*globalCoord.z + c_solutionDimensions.x*globalCoord.y + globalCoord.x;
