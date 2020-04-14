@@ -8,6 +8,7 @@
 #include "gpu/CudaDebugHelper.h"
 #include "io/XMLProblemDeserializer.h"
 #include "io/VTKSolutionWriter.h"
+#include "io/VTKImportanceVisualizer.h"
 #include "io/CSVSolutionWriter.h"
 #include "solution/samplers/SequentialBlockSampler.h"
 #include "gpu/kernels/SolveDisplacementKernel.h"
@@ -16,12 +17,14 @@
 #define ACTIVE_DEVICE 0
 
 int totalIterations = 0;
-__int64 elapsed = 0;
+__int64 elapsedMicroseconds = 0;
 HWND myConsoleWindow = GetConsoleWindow();
 
 REAL EPSILON = asREAL(1.0e-6);
+
 int RESIDUAL_UPDATE_FREQUENCY = 500;
 int PERIODIC_OUTPUT_FREQUENCY = -1;
+bool DEBUG_OUTPUT = true;
 
 int nextIterationTarget = 1;
 
@@ -32,18 +35,23 @@ void solveGPU(ProblemInstance& problemInstance, int lod) {
 
     SolveDisplacementKernel kernel(problemInstance.getSolutionLOD(lod), &sampler, problemInstance.getResidualVolumeLOD(lod));
 
-    VTKSolutionWriter vtkWriter(problemInstance.getSolutionLOD(lod));
+    VTKSolutionWriter vtkWriter(problemInstance.getSolutionLOD(lod), problemInstance.getResidualVolumeLOD(lod));
     vtkWriter.filterOutNullVoxels();
     vtkWriter.setMechanicalValuesOutput(true);
 
-    std::cout << "Solving LOD " << lod << " with GPU...\n";
     auto now = std::chrono::high_resolution_clock::now();
     int numIterationsDone = 0;
-    int numVerticesNotConverged = 0;
+    int numVerticesNotConverged = (int)problemInstance.getSolutionLOD(lod)->getVertices()->size();
     int numVerticesOnResidualLevelZero = (int)problemInstance.getResidualVolumeLOD(lod)->getNumVerticesOnLevelZero();
     REAL remainingResidual = 10000000;
     kernel.setNumLaunchesBeforeResidualUpdate(RESIDUAL_UPDATE_FREQUENCY - 1);
-    
+    libmmv::Vec3<REAL> voxelSize = problemInstance.getSolutionLOD(lod)->getVoxelSize();
+    REAL maxVoxelDim = std::max(std::max(voxelSize.x, voxelSize.y), voxelSize.z);
+
+    REAL targetResid = std::max(maxVoxelDim * EPSILON, asREAL(1.0e-7));
+
+    std::cout << "Solving LOD " << lod << " with GPU, target residual " << EPSILON << "\n";
+
     while (remainingResidual > EPSILON) {
         auto start = std::chrono::high_resolution_clock::now();
         totalIterations++;
@@ -51,7 +59,7 @@ void solveGPU(ProblemInstance& problemInstance, int lod) {
         kernel.launch();
 
         now = std::chrono::high_resolution_clock::now();
-        elapsed += std::chrono::duration_cast<std::chrono::milliseconds>(now - start).count();
+        elapsedMicroseconds += std::chrono::duration_cast<std::chrono::microseconds>(now - start).count();
         numIterationsDone++;
 
         if (totalIterations % RESIDUAL_UPDATE_FREQUENCY == 0) {
@@ -77,9 +85,26 @@ void solveGPU(ProblemInstance& problemInstance, int lod) {
         if (PERIODIC_OUTPUT_FREQUENCY > 0 && (numIterationsDone == 1 || totalIterations == nextIterationTarget)) {
             kernel.pullVertices();
 
-            std::stringstream fp = std::stringstream();
-            fp << base_file_path << "iteration_" << totalIterations << ".vtk";
-            vtkWriter.writeEntireStructureToFile(fp.str());
+            if (!DEBUG_OUTPUT) {
+                for (int i = lod; i > 0; i--) {
+                    problemInstance.projectCoarseSolutionToFinerSolution(i, i - 1);
+                }
+
+                VTKSolutionWriter vtkSnapshot(problemInstance.getSolutionLOD(0), problemInstance.getResidualVolumeLOD(0));
+                vtkSnapshot.filterOutNullVoxels();
+                vtkSnapshot.setMechanicalValuesOutput(true);
+                std::stringstream fp = std::stringstream();
+                fp << base_file_path << "iteration_" << totalIterations << ".vtk";
+                vtkSnapshot.writeEntireStructureToFile(fp.str());
+            }
+            else {
+                std::stringstream fp = std::stringstream();
+                fp << base_file_path << "iteration_" << totalIterations << ".vtk";
+                vtkWriter.writeEntireStructureToFile(fp.str());
+            }
+            
+
+            
 
             nextIterationTarget += PERIODIC_OUTPUT_FREQUENCY;
         }
@@ -93,7 +118,7 @@ void solveGPU(ProblemInstance& problemInstance, int lod) {
 
         if (GetKeyState('S') & 0x8000/*Check if high-order bit is set (1 << 15)*/ && GetForegroundWindow() == myConsoleWindow)
         {
-            VTKSolutionWriter vtkWriter(problemInstance.getSolutionLOD(lod));
+            VTKSolutionWriter vtkWriter(problemInstance.getSolutionLOD(lod), problemInstance.getResidualVolumeLOD(lod));
             vtkWriter.filterOutNullVoxels();
             vtkWriter.setMechanicalValuesOutput(true);
 
@@ -104,12 +129,17 @@ void solveGPU(ProblemInstance& problemInstance, int lod) {
             fp << base_file_path << "lod_" << lod << "_snapshot_" << totalIterations << ".vtk";
             vtkWriter.writeEntireStructureToFile(fp.str());
 
+            VTKImportanceVisualizer impVis(problemInstance.getProblemLOD(lod), problemInstance.getResidualVolumeLOD(lod));
+            fp = std::stringstream();
+            fp << base_file_path << "lod_" << lod << "_residuals_" << totalIterations << ".vtk";
+            impVis.writeToFile(fp.str(), 0);
+
             std::cout << "Done.\n";
         }
     }
 
     kernel.pullVertices();
-    std::cout << "\nFinished simulating for " << elapsed << "ms. Did " << numIterationsDone << " iterations\n\n";
+    std::cout << "\nFinished simulating for " << elapsedMicroseconds / 1000 << " ms. Did " << numIterationsDone << " iterations\n\n";
 
 }
 
@@ -132,7 +162,7 @@ int main(int argc, char* argv[]) {
     CommandLine clParser(argc, argv);
     const std::string &xmlFilename = clParser.getCmdOption("-i");
 
-    std::string xmlInputFile("tibia_image_update.xml");
+    std::string xmlInputFile("virtual_clinical_trial_no_3_patient_id_16_nan.xml");
 
     if (xmlFilename.empty()) {
         std::cout << "No filename found in command line options, using " << xmlInputFile << " instead.\n";
@@ -156,6 +186,7 @@ int main(int argc, char* argv[]) {
             std::cout << "Invalid command line argument: -s " << periodicSnapshots << std::endl;
         }
     }
+
     XMLProblemDeserializer xmlDeserializer(xmlInputFile);
     std::unique_ptr<ProblemInstance> problemInstance = xmlDeserializer.getProblemInstance();
     problemInstance->computeMaterialConfigurationEquations();
@@ -172,7 +203,7 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    std::cout << std::endl << "Total simulation time: " << elapsed << " ms\n\n";
+    std::cout << std::endl << "Total simulation time: " << elapsedMicroseconds / 1000 << " ms\n\n";
 
     VTKSolutionWriter vtkWriter(problemInstance->getSolutionLOD(0));
     vtkWriter.filterOutNullVoxels();
@@ -187,12 +218,13 @@ int main(int argc, char* argv[]) {
         filename = filename.substr(0, p);
 
         std::stringstream fp = std::stringstream();
-        fp << base_file_path << "CSV_" << filename << ".csv";
+        fp << base_file_path << filename << ".csv";
         csvWriter.writeSolutionToFile(fp.str());
 
         fp = std::stringstream();
-        fp << base_file_path << "RESULT_" << filename << ".vtk";
+        fp << base_file_path << filename << ".vtk";
         vtkWriter.writeEntireStructureToFile(fp.str());
+
     }
     catch (std::exception e) {
         std::cout << e.what() << std::endl;
