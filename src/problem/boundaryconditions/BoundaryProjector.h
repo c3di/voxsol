@@ -22,7 +22,7 @@ public:
     void setProjectionDirection(ProblemSide side);
 
 	void projectDirichletBoundary(DirichletBoundary* condition);
-	void projectNeumannBoundary(REAL totalForce, unsigned char materialFilter = 255);
+	void projectNeumannBoundary(libmmv::Vec3<REAL> forceVector, unsigned char materialFilter = 255);
     void projectDisplacementBoundary(DisplacementBoundary* condition, unsigned char materialFilter = 255);
 
 protected:
@@ -34,7 +34,6 @@ protected:
     void projectRayToFindSurface(libmmv::Vec3ui& origin, std::vector<libmmv::Vec3ui>* surfaceCandidates, unsigned char matIdFilter);
     
     libmmv::Vec3i getProjectionStepVector();
-    NeumannBoundary getNeumannBoundary(REAL forcePerVertex);
     std::string getProjectionDirectionAsString();
     libmmv::Vec3<REAL> getDisplacementFromPercent(REAL percentOfDimension);
 };

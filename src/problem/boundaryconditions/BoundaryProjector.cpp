@@ -54,7 +54,9 @@ void BoundaryProjector::projectDirichletBoundary(DirichletBoundary* condition)
     std::cout << "Projected Dirichlet boundary onto " << numBoundaryVoxels << " voxels in " << getProjectionDirectionAsString() << " direction\n";
 }
 
-void BoundaryProjector::projectNeumannBoundary(REAL totalForce, unsigned char materialFilter) {
+void BoundaryProjector::projectNeumannBoundary(const libmmv::Vec3<REAL> forceVector, unsigned char materialFilter) {
+    libmmv::Vec3<REAL> forcePerVertex(forceVector);
+
     std::vector<libmmv::Vec3ui> surfaceVoxels;
     ProblemSideIterator sideIterator(problem, projectFromSide);
     while (sideIterator.hasNext()) {
@@ -62,13 +64,14 @@ void BoundaryProjector::projectNeumannBoundary(REAL totalForce, unsigned char ma
         projectRayToFindSurface(origin, &surfaceVoxels, materialFilter);
     }
 
-    REAL neumannForcePerVoxel = totalForce / surfaceVoxels.size();
-    REAL neumannForcePerVertex = neumannForcePerVoxel * asREAL(0.25); // exposed surface of each voxel has 4 vertices
+    forcePerVertex.x = forcePerVertex.x / surfaceVoxels.size() * asREAL(0.25); // exposed surface of each voxel has 4 vertices
+    forcePerVertex.y = forcePerVertex.y / surfaceVoxels.size() * asREAL(0.25);
+    forcePerVertex.z = forcePerVertex.z / surfaceVoxels.size() * asREAL(0.25);
 
     unsigned int numBoundaryVoxels = 0;
     if (surfaceVoxels.size() > 0) {
         for (auto it = surfaceVoxels.begin(); it != surfaceVoxels.end(); it++) {
-            NeumannBoundary neumannBoundary = getNeumannBoundary(neumannForcePerVertex);
+            NeumannBoundary neumannBoundary(forcePerVertex);
             for (int sideIndex = 0; sideIndex < 4; sideIndex++) {
                 libmmv::Vec3ui vertexCoord(*it);
                 vertexCoord = vertexCoord + sideIterator.sideIndexToVertexCoordinateOffset(sideIndex);
@@ -150,26 +153,6 @@ std::string BoundaryProjector::getProjectionDirectionAsString() {
     default:
         throw std::runtime_error("Illegal projection direction encountered");
     }
-}
-
-NeumannBoundary BoundaryProjector::getNeumannBoundary(REAL forcePerVertex) {
-    libmmv::Vec3<REAL> forceVector(0,0,0);
-
-    switch (projectFromSide) {
-    case POSITIVE_X:
-    case NEGATIVE_X:
-        forceVector.x = forcePerVertex;
-        break;
-    case POSITIVE_Y:
-    case NEGATIVE_Y:
-        forceVector.y = forcePerVertex;
-        break;
-    case POSITIVE_Z:
-    case NEGATIVE_Z:
-        forceVector.z = forcePerVertex;
-        break;
-    }
-    return NeumannBoundary(forceVector);
 }
 
 libmmv::Vec3i BoundaryProjector::getProjectionStepVector() {

@@ -65,7 +65,7 @@ TEST_F(CompressionLoadTest, ThesisTest) {
         bProjector.projectDirichletBoundary(&fixed);
 
         bProjector.setProjectionDirection(ProblemSide::NEGATIVE_Z);
-        REAL totalNeumannForceNewtons = asREAL(-1e9);
+        libmmv::Vec3<REAL> totalNeumannForceNewtons(0, 0, asREAL(-1e9));
         bProjector.projectNeumannBoundary(totalNeumannForceNewtons);
     }
 
@@ -137,7 +137,7 @@ TEST_F(CompressionLoadTest, SimpleCompression) {
         bProjector.projectDirichletBoundary(&fixed);
 
         bProjector.setProjectionDirection(ProblemSide::NEGATIVE_Z);
-        REAL totalNeumannForceNewtons = asREAL(-1e9);
+        libmmv::Vec3<REAL> totalNeumannForceNewtons(0, 0, asREAL(-1e9));
         bProjector.projectNeumannBoundary(totalNeumannForceNewtons);
     }
 
@@ -192,7 +192,7 @@ TEST_F(CompressionLoadTest, SimpleCompressionAnisotropicVoxels) {
         bProjector.projectDirichletBoundary(&fixed);
 
         bProjector.setProjectionDirection(ProblemSide::NEGATIVE_Z);
-        REAL totalNeumannForceNewtons = asREAL(-1e9);
+        libmmv::Vec3<REAL> totalNeumannForceNewtons(0, 0, asREAL(-1e9));
         bProjector.projectNeumannBoundary(totalNeumannForceNewtons);
     }
 
@@ -246,7 +246,7 @@ TEST_F(CompressionLoadTest, SimpleCompressionNonUnitArea) {
         bProjector.projectDirichletBoundary(&fixed);
 
         bProjector.setProjectionDirection(ProblemSide::NEGATIVE_Z);
-        REAL totalNeumannForceNewtons = asREAL(-1e9);
+        libmmv::Vec3<REAL> totalNeumannForceNewtons(0, 0, asREAL(-1e9));
         bProjector.projectNeumannBoundary(totalNeumannForceNewtons);
     }
 
@@ -300,7 +300,7 @@ TEST_F(CompressionLoadTest, SimpleCompressionAnisotropicUnitArea) {
         bProjector.projectDirichletBoundary(&fixed);
 
         bProjector.setProjectionDirection(ProblemSide::NEGATIVE_X);
-        REAL totalNeumannForceNewtons = asREAL(-1e9);
+        libmmv::Vec3<REAL> totalNeumannForceNewtons(0, 0, asREAL(-1e9));
         bProjector.projectNeumannBoundary(totalNeumannForceNewtons);
     }
 

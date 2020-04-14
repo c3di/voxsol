@@ -253,9 +253,13 @@ void XMLProblemDeserializer::parseNeumannBoundaryProjection(std::unique_ptr<Prob
 
     for (tinyxml2::XMLElement* child = boundariesElement->FirstChildElement("NeumannBoundary"); child != NULL; child = child->NextSiblingElement("NeumannBoundary")) {
         
-        REAL totalStressInNewtons = child->FloatAttribute("totalForceInNewtons", asREAL(0.0));
-        if (totalStressInNewtons == 0) {
-            throw std::ios_base::failure("invalid or missing totalForceInNewtons attribute in NeumannBoundary");
+        libmmv::Vec3<REAL> forceVector;
+        forceVector.x = child->FloatAttribute("forceX", asREAL(0.0));
+        forceVector.y = child->FloatAttribute("forceY", asREAL(0.0));
+        forceVector.z = child->FloatAttribute("forceZ", asREAL(0.0));
+
+        if (forceVector.x == 0 && forceVector.y == 0 && forceVector.z == 0) {
+            throw std::ios_base::failure("NeumannBoundary does not specify the force to be applied (Requires one or more of: forceX, forceY, forceZ)");
         }
 
         const char* direction = child->Attribute("projectionDirection");
@@ -288,7 +292,7 @@ void XMLProblemDeserializer::parseNeumannBoundaryProjection(std::unique_ptr<Prob
         for (int i = 0; i < problemInstance->getNumberOfLODs(); i++) {
             BoundaryProjector boundaryProj(problemInstance->getProblemLOD(i), projectFrom);
             boundaryProj.setMaxProjectionDepth(maxDepthForLOD);
-            boundaryProj.projectNeumannBoundary(totalStressInNewtons, materialFilter); 
+            boundaryProj.projectNeumannBoundary(forceVector, materialFilter);
             maxDepthForLOD = std::max(maxDepthForLOD / 2, 1);
         }
     }
