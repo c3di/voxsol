@@ -16,8 +16,6 @@ public:
 
     MaterialDictionary materialDictionary;
 
-    void initFromMRCStack(std::string& path, bool isStumpMRC = false);
-    void initFromMaterialProbeMRC(std::string& path);
     void initFromParameters(libmmv::Vec3ui& discretization, libmmv::Vec3<REAL>& voxelSize);
     void createAdditionalLODs(int numberOfAdditionalLODs);
     void computeMaterialConfigurationEquations();
@@ -40,6 +38,5 @@ protected:
     std::vector<DiscreteProblem*> problemLODs;
     std::vector<Solution*> solutionLODs;
     std::vector<ResidualVolume*> residualLODs;
-    REAL targetResidualDeltaForConvergence = asREAL(1e-11);
 
 };

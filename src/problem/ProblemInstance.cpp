@@ -1,7 +1,6 @@
 #include "stdafx.h"
 #include <iomanip>
 #include "ProblemInstance.h"
-#include "io/MRCVoxelImporter.h"
 #include "io/MRCImporter.h"
 #include "tools/LODGenerator.h"
 #include "gpu/kernels/SolveDisplacementKernel.h"
@@ -27,72 +26,6 @@ ProblemInstance::~ProblemInstance() {
         delete *it;
         *it = nullptr;
     }
-}
-
-void ProblemInstance::initFromMRCStack(std::string& path, bool isStumpMRC) {
-    std::cout << "\nImporting MRC stack using configuration: " << (isStumpMRC ? " STUMP " : " IMPLANT ") << std::endl;
-
-    MRCVoxelImporter importer(path);
-    materialDictionary = importer.extractMaterialDictionary();
-
-    if (isStumpMRC) {
-        importer.fatMaterialColorValue = 1;
-        importer.muscleMaterialColorValue = 2;
-        importer.boneMaterialColorValue = 3;
-        importer.skinMaterialColorValue = 5;
-        importer.linerMaterialColorValue = 7;
-        importer.socketMaterialColorValue = 11;
-    }
-
-    libmmv::Vec3<REAL> voxelSize(0, 0, 0);
-    if (isStumpMRC) {
-        voxelSize.x = asREAL(0.0024);
-        voxelSize.y = asREAL(0.0024); 
-        voxelSize.z = asREAL(0.0030);
-    }
-    else {
-        voxelSize.x = asREAL(0.0024);
-        voxelSize.y = asREAL(0.0024);
-        voxelSize.z = asREAL(0.014);
-    }
-
-    DiscreteProblem* problem = new DiscreteProblem(importer.getDimensionsInVoxels(), voxelSize, &materialDictionary);
-    importer.populateDiscreteProblem(problem);
-    problemLODs.push_back(problem);
-
-    Solution* solution = new Solution(problemLODs[0]);
-    solutionLODs.push_back(solution);
-    
-    ResidualVolume* residual = new ResidualVolume(problemLODs[0]);
-    residualLODs.push_back(residual);
-}
-
-void ProblemInstance::initFromMaterialProbeMRC(std::string & path) {
-    std::cout << "\nImporting material probe MRC stack..." << std::endl;
-
-    MRCImporter importer(path);
-
-    Material aluminum = materialFactory.createMaterialWithProperties(asREAL(70000000000), asREAL(0.35));
-    Material silicon = materialFactory.createMaterialWithProperties(asREAL(150000000000), asREAL(0.27));
-    materialDictionary.addMaterial(aluminum);
-    materialDictionary.addMaterial(silicon);
-
-    importer.addMaterialMapping(&aluminum, 0);
-    importer.addMaterialMapping(&silicon, 255);
-
-    libmmv::Vec3ui voxelDims = importer.getDimensionsInVoxels();
-
-    libmmv::Vec3<REAL> voxelSize(asREAL(1.0 / voxelDims.x), asREAL(1.0 / voxelDims.y), asREAL(1.0 / voxelDims.z));
-
-    DiscreteProblem* problem = new DiscreteProblem(voxelDims, voxelSize, &materialDictionary);
-    importer.populateDiscreteProblem(problem);
-    problemLODs.push_back(problem);
-
-    Solution* solution = new Solution(problemLODs[0]);
-    solutionLODs.push_back(solution);
-
-    ResidualVolume* residual = new ResidualVolume(problemLODs[0]);
-    residualLODs.push_back(residual);
 }
 
 void ProblemInstance::initFromParameters(libmmv::Vec3ui& discretization, libmmv::Vec3<REAL>& voxelSize) {
@@ -206,7 +139,7 @@ int ProblemInstance::solveLOD(int lod, REAL convergenceCriteria, BlockSampler* s
 
     ResidualVolume* residualVolume = getResidualVolumeLOD(lod);
     SolveDisplacementKernel kernel(getSolutionLOD(lod), sampler, residualVolume);
-    kernel.setNumLaunchesBeforeResidualUpdate(199);
+    kernel.setNumLaunchesBeforeResidualUpdate(499);
     
     REAL currentResidualError = 1000000;
     int numVerticesNotConverged = 0;
@@ -216,7 +149,7 @@ int ProblemInstance::solveLOD(int lod, REAL convergenceCriteria, BlockSampler* s
 
         totalSteps++;
 
-        if (totalSteps % 200 == 0 || currentResidualError <= convergenceCriteria) {
+        if (totalSteps % 500 == 0 || currentResidualError <= convergenceCriteria) {
             currentResidualError = residualVolume->getResidualDeltaToLastUpdate(&numVerticesNotConverged);
             std::cout << "\rCurrent residual: " << currentResidualError << " Steps: "<< totalSteps << "                                         ";
         }
