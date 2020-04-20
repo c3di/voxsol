@@ -18,6 +18,7 @@ public:
     unsigned int mapToIndex(libmmv::Vec3ui& coordinate) const;
     libmmv::Vec3ui mapToCoordinate(unsigned int index) const;
     const libmmv::Vec3ui getSize() const;
+    const libmmv::Vec3<REAL> getVoxelSize() const;
 
     const std::vector<MaterialConfigurationEquations>* getMaterialConfigurationEquations() const;
     std::vector<Vertex>* getVertices();

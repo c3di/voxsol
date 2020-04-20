@@ -39,6 +39,10 @@ const libmmv::Vec3ui Solution::getSize() const {
     return size;
 }
 
+const libmmv::Vec3<REAL> Solution::getVoxelSize() const {
+    return voxelSize;
+}
+
 DiscreteProblem* Solution::getProblem() {
     return problem;
 }
