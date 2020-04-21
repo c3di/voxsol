@@ -273,6 +273,7 @@ void ResidualVolume::initializePyramidFromProblem() {
         allocateManagedMemory(i);
     }
 
+    initializeLeveLZeroResidualsFromProblem();
     updateEntirePyramid();
 }
 
