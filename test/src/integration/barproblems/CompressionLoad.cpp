@@ -18,8 +18,6 @@
 #include "gpu/GPUParameters.h"
 #include "gpu/sampling/WaveSampler.h"
 
-bool doOutputTestResultsAsVTK = false;
-
 class CompressionLoadTest : public ::testing::Test {
 
 public:
@@ -42,6 +40,8 @@ public:
             problem->setMaterial(index, material.id);
         }
     }
+
+    bool doOutputTestResultsAsVTK = false;
 
 };
 
