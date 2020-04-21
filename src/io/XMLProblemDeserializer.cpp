@@ -4,7 +4,6 @@
 #include <experimental/filesystem>
 #include "XMLProblemDeserializer.h"
 #include "problem/boundaryconditions/BoundaryProjector.h"
-#include "io/ImageDirectoryImporter.h"
 
 XMLProblemDeserializer::XMLProblemDeserializer(const std::string& path) : 
     document(),
