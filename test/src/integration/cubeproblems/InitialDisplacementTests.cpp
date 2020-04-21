@@ -11,6 +11,8 @@
 #include "gpu/GPUParameters.h"
 #include "io/VTKSolutionWriter.h"
 
+bool doOutputTestResultsAsVTK = false;
+
 class InitialDisplacementTest : public ::testing::Test {
 
 public:
@@ -33,8 +35,6 @@ public:
             problem->setMaterial(index, material.id);
         }
     }
-
-    bool doOutputTestResultsAsVTK = true;
 };
 
 

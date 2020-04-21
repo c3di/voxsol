@@ -18,7 +18,7 @@
 #include "gpu/GPUParameters.h"
 #include "gpu/sampling/WaveSampler.h"
 
-bool doOutputTestResultsAsVTK = true;
+bool doOutputTestResultsAsVTK = false;
 
 class CompressionLoadTest : public ::testing::Test {
 
@@ -91,7 +91,7 @@ TEST_F(CompressionLoadTest, ThesisTest) {
 
             VTKSolutionWriter vis(problemInstance.getSolutionLOD(i-1));
             vis.setMechanicalValuesOutput(true);
-            //vis.writeEntireStructureToFile("d:\\tmp\\integration_SimpleCompression_high.vtk");
+            vis.writeEntireStructureToFile("d:\\tmp\\integration_SimpleCompression_high.vtk");
         }
     }
 
