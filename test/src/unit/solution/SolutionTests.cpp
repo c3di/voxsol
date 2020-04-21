@@ -58,19 +58,7 @@ TEST_F(SolutionTests, PrecomputeMatrices) {
 
     sol.computeMaterialConfigurationEquations();
     const std::vector<MaterialConfigurationEquations>* fSigs = sol.getMaterialConfigurationEquations();
-    EXPECT_EQ(fSigs->size(), 27) << "Expected all vertices to have a unique set of material configuration equations";
-
-    // Since every vertex in this problem has a unique material configuration its signature ID should be the same as its index
-    vertices = sol.getVertices();
-    for (ConfigId i = 0; i < 27; i++) {
-        if (vertices->at(i).materialConfigId != i) {
-            FAIL() << "Vertex " << i << " equation id (" << vertices->at(i).materialConfigId << ") did not match expected value " << i;
-        }
-    }
-
-    ProblemFragment frag = problem.extractLocalProblem(libmmv::Vec3ui(1, 1, 1));
-    ConfigId fragId = sol.getEquationIdForFragment(frag);
-    EXPECT_EQ(fragId, 13) << "Expected problem fragment for center vertex to have material configuration equation id 13";
+    EXPECT_EQ(fSigs->size(), 28) << "Expected all vertices to have a unique set of material configuration equations"; //28 because the void configuration is always created
 }
 
 TEST_F(SolutionTests, ConsistencyAfterPrecompute) {
@@ -83,7 +71,6 @@ TEST_F(SolutionTests, ConsistencyAfterPrecompute) {
     sol.computeMaterialConfigurationEquations();
     
     ASSERT_TRUE(sol.allVerticesHaveValidSignatureId(errMessage)) << errMessage;
-    ASSERT_TRUE(sol.matConfigEquationIdsMatchPositionInVector(errMessage)) << errMessage;
     ASSERT_TRUE(sol.allMatConfigEquationsInitialized(errMessage)) << errMessage;
 }
 
@@ -112,9 +99,9 @@ TEST_F(SolutionTests, DirichletBoundaryAppliedToLHS) {
     const MaterialConfigurationEquations xFixedEqns = equations->at(eqId);
     const Matrix3x3* xFixedLHS = xFixedEqns.getLHSInverse();
     //Note: first row is all zeroes => x component zero when multiplied with RHS vector => x is fixed
-    Matrix3x3 xFixedExpected(0.0, asREAL(6.2308614032751929e-12), asREAL(6.2308614032751929e-12), 0.0, asREAL(2.4508054852882432e-11), asREAL(-6.2308614032751929e-12), 0.0, asREAL(-6.2308614032751929e-12), asREAL(2.4508054852882432e-11));
+    Matrix3x3 xFixedExpected(0.0, 0.0, 0.0, asREAL(6.2308614032751929e-12), asREAL(2.4508054852882432e-11), asREAL(-6.2308614032751929e-12), asREAL(6.2308614032751929e-12), asREAL(-6.2308614032751929e-12), asREAL(2.4508054852882432e-11));
 
-    EXPECT_TRUE(closeEqual(*xFixedLHS, xFixedExpected)) << "Expected LHS matrix for X_FIXED to have zeroes in first row";
+    EXPECT_TRUE(closeEqual(*xFixedLHS, xFixedExpected)) << "Expected LHS matrix for X_FIXED to have zeroes in first col";
 }
 
 TEST_F(SolutionTests, NeumannBoundaryAppliedToEquations) {

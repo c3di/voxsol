@@ -57,6 +57,29 @@ bool SolutionInspector::allMatConfigEquationsInitialized(std::string& errMessage
             return false;
         }
 
+        if (eqn.getId() == EMPTY_MATERIALS_CONFIG) {
+            // The void configuration is a special case it should have identity matrices
+            const Matrix3x3* lhs = eqn.getLHSInverse();
+            if (lhs == NULL || *lhs != Matrix3x3::identity) {
+                std::stringstream ss;
+                ss << "Equations for the void configuration " << i << " have invalid LHS matrix";
+                errMessage = ss.str();
+                return false;
+            }
+
+            for (int j = 0; j < 27; j++) {
+                const Matrix3x3* rhs = eqn.getRHS(j);
+                if (rhs == NULL || *rhs != Matrix3x3::identity) {
+                    std::stringstream ss;
+                    ss << "Equations for the void configuration " << i << " have invalid RHS matrix for vertex " << j;
+                    errMessage = ss.str();
+                    return false;
+                }
+            }
+
+            continue;
+        }
+
         const Matrix3x3* lhs = eqn.getLHSInverse();
         if (lhs == NULL || *lhs == Matrix3x3::identity) {
             std::stringstream ss;

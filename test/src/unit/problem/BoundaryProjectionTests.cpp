@@ -89,8 +89,8 @@ TEST_F(BoundaryProjectionTests, SimpleDisplacementProjection) {
     BoundaryProjector projector(&problem, ProblemSide::POSITIVE_Z);
     projector.projectDisplacementBoundary(&initialDisplacement);
 
-    ASSERT_FALSE(problem.getDisplacementBoundaryAtVertex(VertexCoordinate(0, 0, 0)).isNonZero()) << "Expected non-zero displacement boundary at 0,0,0";
-    ASSERT_FALSE(problem.getDisplacementBoundaryAtVertex(VertexCoordinate(1, 1, 0)).isNonZero()) << "Expected non-zero displacement boundary at 1,1,0";
+    ASSERT_TRUE(problem.getDisplacementBoundaryAtVertex(VertexCoordinate(0, 0, 0)).isNonZero()) << "Expected non-zero displacement boundary at 0,0,0";
+    ASSERT_TRUE(problem.getDisplacementBoundaryAtVertex(VertexCoordinate(1, 1, 0)).isNonZero()) << "Expected non-zero displacement boundary at 1,1,0";
     
     solution.computeMaterialConfigurationEquations();
 

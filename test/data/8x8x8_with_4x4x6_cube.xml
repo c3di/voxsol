@@ -22,7 +22,7 @@
 	
 	<NeumannBoundaries>
 		<NeumannBoundaryProjector maximumDepth="5" maximumDepthFromFirstHit="5"></NeumannBoundaryProjector>
-		<NeumannBoundary totalForceInNewtons="1000000000" projectionDirection="-Z"></NeumannBoundary>
+		<NeumannBoundary forceZ="1000000000" projectionDirection="-Z"></NeumannBoundary>
 	</NeumannBoundaries>
 	
 	<LODGenerator numLevelsOfDetail="1"></LODGenerator>
