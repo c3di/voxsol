@@ -142,6 +142,17 @@ void solveGPU(ProblemInstance& problemInstance, int lod) {
 
 }
 
+void printCommandLineHelp() {
+    std::cout << "\n\n Available command line options:\n\n";
+
+    std::cout << "\t -i \t\tpath to input XML file (required)\n";
+    std::cout << "\t -o \t\tpath to output folder \n\t\t\t  default: current folder\n";
+    std::cout << "\t -s \t\tenable output of periodic snapshot solutions in VTK format\n\t\t\t  default: disabled\n\t\t\t  expects: number of iterations between snapshots (integer)\n\t\t\t  eg: -s 5000\n";
+    std::cout << "\t --outputs \tchoose which output formats are used \n\t\t\t  default: vtk\n\t\t\t  expects: comma-delimited string containing zero or more of 'csv' or 'vtk'\n\t\t\t  eg: --outputs 'csv,vtk' or --outputs ''\n";
+
+    std::cout << "\t -h \t\tlist available command line options\n";
+}
+
 int main(int argc, char* argv[]) {
     _putenv("CUDA_VISIBLE_DEVICES=0");
     std::cout << "Stochastic Mechanic Solver\n\n";
@@ -162,6 +173,11 @@ int main(int argc, char* argv[]) {
     const std::string &xmlFilename = clParser.getCmdOption("-i");
 
     std::string xmlInputFile("test.xml");
+
+    if (clParser.cmdOptionExists("-h")) {
+        printCommandLineHelp();
+        exit(1);
+    }
 
     if (xmlFilename.empty()) {
         std::cout << "No input filename found in command line options, using " << xmlInputFile << " instead.\n";
