@@ -22,6 +22,8 @@ HWND myConsoleWindow = GetConsoleWindow();
 
 REAL EPSILON = asREAL(1.0e-6);
 
+bool OUTPUT_VTK = true;
+bool OUTPUT_CSV = false;
 int RESIDUAL_UPDATE_FREQUENCY = 500;
 int PERIODIC_OUTPUT_FREQUENCY = -1;
 bool DEBUG_OUTPUT = true;
@@ -103,9 +105,6 @@ void solveGPU(ProblemInstance& problemInstance, int lod) {
                 vtkWriter.writeEntireStructureToFile(fp.str());
             }
             
-
-            
-
             nextIterationTarget += PERIODIC_OUTPUT_FREQUENCY;
         }
 
@@ -145,7 +144,7 @@ void solveGPU(ProblemInstance& problemInstance, int lod) {
 
 int main(int argc, char* argv[]) {
     _putenv("CUDA_VISIBLE_DEVICES=0");
-    std::cout << "Stochastic Mechanic Solver -- BY OUR GPUS COMBINED! (except currently limited to 1 GPU)\n\n";
+    std::cout << "Stochastic Mechanic Solver\n\n";
 
     CudaDebugHelper::PrintDeviceInfo(ACTIVE_DEVICE);
 
@@ -162,18 +161,18 @@ int main(int argc, char* argv[]) {
     CommandLine clParser(argc, argv);
     const std::string &xmlFilename = clParser.getCmdOption("-i");
 
-    std::string xmlInputFile("virtual_clinical_trial_no_3_patient_id_16_nan.xml");
+    std::string xmlInputFile("test.xml");
 
     if (xmlFilename.empty()) {
-        std::cout << "No filename found in command line options, using " << xmlInputFile << " instead.\n";
+        std::cout << "No input filename found in command line options, using " << xmlInputFile << " instead.\n";
     }
     else {
         xmlInputFile = xmlFilename;
     }
 
-    const std::string basePathOption = clParser.getCmdOption("-basePath");
-    if (!basePathOption.empty()) {
-        base_file_path = basePathOption;
+    const std::string outputFolder = clParser.getCmdOption("-o");
+    if (!outputFolder.empty()) {
+        base_file_path = outputFolder;
     }
 
     const std::string periodicSnapshots = clParser.getCmdOption("-s");
@@ -185,6 +184,11 @@ int main(int argc, char* argv[]) {
         catch (std::exception const e) {
             std::cout << "Invalid command line argument: -s " << periodicSnapshots << std::endl;
         }
+    }
+    const std::string outputOptions = clParser.getCmdOption("--outputs");
+    if (!outputOptions.empty()) {
+        OUTPUT_VTK = outputOptions.find("vtk") != -1 || outputOptions.find("VTK") != -1;
+        OUTPUT_CSV = outputOptions.find("csv") != -1 || outputOptions.find("CSV") != -1;
     }
 
     XMLProblemDeserializer xmlDeserializer(xmlInputFile);
@@ -205,12 +209,6 @@ int main(int argc, char* argv[]) {
 
     std::cout << std::endl << "Total simulation time: " << elapsedMicroseconds / 1000 << " ms\n\n";
 
-    VTKSolutionWriter vtkWriter(problemInstance->getSolutionLOD(0));
-    vtkWriter.filterOutNullVoxels();
-    vtkWriter.setMechanicalValuesOutput(true);
-
-    CSVSolutionWriter csvWriter(problemInstance->getSolutionLOD(0));
-
     try {
         // Remove any directories and the .xml ending
         std::string filename = xmlInputFile.substr(xmlInputFile.find_last_of("/\\") + 1);
@@ -218,13 +216,22 @@ int main(int argc, char* argv[]) {
         filename = filename.substr(0, p);
 
         std::stringstream fp = std::stringstream();
-        fp << base_file_path << filename << ".csv";
-        csvWriter.writeSolutionToFile(fp.str());
 
-        fp = std::stringstream();
-        fp << base_file_path << filename << ".vtk";
-        vtkWriter.writeEntireStructureToFile(fp.str());
+        if (OUTPUT_CSV) {
+            CSVSolutionWriter csvWriter(problemInstance->getSolutionLOD(0));
+            fp << base_file_path << filename << ".csv";
+            csvWriter.writeSolutionToFile(fp.str());
+        }
 
+        if (OUTPUT_VTK) {
+            VTKSolutionWriter vtkWriter(problemInstance->getSolutionLOD(0));
+            vtkWriter.filterOutNullVoxels();
+            vtkWriter.setMechanicalValuesOutput(true);
+            
+            fp = std::stringstream();
+            fp << base_file_path << filename << ".vtk";
+            vtkWriter.writeEntireStructureToFile(fp.str());
+        }
     }
     catch (std::exception e) {
         std::cout << e.what() << std::endl;
