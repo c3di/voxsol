@@ -72,7 +72,7 @@ TEST_F(CompressionLoadTest, ThesisTest) {
     problemInstance.computeMaterialConfigurationEquations();
  
     for (int i = numLOD; i >= 0; i--) {
-        REAL epsilon = i > 0 ? asREAL(1e-6) : asREAL(1e-7);
+        REAL epsilon = asREAL(1e-6);
         SequentialBlockSampler sampler(problemInstance.getSolutionLOD(i), BLOCK_SIZE);
 
         auto start = std::chrono::high_resolution_clock::now();
@@ -82,16 +82,14 @@ TEST_F(CompressionLoadTest, ThesisTest) {
         auto now = std::chrono::high_resolution_clock::now();
         elapsed += std::chrono::duration_cast<std::chrono::milliseconds>(now - start).count();
 
-        VTKSolutionWriter vis(problemInstance.getSolutionLOD(i));
-        vis.setMechanicalValuesOutput(true);
-        //vis.writeEntireStructureToFile("d:\\tmp\\integration_SimpleCompression_low.vtk");
-
         if (i > 0) {
             problemInstance.projectCoarseSolutionToFinerSolution(i, i-1);
 
-            VTKSolutionWriter vis(problemInstance.getSolutionLOD(i-1));
-            vis.setMechanicalValuesOutput(true);
-            vis.writeEntireStructureToFile("d:\\tmp\\integration_SimpleCompression_high.vtk");
+            if (doOutputTestResultsAsVTK) {
+                VTKSolutionWriter vis(problemInstance.getSolutionLOD(i - 1));
+                vis.setMechanicalValuesOutput(true);
+                vis.writeEntireStructureToFile("integration_SimpleCompression_high.vtk");
+            }
         }
     }
 
@@ -114,7 +112,7 @@ TEST_F(CompressionLoadTest, ThesisTest) {
     if (doOutputTestResultsAsVTK) {
         VTKSolutionWriter vis(problemInstance.getSolutionLOD(0));
         vis.setMechanicalValuesOutput(true);
-        vis.writeEntireStructureToFile("d:\\tmp\\integration_SimpleCompression.vtk");
+        vis.writeEntireStructureToFile("integration_SimpleCompression.vtk");
     }
    
 }
@@ -168,7 +166,7 @@ TEST_F(CompressionLoadTest, SimpleCompression) {
 
     if (doOutputTestResultsAsVTK) {
         VTKSolutionWriter vis(problemInstance.getSolutionLOD(0));
-        vis.writeEntireStructureToFile("d:\\tmp\\integration_SimpleCompression.vtk");
+        vis.writeEntireStructureToFile("integration_SimpleCompression.vtk");
     }
 
 }
@@ -223,13 +221,13 @@ TEST_F(CompressionLoadTest, SimpleCompressionAnisotropicVoxels) {
 
     if (doOutputTestResultsAsVTK) {
         VTKSolutionWriter vis(problemInstance.getSolutionLOD(0));
-        vis.writeEntireStructureToFile("d:\\tmp\\integration_SimpleCompressionAnisotropicVoxels.vtk");
+        vis.writeEntireStructureToFile("integration_SimpleCompressionAnisotropicVoxels.vtk");
     }
 
 }
 
 TEST_F(CompressionLoadTest, SimpleCompressionNonUnitArea) {
-    libmmv::Vec3ui discretization(100, 10, 10); // uniform voxel size 0.1 with 100,15,10 produces the same solution
+    libmmv::Vec3ui discretization(10, 10, 100); 
     libmmv::Vec3<REAL> voxelSize(asREAL(0.1), asREAL(0.15), asREAL(0.1));
 
     ProblemInstance problemInstance;
@@ -267,8 +265,8 @@ TEST_F(CompressionLoadTest, SimpleCompressionNonUnitArea) {
     REAL maxDisplacement = 0;
 
     for (auto it = vertices->begin(); it != vertices->end(); it++) {
-        if (abs(it->x) > maxDisplacement) {
-            maxDisplacement = it->x;
+        if (abs(it->z) > maxDisplacement) {
+            maxDisplacement = it->z;
         }
     }
 
@@ -277,14 +275,14 @@ TEST_F(CompressionLoadTest, SimpleCompressionNonUnitArea) {
 
     if (doOutputTestResultsAsVTK) {
         VTKSolutionWriter vis(problemInstance.getSolutionLOD(0));
-        vis.writeEntireStructureToFile("d:\\tmp\\integration_SimpleCompressionNonUnitArea.vtk");
+        vis.writeEntireStructureToFile("integration_SimpleCompressionNonUnitArea.vtk");
     }
 
 }
 
 TEST_F(CompressionLoadTest, SimpleCompressionAnisotropicUnitArea) {
-    libmmv::Vec3ui discretization(100, 10, 20); 
-    libmmv::Vec3<REAL> voxelSize(asREAL(0.1), asREAL(0.1), asREAL(0.05));
+    libmmv::Vec3ui discretization(20, 10, 100); 
+    libmmv::Vec3<REAL> voxelSize(asREAL(0.05), asREAL(0.1), asREAL(0.1));
 
     ProblemInstance problemInstance;
     problemInstance.initFromParameters(discretization, voxelSize);
@@ -295,11 +293,11 @@ TEST_F(CompressionLoadTest, SimpleCompressionAnisotropicUnitArea) {
 
     for (int i = 0; i <= 0; i++) {
         DirichletBoundary fixed(DirichletBoundary::FIXED_ALL);
-        BoundaryProjector bProjector(problemInstance.getProblemLOD(0), ProblemSide::POSITIVE_X);
+        BoundaryProjector bProjector(problemInstance.getProblemLOD(0), ProblemSide::POSITIVE_Z);
         bProjector.setMaxProjectionDepth(2);
         bProjector.projectDirichletBoundary(&fixed);
 
-        bProjector.setProjectionDirection(ProblemSide::NEGATIVE_X);
+        bProjector.setProjectionDirection(ProblemSide::NEGATIVE_Z);
         libmmv::Vec3<REAL> totalNeumannForceNewtons(0, 0, asREAL(-1e9));
         bProjector.projectNeumannBoundary(totalNeumannForceNewtons);
     }
@@ -321,8 +319,8 @@ TEST_F(CompressionLoadTest, SimpleCompressionAnisotropicUnitArea) {
     REAL maxDisplacement = 0;
 
     for (auto it = vertices->begin(); it != vertices->end(); it++) {
-        if (abs(it->x) > maxDisplacement) {
-            maxDisplacement = it->x;
+        if (abs(it->z) > maxDisplacement) {
+            maxDisplacement = it->z;
         }
     }
 
@@ -331,7 +329,7 @@ TEST_F(CompressionLoadTest, SimpleCompressionAnisotropicUnitArea) {
 
     if (doOutputTestResultsAsVTK) {
         VTKSolutionWriter vis(problemInstance.getSolutionLOD(0));
-        vis.writeEntireStructureToFile("d:\\tmp\\integration_SimpleCompressionNonUnitArea.vtk");
+        vis.writeEntireStructureToFile("integration_SimpleCompressionNonUnitArea.vtk");
     }
 
 }

@@ -88,7 +88,7 @@ TEST_F(InitialDisplacementTest, SimpleInitialDisplacement) {
 
     if (doOutputTestResultsAsVTK) {
         VTKSolutionWriter vis(problemInstance.getSolutionLOD(0));
-        vis.writeEntireStructureToFile("d:\\tmp\\integration_SimpleInitialDisplacement.vtk");
+        vis.writeEntireStructureToFile("integration_SimpleInitialDisplacement.vtk");
     }
 
 }
