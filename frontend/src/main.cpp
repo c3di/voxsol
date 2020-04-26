@@ -17,7 +17,7 @@
 #define ACTIVE_DEVICE 0
 
 int totalIterations = 0;
-__int64 elapsedMicroseconds = 0;
+__int64 elapsedMicrosecondsTotal = 0;
 HWND myConsoleWindow = GetConsoleWindow();
 
 REAL EPSILON = asREAL(1.0e-6);
@@ -26,7 +26,8 @@ bool OUTPUT_VTK = true;
 bool OUTPUT_CSV = false;
 int RESIDUAL_UPDATE_FREQUENCY = 500;
 int PERIODIC_OUTPUT_FREQUENCY = -1;
-bool DEBUG_OUTPUT = true;
+
+bool FORCE_LOD0_SNAPSHOTS = false;
 
 int nextIterationTarget = 1;
 
@@ -47,10 +48,7 @@ void solveGPU(ProblemInstance& problemInstance, int lod) {
     int numVerticesOnResidualLevelZero = (int)problemInstance.getResidualVolumeLOD(lod)->getNumVerticesOnLevelZero();
     REAL remainingResidual = 10000000;
     kernel.setNumLaunchesBeforeResidualUpdate(RESIDUAL_UPDATE_FREQUENCY - 1);
-    libmmv::Vec3<REAL> voxelSize = problemInstance.getSolutionLOD(lod)->getVoxelSize();
-    REAL maxVoxelDim = std::max(std::max(voxelSize.x, voxelSize.y), voxelSize.z);
-
-    REAL targetResid = std::max(maxVoxelDim * EPSILON, asREAL(1.0e-7));
+    __int64 elapsedMicroseconds = 0;
 
     std::cout << "Solving LOD " << lod << " with GPU, target residual " << EPSILON << "\n";
 
@@ -87,7 +85,7 @@ void solveGPU(ProblemInstance& problemInstance, int lod) {
         if (PERIODIC_OUTPUT_FREQUENCY > 0 && (numIterationsDone == 1 || totalIterations == nextIterationTarget)) {
             kernel.pullVertices();
 
-            if (!DEBUG_OUTPUT) {
+            if (FORCE_LOD0_SNAPSHOTS) {
                 for (int i = lod; i > 0; i--) {
                     problemInstance.projectCoarseSolutionToFinerSolution(i, i - 1);
                 }
@@ -138,8 +136,8 @@ void solveGPU(ProblemInstance& problemInstance, int lod) {
     }
 
     kernel.pullVertices();
-    std::cout << "\nFinished simulating for " << elapsedMicroseconds / 1000 << " ms. Did " << numIterationsDone << " iterations\n\n";
-
+    std::cout << "\nFinished LOD " << lod << " in " << numIterationsDone << " iterations taking " << elapsedMicroseconds / 1000 << " ms\n\n";
+    elapsedMicrosecondsTotal += elapsedMicroseconds;
 }
 
 void printCommandLineHelp() {
@@ -223,7 +221,7 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    std::cout << std::endl << "Total simulation time: " << elapsedMicroseconds / 1000 << " ms\n\n";
+    std::cout << std::endl << "Finished simulation. Total simulation time: " << elapsedMicrosecondsTotal / 1000 << " ms\n\n";
 
     try {
         // Remove any directories and the .xml ending
