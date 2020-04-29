@@ -8,6 +8,7 @@ set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin)
 set(LIBRARY_OUTPUT_PATH ${EXECUTABLE_OUTPUT_PATH})
 set(CMAKE_USE_RELATIVE_PATHS FALSE)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+set(SOLVER_COMPUTE_CAPABILITY "60" CACHE STRING "The CUDA compute capability that the GPU kernels should be compiled for.")
 
 include(CommonFlags)
 include(GetSourceFiles)
@@ -24,7 +25,7 @@ if (MSVC)
 	string(APPEND CMAKE_CXX_FLAGS_RELEASE " /MT")
 	
 	# enable CUDA memory tracking and debug code
-	set(CMAKE_CUDA_FLAGS " -Xptxas=-v -Xptxas -dlcm=ca -gencode arch=compute_60,code=sm_60 -res-usage")
+	set(CMAKE_CUDA_FLAGS " -Xptxas=-v -Xptxas -dlcm=ca -gencode arch=compute_${SOLVER_COMPUTE_CAPABILITY},code=sm_${SOLVER_COMPUTE_CAPABILITY} -res-usage")
 	set(CMAKE_CUDA_FLAGS_DEBUG -Xcompiler="-MTd -Zi -Ob0 -Od /RTC1")
 	string(APPEND CMAKE_CUDA_FLAGS_DEBUG "  -G ")
 	set(CMAKE_CUDA_FLAGS_RELWITHDEBINFO -Xcompiler="-MT -Zi -Ob0 -Od /RTC1")
