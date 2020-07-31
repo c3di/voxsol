@@ -1,4 +1,4 @@
-# Stomech Solver
+# Voxsol Mechanical Solver
 
 A GPU-driven finite element solver used for the mechanical simulation of problems stemming from CT image stacks, FIB/SEM volumes or other 3D datasets. 
 
