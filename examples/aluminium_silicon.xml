@@ -1,0 +1,31 @@
+<xml version="1.0">
+
+    <MaterialDictionary>
+        <Material id="1" name="aluminum" youngsModulus="70000" poissonRatio="0.35"></Material> 
+        <Material id="2" name="silicon" youngsModulus="150000" poissonRatio="0.27"></Material>
+    </MaterialDictionary>
+
+    <DiscreteProblem sizeX="64" sizeY="64" sizeZ="64" voxelSizeX="0.046" voxelSizeY="0.046" voxelSizeZ="0.046">
+        <InputFile inputFileName="aluminium_silicon.mrc">
+            <MaterialMapping>
+                <MaterialMap materialID="1" colorValue="0"></MaterialMap>
+                <MaterialMap materialID="2" colorValue="255"></MaterialMap>
+            </MaterialMapping>
+        </InputFile>
+    </DiscreteProblem>
+
+    <DirichletBoundaries>
+        <DirichletBoundaryProjector maximumDepth="5" maximumDepthFromFirstHit="5"></DirichletBoundaryProjector>
+        <DirichletBoundary fixedX="true" projectionDirection="+X"></DirichletBoundary>
+        <DirichletBoundary fixedY="true" projectionDirection="+Y"></DirichletBoundary>
+        <DirichletBoundary fixedZ="true" projectionDirection="+Z"></DirichletBoundary>
+    </DirichletBoundaries>
+
+    <NeumannBoundaries>
+        <NeumannBoundaryProjector maximumDepth="5" maximumDepthFromFirstHit="5"></NeumannBoundaryProjector>
+        <NeumannBoundary forceZ="-1000" projectionDirection="-Z"></NeumannBoundary>
+    </NeumannBoundaries>
+
+    <LODGenerator numLevelsOfDetail="2" strategy="majorityVote"></LODGenerator>
+
+</xml>

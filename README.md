@@ -41,4 +41,14 @@ For help with command line options:
 stomech_solver -h
 ```
 
+## Examples
+
+An example input is included consisting of a small aluminium material probe with silicon inclusions. A compressive load is applied to the top face of the cube. The bottom face is fixed in Z direction while two sides are fixed in X and Y directions respectively. 
+
+It may be executed with output as a VTK file as follows:
+
+```
+stomech_solver -i "path/to/aluminium-silicon.xml" -o "path/to/output/folder/" --outputs "vtk"
+```
+
 
