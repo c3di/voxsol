@@ -153,7 +153,7 @@ void printCommandLineHelp() {
 
 int main(int argc, char* argv[]) {
     _putenv("CUDA_VISIBLE_DEVICES=0");
-    std::cout << "Stochastic Mechanic Solver\n\n";
+    std::cout << "Voxsol Mechanical Solver\n\n";
 
     CudaDebugHelper::PrintDeviceInfo(ACTIVE_DEVICE);
 

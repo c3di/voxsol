@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.10)
 SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}")
 
-project(stomech_solver CUDA)
+project(voxsol CUDA)
 
 # find all directories containing source files
 set(FILE_TYPES *.c *.cc *.cu *.cpp *.h *.hpp *.tcc)
@@ -19,5 +19,5 @@ add_executable(${PROJECT_NAME}
 
 target_link_libraries(${PROJECT_NAME}
                       ${LIBMMV_LIBRARY_RELEASE}
-					  stomech_solver_lib
+					  voxsol_lib
 )

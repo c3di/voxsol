@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.10)
 SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}")
 
-project(stomech_solver_lib CXX CUDA)
+project(voxsol_lib CXX CUDA)
 
 set(CMAKE_BINARY_DIR ${PROJECT_BINARY_DIR})
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin)
