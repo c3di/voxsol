@@ -48,7 +48,7 @@ An example input is included consisting of a small aluminium material probe with
 It may be executed with output as a VTK file as follows:
 
 ```
-stomech_solver -i "path/to/aluminium-silicon.xml" -o "path/to/output/folder/" --outputs "vtk"
+voxsol -i "path/to/aluminium-silicon.xml" -o "path/to/output/folder/" --outputs "vtk"
 ```
 
 
