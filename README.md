@@ -32,13 +32,13 @@ For this reason they cannot be run as standalone executables yet and should be e
 The project creates a standalone executable that loads a problem from a specified .xml file:
 
 ```
-stomech_solver -i "path/to/input.xml"
+voxsol -i "path/to/input.xml"
 ```
 
 For help with command line options:
 
 ```
-stomech_solver -h
+voxsol -h
 ```
 
 ## Examples
